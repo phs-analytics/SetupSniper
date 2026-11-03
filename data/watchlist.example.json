@@ -1,0 +1,35 @@
+{
+  "_ajuda": "Exemplo inicial. Na primeira execução o servidor copia isto; suas mudanças ficam em data/watchlist.json (que não vai para o git).",
+  "items": [
+    {
+      "id": "cpu",
+      "name": "AMD Ryzen 7 7800X3D",
+      "query": "Ryzen 7 7800X3D",
+      "target": null,
+      "minPrice": 1200,
+      "maxPrice": 5000,
+      "pins": {},
+      "createdAt": 0
+    },
+    {
+      "id": "ram",
+      "name": "Memória DDR5 16GB (1x16) 5600MHz",
+      "query": "memoria ddr5 16gb 5600",
+      "target": null,
+      "minPrice": 150,
+      "maxPrice": 1500,
+      "pins": {},
+      "createdAt": 0
+    },
+    {
+      "id": "ssd",
+      "name": "SSD NVMe 1TB",
+      "query": "ssd nvme 1tb",
+      "target": null,
+      "minPrice": 250,
+      "maxPrice": 2000,
+      "pins": {},
+      "createdAt": 0
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+# ---- Dados pessoais e segredos: NUNCA vão para o GitHub ----
+# segredos (senha, token do Telegram)
+.env
+.env.*
+!.env.example
+# token do Telegram, chat id e regras salvas pelo site
+data/settings.json
+# seus produtos monitorados, histórico e alertas
+data/watchlist.json
+data/history.json
+data/alerts.json
+logs/
+
+# ---- Outros ----
+node_modules/
+*.tar.gz
+*.log
+.DS_Store
