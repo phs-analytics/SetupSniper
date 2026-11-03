@@ -1,129 +1,80 @@
+<div align="center">
+
 # 🎯 SetupSniper
 
-Busque peças de PC em várias lojas brasileiras ao mesmo tempo, veja um **score de confiabilidade (0–100)** de cada loja ao lado do preço e receba **alertas no Telegram** quando o preço cair.
+**Caçador de preços de hardware.** Busca em várias lojas brasileiras ao mesmo tempo, mostra um **score de confiabilidade** de cada loja e avisa no **Telegram** quando o preço cai.
 
-Não precisa instalar nenhuma dependência: basta ter o Node.js. Roda no PC ou num **celular Android antigo** usado como servidor 24h.
+Roda no seu PC ou num **celular Android antigo** usado como servidor pessoal, que também pode virar a sua **nuvem de arquivos**.
+
+[![CI](https://github.com/phs-analytics/SetupSniper/actions/workflows/ci.yml/badge.svg)](https://github.com/phs-analytics/SetupSniper/actions/workflows/ci.yml)
+![Node](https://img.shields.io/badge/node-%E2%89%A518.18-339933)
+![Dependências](https://img.shields.io/badge/depend%C3%AAncias-0-brightgreen)
+![Licença](https://img.shields.io/badge/licen%C3%A7a-MIT-blue)
+
+[Começar](#-começar-em-2-minutos) · [Celular como servidor](docs/celular-servidor.md) · [Telegram](docs/telegram.md) · [Nuvem](docs/nuvem.md) · [FAQ](docs/faq.md)
+
+</div>
 
 ![Busca](docs/busca.png)
 
-## O que ele faz
+## ✨ O que ele faz
 
-- **Busca livre**: digite qualquer produto e os resultados de cada loja aparecem conforme ela responde.
-- **Lojas**: KaBuM!, Pichau, Terabyte, Amazon, Mercado Livre, Magazine Luiza, AliExpress e Shopee.
-- **Busca profunda**: consulta mais páginas, inclui os comparadores Buscapé e Zoom e, no PC, pode usar um navegador headless para lojas que bloqueiam robôs.
-- **Filtro de lixo**: descarta acessórios ("suporte para…", "adesivo…") e marca como **suspeito** preço muito abaixo da mediana, que pode ser golpe ou outro produto.
-- **📌 Fixar produtos**: fixe uma oferta direto da busca (ou pelo Telegram) com uma **meta de preço**. Os fixados aparecem no topo da busca. O servidor confere todos a cada 15 min e guarda o histórico.
-- **🔔 Alertas no Telegram**: avisa quando um fixado atinge a meta ou cai X% abaixo da média de 30 dias. Dá para ligar ou desligar os alertas de cada produto.
-- **Confiabilidade**: o score de cada loja combina Reclame Aqui (40%), avaliação da loja (25%), volume de vendas (20%) e reviews (15%).
+| | |
+|---|---|
+| 🔎 **Busca livre** | Digite qualquer produto e os resultados de cada loja aparecem conforme ela responde. |
+| 🛒 **8 lojas + 2 comparadores** | KaBuM!, Pichau, Terabyte, Amazon, Mercado Livre, Magalu, AliExpress e Shopee. Na **busca profunda**, também Buscapé e Zoom. |
+| 🛡️ **Score de confiabilidade** | De 0 a 100 por loja, combinando Reclame Aqui, avaliação, volume de vendas e reviews. |
+| 🧹 **Filtro de lixo** | Descarta acessórios e marca como **suspeito** o preço bom demais para ser verdade. |
+| 📌 **Fixar produtos** | Fixe uma oferta com **meta de preço**. O servidor confere de tempos em tempos e guarda o histórico. |
+| 🔔 **Alertas no Telegram** | Avisa quando o preço atinge a meta ou cai abaixo da média. Também dá para fixar produtos pelo próprio bot. |
+| ↗️ **Link direto** | O botão "Ver na loja" leva direto à página do produto. |
+| 📱 **Servidor no celular** | Scripts para Termux: liga sozinho, reinicia se cair, atualiza pelo Telegram. |
+| ☁️ **Nuvem de arquivos** | Opcional: seus arquivos no celular servidor, acessíveis pelo navegador ou por WebDAV. |
+| 🔒 **Privado** | Nenhum dado sai da sua máquina. Zero dependências e zero contas. |
 
 ![Fixados](docs/fixados.png)
 
-## Começando
+## 🚀 Começar em 2 minutos
 
-Requer **Node.js 18+**, sem `npm install`.
+Precisa do **Node.js 18.18+**. Não tem `npm install`.
 
 ```bash
 git clone https://github.com/phs-analytics/SetupSniper.git
 cd SetupSniper
-cp .env.example .env      # defina uma SENHA
-npm start                 # http://localhost:3000
+cp .env.example .env        # defina uma SENHA
+npm start                   # abra http://localhost:3000
 ```
 
-Quer só ver a interface? Rode `npm run demo` (preços simulados).
+Quer só conhecer a interface? Rode `npm run demo` (preços simulados).
 
-### Busca profunda com navegador (opcional, só no PC)
+## 📚 Guias
 
-Shopee e AliExpress costumam bloquear requisições simples. No PC, instale o Playwright para que a busca profunda use um navegador de verdade:
-
-```bash
-npm install playwright && npx playwright install chromium
-```
-
-## Celular Android como servidor
-
-Use o [Termux](https://f-droid.org/packages/com.termux/) (pelo F-Droid, **não** pela Play Store) e o Termux:Boot.
-
-```bash
-pkg install -y git
-git clone https://github.com/phs-analytics/SetupSniper.git && cd SetupSniper
-./scripts/instalar-termux.sh       # instala Node, git, tmux, ssh e configura o boot
-nano .env                          # defina SENHA
-./scripts/iniciar.sh --tmux        # liga em segundo plano e reinicia sozinho se cair
-```
-
-Com isso, o celular vira um servidor pessoal com duas coisas: o SetupSniper (porta 3000) e uma nuvem de arquivos (porta 8090, veja abaixo).
-
-- **Acesso de qualquer lugar**: instale o [Tailscale](https://tailscale.com) no celular servidor e nos seus aparelhos e abra `http://IP-tailscale:3000`.
-- **Ver o que está acontecendo**: `tmux attach -t sniper` (sair: CTRL+B, depois D), `tail -f logs/server.log` ou `/status` no Telegram.
-- **Atualizar**: `./scripts/atualizar.sh` ou `/atualizar` no Telegram.
-- **Acesso remoto ao terminal**: rode `passwd` e `sshd` no Termux; do PC, use `ssh -p 8022 usuario@IP-tailscale`.
-- Em **Configurações → Apps → Termux → Bateria**, escolha **Sem restrições**.
-
-## Nuvem de arquivos (opcional)
-
-O celular servidor também pode guardar seus arquivos. O `scripts/nuvem.sh` liga o [dufs](https://github.com/sigoden/dufs): uma página web para enviar, baixar, buscar e apagar arquivos, que também funciona como WebDAV.
-
-```bash
-nano .env                        # defina NUVEM_SENHA (e, se quiser, NUVEM_USUARIO e NUVEM_PASTA)
-./scripts/nuvem.sh --tmux        # liga em segundo plano
-```
-
-- **No navegador** (celular ou PC, com Tailscale): abra `http://IP-tailscale:8090` e entre com o usuário e a senha.
-- **Como pasta no PC ou no celular**: use um app com suporte a WebDAV no endereço `http://IP-tailscale:8090`. Por exemplo: RaiDrive no Windows, Arquivos no iPhone, Solid Explorer ou CX no Android, ou `rclone mount`.
-- **Onde ficam os arquivos**: por padrão em `Nuvem/`, no armazenamento interno do Android, visíveis também no gerenciador de arquivos do celular.
-- **Sem senha a nuvem não liga.** Use apenas pelo Tailscale e nunca abra a porta 8090 no roteador.
-
-## Telegram
-
-1. No Telegram, fale com o [@BotFather](https://t.me/BotFather), envie `/newbot` e copie o token.
-2. Abra o site, vá na aba **Alertas**, cole o token e salve.
-3. Envie `/start` para o seu bot. O chat é conectado sozinho e só ele pode usar os comandos.
-
-| Comando | O que faz |
+| Guia | Para quê |
 |---|---|
-| `/fixados` | Lista os produtos fixados com o melhor preço atual |
-| `/fixar ryzen 5 7600 meta 1200` | Fixa um produto (a meta é opcional) |
-| `/desafixar 2` | Remove o fixado nº 2 da lista |
-| `/buscar rtx 4060` | Busca rápida nas lojas |
-| `/status` | Mostra versão, tempo ligado e memória do servidor |
-| `/atualizar` | Baixa a versão nova do GitHub e reinicia |
+| [Instalação no computador](docs/instalacao.md) | Windows, macOS, Linux e Docker |
+| [Celular como servidor](docs/celular-servidor.md) | Android antigo + Termux + Tailscale, rodando 24h |
+| [Alertas no Telegram](docs/telegram.md) | Criar o bot, regras de alerta e comandos |
+| [Nuvem de arquivos](docs/nuvem.md) | Seus arquivos no servidor, pelo navegador ou WebDAV |
+| [Como funciona](docs/como-funciona.md) | Leitura de preços, filtros, score e API |
+| [Adicionar uma loja](docs/adicionar-loja.md) | Passo a passo para contribuir com uma loja nova |
+| [Perguntas frequentes](docs/faq.md) | Lojas bloqueadas, preços diferentes e segurança |
 
-## Segurança e privacidade
+## 🔒 Privacidade e segurança
 
-- **Seus dados ficam só na sua máquina.** O token, os produtos fixados, o histórico e os alertas ficam em `data/settings.json`, `data/watchlist.json`, `data/history.json`, `data/alerts.json` e `.env`. Todos estão no `.gitignore` e **nunca** vão para o git.
-- **Defina `SENHA` no `.env`**: quem abre o site pode alterar os produtos fixados e as configurações.
-- **Não exponha as portas 3000 e 8090 direto na internet.** Prefira o Tailscale, que é privado e criptografado.
-- **Links fixos são restritos às lojas suportadas**, então o servidor não busca endereços arbitrários.
-- **Se o token do bot vazar**, gere outro no @BotFather (`/revoke`).
+- **Seus dados ficam só com você.** Token do Telegram, senhas, fixados e histórico ficam em arquivos que **nunca vão para o git**. O `npm run check` e o CI conferem isso.
+- **Proteja o acesso.** Defina `SENHA` e acesse de fora de casa só pelo [Tailscale](https://tailscale.com). Não abra portas no roteador.
+- **Detalhes:** veja o [SECURITY.md](SECURITY.md).
 
-## Avisos
+## 🤝 Contribuindo
 
-- **A coleta de preços é por raspagem de páginas públicas.** Se uma loja mudar o layout ou bloquear o acesso, o site mostra o erro daquela loja e as outras continuam funcionando. Os intervalos padrão são conservadores; não os reduza muito.
-- **Os valores de confiabilidade em `data/stores.json` são estimativas iniciais.** Confira no Reclame Aqui e ajuste. O servidor tenta atualizar esses dados sozinho (melhor esforço).
-- **Projeto pessoal, sem vínculo com as lojas citadas.** Confira sempre o preço e o vendedor na página da loja antes de comprar.
+Lojas mudam de layout o tempo todo, então correções de adaptadores são muito bem-vindas! Veja o [CONTRIBUTING.md](CONTRIBUTING.md). Para rodar os testes: `npm test` e `npm run check`.
 
-## Estrutura
+## ⚠️ Avisos
 
-```
-server.js              servidor HTTP, busca em streaming, fixados e alertas
-src/stores.js          adaptadores de cada loja
-src/extract.js         extrator genérico (JSON embutido / HTML) e filtros
-src/reliability.js     cálculo do score de confiabilidade
-src/telegram.js        bot do Telegram
-src/browser.js         navegador headless opcional (Playwright)
-src/update.js          versão e autoatualização via git
-scripts/               iniciar, atualizar, nuvem de arquivos e instalar no Termux
-data/stores.json       lojas e indicadores de confiabilidade
-public/                interface
-```
+- **Os preços são lidos de páginas públicas.** Se uma loja mudar o layout ou bloquear o acesso, só aquela loja é afetada.
+- **Os indicadores de confiabilidade em `data/stores.json` são estimativas iniciais.** Ajuste conforme a sua pesquisa.
+- **Projeto pessoal, sem vínculo com as lojas citadas.** Confira sempre preço, vendedor e frete na loja antes de comprar.
 
-### Adicionar uma loja
+## 📄 Licença
 
-1. Crie a entrada em `src/stores.js` (URL de busca e, se precisar, um `parse`). Na maioria das lojas o extrator genérico já funciona.
-2. Crie a entrada em `data/stores.json` com cor e indicadores.
-
-Contribuições são bem-vindas.
-
-## Licença
-
-MIT
+[MIT](LICENSE)

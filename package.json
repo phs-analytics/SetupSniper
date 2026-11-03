@@ -5,10 +5,12 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "demo": "node server.js --demo"
+    "demo": "node server.js --demo",
+    "test": "node --test",
+    "check": "node scripts/check.js"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=18.18"
   },
   "license": "MIT",
   "keywords": [
@@ -20,5 +22,13 @@
     "termux",
     "kabum",
     "pichau"
-  ]
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/phs-analytics/SetupSniper.git"
+  },
+  "homepage": "https://github.com/phs-analytics/SetupSniper#readme",
+  "bugs": {
+    "url": "https://github.com/phs-analytics/SetupSniper/issues"
+  }
 }

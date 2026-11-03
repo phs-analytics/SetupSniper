@@ -10,6 +10,7 @@ export function parseBRL(s) {
   if (!s) return null;
   let t = String(s).replace(/[^\d.,]/g, '');
   if (t.includes(',')) t = t.replace(/\./g, '').replace(',', '.');
+  else if (/^\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, '');   // "1.234" = mil duzentos e trinta e quatro
   const n = parseFloat(t);
   return Number.isFinite(n) ? n : null;
 }
