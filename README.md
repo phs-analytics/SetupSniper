@@ -28,7 +28,7 @@ Roda no seu PC ou num **celular Android antigo** usado como servidor pessoal, qu
 | 📌 **Fixar produtos** | Fixe uma oferta com **meta de preço**. O servidor confere de tempos em tempos e guarda o histórico. |
 | 🔔 **Alertas no Telegram** | Avisa quando o preço atinge a meta ou cai abaixo da média. Também dá para fixar produtos pelo próprio bot. |
 | ↗️ **Link direto** | O botão "Ver na loja" leva direto à página do produto. |
-| 📱 **Servidor no celular** | Scripts para Termux: liga sozinho, reinicia se cair, atualiza pelo Telegram. |
+| 📱 **Servidor no celular** | Scripts para Termux: liga sozinho, reinicia se cair, tem um vigia que religa tudo a cada 15 min e atualiza pelo Telegram. |
 | ☁️ **Nuvem de arquivos** | Opcional: seus arquivos no celular servidor, acessíveis pelo navegador ou por WebDAV. |
 | 🔒 **Privado** | Nenhum dado sai da sua máquina. Zero dependências e zero contas. |
 

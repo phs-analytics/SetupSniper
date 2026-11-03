@@ -1,6 +1,6 @@
 {
   "name": "setupsniper",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Compare preços de peças de PC em várias lojas brasileiras, veja a confiabilidade de cada loja e receba alertas de preço baixo no Telegram.",
   "type": "module",
   "scripts": {

@@ -3,7 +3,7 @@
 set -e
 cd "$(dirname "$0")/.."
 pkg update -y && pkg upgrade -y
-pkg install -y nodejs-lts git tmux openssh termux-api
+pkg install -y nodejs-lts git tmux openssh termux-api curl
 pkg install -y dufs || pkg install -y rclone   # nuvem de arquivos
 [ -d ~/storage ] || termux-setup-storage        # acesso ao armazenamento do Android (toque em Permitir)
 [ -f .env ] || { cp .env.example .env; echo "Criei o arquivo .env — edite com: nano .env"; }
@@ -19,6 +19,9 @@ $(pwd)/scripts/iniciar.sh --tmux
 $(pwd)/scripts/nuvem.sh --tmux
 BOOT
 chmod +x ~/.termux/boot/setupsniper.sh
+
+# Vigia: religa o que cair, a cada 15 min (precisa do app Termux:API)
+./scripts/vigia.sh --instalar || echo "Vigia não ativado: instale o app Termux:API e rode ./scripts/vigia.sh --instalar"
 
 echo
 echo "Pronto! Próximos passos:"

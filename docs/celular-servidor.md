@@ -60,7 +60,61 @@ Os dois reiniciam sozinhos se caírem e ligam sozinhos quando o celular reinicia
 
 Dica: ative o **MagicDNS** no painel do Tailscale para usar um nome, como `http://celular-antigo:3000`.
 
-## 7. Acompanhe o servidor
+## 7. Mantenha sempre ativo
+
+O Android é feito para economizar bateria e costuma fechar apps em segundo plano. Para um servidor 24h, cubra estas camadas:
+
+| Camada | O que faz | Como |
+|---|---|---|
+| Reinício automático | Religa o servidor se o processo cair | Já vem nos scripts `iniciar.sh` e `nuvem.sh` |
+| Wake lock | Impede o celular de "dormir" com o servidor ligado | Já vem nos scripts (notificação fixa do Termux) |
+| Boot automático | Liga tudo quando o celular reinicia | Termux:Boot (passo 2) |
+| **Vigia** | A cada 15 min, religa o que tiver caído, mesmo se o Android fechar o Termux | `./scripts/vigia.sh --instalar` (já roda no instalador; precisa do Termux:API) |
+
+### Ajustes do Android
+
+- **Bateria sem restrições** para Termux, Termux:Boot, Termux:API e Tailscale.
+- **Pausar app se não usado:** em **Configurações → Apps → Termux**, desative "Pausar atividade do app se não usado" ou "Remover permissões".
+- **Tailscale sempre ligado:** em **Configurações → Rede → VPN → Tailscale (⚙️)**, ative **VPN sempre ativa**. Não ative "Bloquear conexões sem VPN".
+- **Wi-Fi:** desative "Alternar para dados móveis" ou "Wi-Fi adaptativo". Em Androids antigos, ative "Manter Wi-Fi ligado durante suspensão: Sempre".
+- **Atualizações automáticas:** em **Opções do desenvolvedor**, desative "Atualizações automáticas do sistema", para o celular não reiniciar sozinho de madrugada.
+- **Trave o Termux nos recentes:** abra a tela de apps recentes e toque no ícone do Termux para escolher **Bloquear** ou **Manter aberto**, ou arraste o card para baixo.
+
+### Por marca
+
+| Marca | Ajuste extra |
+|---|---|
+| Samsung | **Bateria → Limites de uso em segundo plano → Apps que nunca suspendem**: adicione Termux, Termux:API e Tailscale. Desative "Colocar apps não usados para suspender". |
+| Xiaomi / Redmi / POCO | **Apps → Permissões → Início automático**: ative Termux, Termux:Boot e Tailscale. Em **Economia de bateria** do app, escolha **Sem restrições**. |
+| Motorola | **Bateria → Otimização** (ou "Uso em segundo plano"): **Sem restrições** para os apps. |
+| Huawei / Honor | **Bateria → Inicialização de apps**: desative o gerenciamento automático e ative as três opções manuais. |
+
+Mais detalhes por modelo em [dontkillmyapp.com](https://dontkillmyapp.com).
+
+### Android 12 ou mais novo: limite de processos
+
+O Android 12+ encerra processos "filhos" em excesso (o erro aparece como `[Process completed (signal 9)]`).
+
+- **Android 14 ou mais novo:** em **Opções do desenvolvedor**, ative **"Desativar restrições de processos filhos"**.
+- **Android 12 e 13:** pelo PC, com a [depuração USB](https://developer.android.com/studio/debug/dev-options) ativada e o [ADB](https://developer.android.com/tools/releases/platform-tools) instalado:
+
+```bash
+adb shell "/system/bin/device_config set_sync_disabled_for_tests persistent"
+adb shell "/system/bin/device_config put activity_manager max_phantom_processes 2147483647"
+adb shell settings put global settings_enable_monitor_phantom_procs false
+```
+
+### Falta de energia
+
+Com a bateria, o celular aguenta horas sem tomada. Se ela acabar, ligue o celular de novo e **desbloqueie a tela uma vez**: o Termux:Boot e o vigia cuidam do resto. Alguns modelos têm "Ligar ao conectar o carregador" nas configurações ou no modo de recuperação.
+
+### Como saber se está tudo bem
+
+- O bot avisa **"🟢 SetupSniper ligado"** a cada início. Se chegar sem você ter feito nada, houve uma queda e o servidor voltou sozinho.
+- `/status` no bot mostra há quanto tempo o servidor está ligado.
+- `cat ~/SetupSniper/logs/vigia.log` mostra quando o vigia precisou religar algo.
+
+## 8. Acompanhe o servidor
 
 | Como | O quê |
 |---|---|
@@ -71,7 +125,7 @@ Dica: ative o **MagicDNS** no painel do Tailscale para usar um nome, como `http:
 
 Para o SSH, rode uma vez no Termux: `passwd` (cria a senha) e `whoami` (mostra o usuário).
 
-## 8. Atualize
+## 9. Atualize
 
 Mande `/atualizar` para o bot ou rode:
 
@@ -85,7 +139,7 @@ Seus fixados, histórico e token ficam em arquivos fora do git e não são afeta
 
 | Sintoma | O que fazer |
 |---|---|
-| O site some depois de um tempo | Revise o passo 2. No Android 12+, ative em **Opções do desenvolvedor** "Desativar restrições de processos filhos", se existir. |
+| O site some depois de um tempo | Revise o passo 7, "Mantenha sempre ativo". |
 | "Já está rodando" | O servidor já está ligado: `tmux attach -t sniper`. |
 | Não abre pelo Tailscale | Confira se o Tailscale está conectado nos dois aparelhos e se o endereço termina em `:3000`. |
 | `/atualizar` falhou | Pelo SSH: `cd ~/SetupSniper && git status`. |
