@@ -34,7 +34,7 @@ function ring(score, sm = true) {
 function barcode(seed) {
   let h = 0; for (const c of String(seed)) h = (h * 31 + c.charCodeAt(0)) >>> 0;
   let x = 0, bars = '';
-  for (let i = 0; i < 38; i++) { h = (h * 1103515245 + 12345) >>> 0; const w = 1 + (h >> 16) % 3; bars += `<rect x="${x}" y="0" width="${w}" height="22"/>`; x += w + 1 + ((h >> 8) % 2); }
+  for (let i = 0; i < 38; i++) { h = (h * 1103515245 + 12345) >>> 0; const w = 1 + (h >>> 16) % 3; bars += `<rect x="${x}" y="0" width="${w}" height="22"/>`; x += w + 1 + ((h >>> 8) % 2); }
   return `<svg class="barcode" viewBox="0 0 ${x} 22" preserveAspectRatio="none" aria-hidden="true">${bars}</svg>`;
 }
 const licenseNo = (seed) => { let h = 0; for (const c of String(seed)) h = (h * 33 + c.charCodeAt(0)) >>> 0; return String(h % 10000).padStart(4, '0'); };
