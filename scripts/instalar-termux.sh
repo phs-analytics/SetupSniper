@@ -10,13 +10,11 @@ pkg install -y dufs || pkg install -y rclone   # nuvem de arquivos
 chmod +x scripts/*.sh
 
 # Liga sozinho quando o celular reinicia (precisa do app Termux:Boot aberto uma vez)
-mkdir -p ~/.termux/boot
+mkdir -p ~/.termux/boot logs
 cat > ~/.termux/boot/setupsniper.sh <<BOOT
 #!/data/data/com.termux/files/usr/bin/sh
 termux-wake-lock
-sshd
-$(pwd)/scripts/iniciar.sh --tmux
-$(pwd)/scripts/nuvem.sh --tmux
+$(pwd)/scripts/ligar.sh > $(pwd)/logs/boot.log 2>&1
 BOOT
 chmod +x ~/.termux/boot/setupsniper.sh
 
@@ -26,6 +24,5 @@ chmod +x ~/.termux/boot/setupsniper.sh
 echo
 echo "Pronto! Próximos passos:"
 echo "  1. nano .env                      (defina SENHA e NUVEM_SENHA)"
-echo "  2. ./scripts/iniciar.sh --tmux    (liga o SetupSniper na porta 3000)"
-echo "  3. ./scripts/nuvem.sh --tmux      (liga a nuvem de arquivos na porta 8090)"
-echo "  4. passwd && sshd                 (acesso SSH pela porta 8022, opcional)"
+echo "  2. passwd                         (senha do SSH, opcional)"
+echo "  3. ./scripts/ligar.sh             (liga tudo e mostra o status)"

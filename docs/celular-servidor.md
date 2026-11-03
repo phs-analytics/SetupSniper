@@ -45,6 +45,8 @@ Preencha `SENHA=` (do site) e, se for usar a nuvem, `NUVEM_SENHA=`. Use senhas d
 
 ## 5. Ligue
 
+O jeito mais simples é `./scripts/ligar.sh`: ele liga o que estiver desligado e mostra um status de tudo. Para só conferir, use `./scripts/ligar.sh --status`. Também dá para ligar cada parte separadamente:
+
 ```bash
 ./scripts/iniciar.sh --tmux     # SetupSniper
 ./scripts/nuvem.sh --tmux       # nuvem (opcional)
@@ -142,6 +144,7 @@ Seus fixados, histórico e token ficam em arquivos fora do git e não são afeta
 | O site some depois de um tempo | Revise o passo 7, "Mantenha sempre ativo". |
 | "Já está rodando" | O servidor já está ligado: `tmux attach -t sniper`. |
 | Não abre pelo Tailscale | Confira se o Tailscale está conectado nos dois aparelhos e se o endereço termina em `:3000`. |
+| Não ligou sozinho depois de reiniciar | Desbloqueie a tela uma vez e espere 30 s. Rode `./scripts/ligar.sh` para religar e ver o que falta. Confira se o **Termux:Boot** foi aberto uma vez, se veio do **F-Droid** (igual ao Termux) e se tem bateria **Sem restrições**. O registro do boot fica em `logs/boot.log`. |
 | `/atualizar` falhou | Pelo SSH: `cd ~/SetupSniper && git status`. |
 
 Mais respostas em [faq.md](faq.md).
