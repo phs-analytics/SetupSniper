@@ -9,8 +9,8 @@ no() { printf '  \033[31m✗\033[0m %s\n' "$1"; }
 
 if [ "$1" != "--status" ]; then
   command -v termux-wake-lock >/dev/null 2>&1 && termux-wake-lock
-  tmux has-session -t sniper 2>/dev/null || ./scripts/iniciar.sh --tmux >/dev/null
-  if grep -qE '^NUVEM_SENHA=.+' .env 2>/dev/null; then tmux has-session -t nuvem 2>/dev/null || ./scripts/nuvem.sh --tmux >/dev/null; fi
+  tmux has-session -t sniper 2>/dev/null || sh scripts/iniciar.sh --tmux >/dev/null
+  if grep -qE '^NUVEM_SENHA=.+' .env 2>/dev/null; then tmux has-session -t nuvem 2>/dev/null || sh scripts/nuvem.sh --tmux >/dev/null; fi
   command -v sshd >/dev/null 2>&1 && ! pgrep -x sshd >/dev/null 2>&1 && sshd 2>/dev/null
   sleep 4
 fi
@@ -25,6 +25,6 @@ if grep -qE '^NUVEM_SENHA=.+' .env 2>/dev/null; then
   tmux has-session -t nuvem 2>/dev/null && ok "Nuvem ligada (porta $NPORTA)" || no "Nuvem desligada — veja: tmux attach -t nuvem"
 else echo "  – Nuvem não configurada (NUVEM_SENHA vazia no .env)"; fi
 pgrep -x sshd >/dev/null 2>&1 && ok "SSH ligado (porta 8022)" || echo "  – SSH desligado (opcional)"
-[ -x "$HOME/.termux/boot/setupsniper.sh" ] && ok "Início automático configurado (Termux:Boot)" || no "Início automático NÃO configurado — rode ./scripts/instalar-termux.sh"
+[ -x "$HOME/.termux/boot/setupsniper.sh" ] && ok "Início automático configurado (Termux:Boot)" || no "Início automático NÃO configurado — rode: sh scripts/instalar-termux.sh"
 if command -v termux-job-scheduler >/dev/null 2>&1 && termux-job-scheduler --pending 2>/dev/null | grep -q 'vigia'; then ok "Vigia ativo (a cada 15 min)"
-else no "Vigia não ativo — rode ./scripts/vigia.sh --instalar (precisa do app Termux:API)"; fi
+else no "Vigia não ativo — rode: sh scripts/vigia.sh --instalar (precisa do app Termux:API)"; fi

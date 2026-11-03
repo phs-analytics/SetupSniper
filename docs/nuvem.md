@@ -12,7 +12,7 @@ Se o dufs não estiver disponível, o script usa o `rclone serve webdav`, que of
 
 ```bash
 nano .env              # preencha NUVEM_SENHA (sem ':' nem '@')
-./scripts/nuvem.sh --tmux
+sh scripts/nuvem.sh --tmux
 ```
 
 | Opção no `.env` | Padrão | Para quê |

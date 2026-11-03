@@ -30,7 +30,7 @@ No Termux:
 pkg update -y && pkg install -y git
 git clone https://github.com/phs-analytics/SetupSniper.git
 cd SetupSniper
-./scripts/instalar-termux.sh
+sh scripts/instalar-termux.sh
 ```
 
 O instalador instala Node.js, git, tmux, SSH e a nuvem, cria o `.env` e configura o início automático. Quando o Android pedir acesso aos arquivos, toque em **Permitir**.
@@ -45,11 +45,11 @@ Preencha `SENHA=` (do site) e, se for usar a nuvem, `NUVEM_SENHA=`. Use senhas d
 
 ## 5. Ligue
 
-O jeito mais simples é `./scripts/ligar.sh`: ele liga o que estiver desligado e mostra um status de tudo. Para só conferir, use `./scripts/ligar.sh --status`. Também dá para ligar cada parte separadamente:
+O jeito mais simples é `sh scripts/ligar.sh`: ele liga o que estiver desligado e mostra um status de tudo. Para só conferir, use `sh scripts/ligar.sh --status`. Também dá para ligar cada parte separadamente:
 
 ```bash
-./scripts/iniciar.sh --tmux     # SetupSniper
-./scripts/nuvem.sh --tmux       # nuvem (opcional)
+sh scripts/iniciar.sh --tmux     # SetupSniper
+sh scripts/nuvem.sh --tmux       # nuvem (opcional)
 ```
 
 Os dois reiniciam sozinhos se caírem e ligam sozinhos quando o celular reinicia. Teste no navegador do próprio celular: `http://localhost:3000`.
@@ -71,7 +71,7 @@ O Android é feito para economizar bateria e costuma fechar apps em segundo plan
 | Reinício automático | Religa o servidor se o processo cair | Já vem nos scripts `iniciar.sh` e `nuvem.sh` |
 | Wake lock | Impede o celular de "dormir" com o servidor ligado | Já vem nos scripts (notificação fixa do Termux) |
 | Boot automático | Liga tudo quando o celular reinicia | Termux:Boot (passo 2) |
-| **Vigia** | A cada 15 min, religa o que tiver caído, mesmo se o Android fechar o Termux | `./scripts/vigia.sh --instalar` (já roda no instalador; precisa do Termux:API) |
+| **Vigia** | A cada 15 min, religa o que tiver caído, mesmo se o Android fechar o Termux | `sh scripts/vigia.sh --instalar` (já roda no instalador; precisa do Termux:API) |
 
 ### Ajustes do Android
 
@@ -132,7 +132,7 @@ Para o SSH, rode uma vez no Termux: `passwd` (cria a senha) e `whoami` (mostra o
 Mande `/atualizar` para o bot ou rode:
 
 ```bash
-cd ~/SetupSniper && ./scripts/atualizar.sh
+cd ~/SetupSniper && sh scripts/atualizar.sh
 ```
 
 Seus fixados, histórico e token ficam em arquivos fora do git e não são afetados. Evite editar arquivos do projeto direto no celular. Se editar, use `git stash` antes de atualizar.
@@ -144,7 +144,7 @@ Seus fixados, histórico e token ficam em arquivos fora do git e não são afeta
 | O site some depois de um tempo | Revise o passo 7, "Mantenha sempre ativo". |
 | "Já está rodando" | O servidor já está ligado: `tmux attach -t sniper`. |
 | Não abre pelo Tailscale | Confira se o Tailscale está conectado nos dois aparelhos e se o endereço termina em `:3000`. |
-| Não ligou sozinho depois de reiniciar | Desbloqueie a tela uma vez e espere 30 s. Rode `./scripts/ligar.sh` para religar e ver o que falta. Confira se o **Termux:Boot** foi aberto uma vez, se veio do **F-Droid** (igual ao Termux) e se tem bateria **Sem restrições**. O registro do boot fica em `logs/boot.log`. |
+| Não ligou sozinho depois de reiniciar | Desbloqueie a tela uma vez e espere 30 s. Rode `sh scripts/ligar.sh` para religar e ver o que falta. Confira se o **Termux:Boot** foi aberto uma vez, se veio do **F-Droid** (igual ao Termux) e se tem bateria **Sem restrições**. O registro do boot fica em `logs/boot.log`. |
 | `/atualizar` falhou | Pelo SSH: `cd ~/SetupSniper && git status`. |
 
 Mais respostas em [faq.md](faq.md).

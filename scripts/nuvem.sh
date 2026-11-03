@@ -24,7 +24,7 @@ case "$NUVEM_SENHA" in *:*|*@*) echo "A NUVEM_SENHA não pode ter ':' nem '@'.";
 
 if [ "$1" = "--tmux" ]; then
   tmux has-session -t nuvem 2>/dev/null && { echo "A nuvem já está rodando. Ver: tmux attach -t nuvem"; exit 0; }
-  tmux new -d -s nuvem "$(pwd)/scripts/nuvem.sh" && echo "Nuvem ligada na porta $PORTA (pasta: $PASTA)."
+  tmux new -d -s nuvem "sh $(pwd)/scripts/nuvem.sh" && echo "Nuvem ligada na porta $PORTA (pasta: $PASTA)."
   exit 0
 fi
 

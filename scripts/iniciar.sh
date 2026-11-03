@@ -6,7 +6,7 @@ cd "$(dirname "$0")/.." || exit 1
 
 if [ "$1" = "--tmux" ]; then
   tmux has-session -t sniper 2>/dev/null && { echo "Já está rodando. Veja com: tmux attach -t sniper"; exit 0; }
-  tmux new -d -s sniper "$(pwd)/scripts/iniciar.sh" && echo "Rodando em segundo plano. Ver: tmux attach -t sniper (sair: CTRL+B, depois D)"
+  tmux new -d -s sniper "sh $(pwd)/scripts/iniciar.sh" && echo "Rodando em segundo plano. Ver: tmux attach -t sniper (sair: CTRL+B, depois D)"
   exit 0
 fi
 

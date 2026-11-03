@@ -6,4 +6,4 @@ git pull --ff-only || { echo "Falhou. Se você mudou arquivos aqui, veja: git st
 after=$(git rev-parse --short HEAD)
 if [ "$before" = "$after" ]; then echo "Já está na versão mais nova ($after)."; exit 0; fi
 echo "Atualizado $before -> $after:"; git log --oneline "$before..$after"
-pkill -f "node server.js" && echo "Reiniciando…" || echo "Servidor não estava rodando. Inicie com ./scripts/iniciar.sh --tmux"
+pkill -f "node server.js" && echo "Reiniciando…" || echo "Servidor não estava rodando. Inicie com: sh scripts/ligar.sh"
