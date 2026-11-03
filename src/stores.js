@@ -1,6 +1,6 @@
 // Adaptadores de busca por loja. Cada um monta a URL de busca e, se necessário, ajuda o extrator genérico.
 import { fetchText } from './http.js';
-import { collectJsonBlobs, extractFromJson, extractFromHtmlCards, decode } from './extract.js';
+import { collectJsonBlobs, extractFromJson, extractFromHtmlCards, pricesFromText, decode } from './extract.js';
 import { parseBRL } from './scraper.js';
 import { browserAvailable, renderPage } from './browser.js';
 
@@ -9,7 +9,10 @@ const slug = (q) => q.trim().toLowerCase().replace(/\s+/g, '-');
 
 function generic(html, base, opts = {}) {
   let items = extractFromJson(collectJsonBlobs(html), { base, ...opts });
-  if (!items.length && opts.productPath) items = extractFromHtmlCards(html, { base, productPath: opts.productPath });
+  if (!items.length && opts.productPath) {
+    items = extractFromHtmlCards(html, { base, productPath: opts.productPath });
+    if (opts.samePrice) items = items.map(({ pix, card, ...i }) => ({ ...i, price: pix ?? card, samePrice: true }));
+  }
   return items;
 }
 
@@ -50,7 +53,9 @@ export const ADAPTERS = {
         const link = chunk.match(/href=["'](\/[^"']*\/dp\/[A-Z0-9]{10}[^"']*)["']/)?.[1];
         if (!title || !price) continue;
         out.push({
-          title: decode(title), price: parseBRL(price),
+          // A Amazon cobra o mesmo valor no Pix e no cartão; as parcelas vêm do texto do bloco.
+          title: decode(title), price: parseBRL(price), samePrice: true,
+          installments: pricesFromText(chunk).installments,
           url: asin ? `https://www.amazon.com.br/dp/${asin}` : link ? 'https://www.amazon.com.br' + link : null,
           image: chunk.match(/class=["']s-image["'][^>]*src=["']([^"']+)["']/)?.[1] ?? chunk.match(/src=["']([^"']+)["'][^>]*class=["']s-image/)?.[1] ?? null,
           available: true,
@@ -65,10 +70,13 @@ export const ADAPTERS = {
     // 1ª tentativa: API pública (traz reputação do vendedor); se recusar, cai para o HTML.
     api: async (q, p) => {
       const j = await fetchText(`https://api.mercadolibre.com/sites/MLB/search?q=${enc(q)}&offset=${(p - 1) * 50}&limit=50`, { json: true });
+      // A API de busca não traz o preço no Pix: "price" é o preço no crédito (1x).
       return (j.results ?? []).map(r => ({
-        title: r.title, price: r.price, url: r.permalink, image: r.thumbnail?.replace(/^http:/, 'https:'),
-        available: r.available_quantity !== 0, official: !!r.official_store_id,
-        seller: r.official_store_name ?? r.seller?.nickname ?? null,
+        title: r.title, card: r.price, url: r.permalink, image: r.thumbnail?.replace(/^http:/, 'https:'),
+        available: r.available_quantity !== 0,
+        installments: r.installments ? { n: r.installments.quantity, value: r.installments.amount, rate: r.installments.rate } : null,
+        seller: { id: r.seller?.id ?? null, name: r.official_store_name ?? r.seller?.nickname ?? null, official: !!r.official_store_id },
+        freeShipping: r.shipping?.free_shipping === true,
       }));
     },
     parse: (html, a) => {
@@ -81,8 +89,11 @@ export const ADAPTERS = {
         const frac = cur.match(/andes-money-amount__fraction[^>]*>([\d.]+)</)?.[1];
         const cents = cur.match(/andes-money-amount__cents[^>]*>(\d{2})</)?.[1] ?? '00';
         if (!t || !frac) continue;
-        out.push({ title: decode(t[2]), price: parseBRL(`${frac},${cents}`), url: link, image: c.match(/<img[^>]+(?:data-src|src)=["'](https:[^"']+)["']/)?.[1] ?? null,
-          available: true, official: /Loja oficial|poly-component__seller.*?oficial/i.test(c) });
+        const txt = pricesFromText(c);   // "R$ 608 com Pix", "10x R$ 69,90 sem juros"
+        out.push({ title: decode(t[2]), card: parseBRL(`${frac},${cents}`), pix: txt.pix, installments: txt.installments,
+          url: link, image: c.match(/<img[^>]+(?:data-src|src)=["'](https:[^"']+)["']/)?.[1] ?? null,
+          available: true, official: /Loja oficial|poly-component__seller.*?oficial/i.test(c),
+          freeShipping: /frete gr[aá]tis|chegar[aá] gr[aá]tis/i.test(c) });
       }
       return out.length ? out : generic(html, a.base, { productPath: /MLB-?\d+/ });
     },
@@ -101,6 +112,7 @@ export const ADAPTERS = {
       linkOf: (o) => o.productId ? `https://pt.aliexpress.com/item/${o.productId}.html` : null,
       imageOf: (o) => o.image?.imgUrl ? (o.image.imgUrl.startsWith('//') ? 'https:' + o.image.imgUrl : o.image.imgUrl) : null,
       productPath: /\/item\/\d+\.html/,
+      samePrice: true,
     }),
   },
   shopee: {
@@ -113,7 +125,7 @@ export const ADAPTERS = {
     },
     browserCapture: /api\/v4\/search\/search_items/,
     fromCaptured: (list) => list.flatMap(shopeeItems),
-    parse: (html, a) => generic(html, a.base, { priceScale: 100000, productPath: /-i\.\d+\.\d+/ }),
+    parse: (html, a) => generic(html, a.base, { priceScale: 100000, productPath: /-i\.\d+\.\d+/, samePrice: true }),
   },
   // Agregadores (só na busca profunda): mostram ofertas de muitas lojas menores.
   buscape: {
@@ -129,11 +141,15 @@ export const ADAPTERS = {
 };
 
 function shopeeItems(j) {
+  // Preços da Shopee vêm multiplicados por 100.000. O mesmo valor vale no Pix e no cartão.
   return (j?.items ?? []).map(x => x.item_basic ?? x).filter(b => b?.name).map(b => ({
-    title: b.name, price: (b.price_min ?? b.price) / 100000,
+    title: b.name, price: (b.price_min ?? b.price) / 100000, samePrice: true,
     url: `https://shopee.com.br/product/${b.shopid}/${b.itemid}`,
     image: b.image ? `https://down-br.img.susercontent.com/file/${b.image}` : null,
-    available: b.stock !== 0, official: !!(b.is_official_shop || b.shopee_verified),
+    available: b.stock !== 0,
+    seller: { id: b.shopid ?? null, official: !!(b.is_official_shop || b.shopee_verified) },
+    origin: b.shop_location ? (/china|exterior|overseas|hong kong|kor|taiwan|jap|estados unidos|usa/i.test(b.shop_location) ? 'INTL' : 'BR') : null,
+    freeShipping: b.show_free_shipping === true,
   }));
 }
 

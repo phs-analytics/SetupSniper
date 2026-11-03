@@ -1,6 +1,29 @@
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
-const brl = (v) => v == null ? '—' : v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+// Dinheiro chega do servidor em CENTAVOS inteiros; só é formatado aqui.
+const brl = (c) => c == null || !Number.isFinite(c) ? '—' : (c / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const refKind = () => (S?.settings?.priceReference === 'card' ? 'card' : 'pix');
+// Preço de referência de uma oferta (Pix por padrão; sem Pix, o crédito)
+function refOf(o) {
+  const p = o?.price; if (!p || typeof p !== 'object') return null;
+  const parcelado = p.installments ? p.installments.n * p.installments.value : null;
+  return refKind() === 'card' ? (p.card ?? p.pix ?? parcelado) : (p.pix ?? p.card ?? parcelado);
+}
+// "no Pix R$ 1.849,90 · cartão R$ 2.176,46 · 10x R$ 217,65 sem juros"
+function priceDetail(o) {
+  const p = o?.price; if (!p) return '';
+  const parts = [];
+  const same = p.pix != null && p.pix === p.card;
+  if (same) parts.push('mesmo preço no Pix e no cartão');
+  else {
+    if (refKind() === 'pix' && p.card != null && p.pix != null) parts.push(`cartão ${brl(p.card)}`);
+    if (refKind() === 'card' && p.pix != null && p.card != null) parts.push(`Pix ${brl(p.pix)}`);
+    if (p.pix == null && p.card != null) parts.push('Pix não informado');
+  }
+  if (p.installments) parts.push(`${p.installments.n}x ${brl(p.installments.value)}${p.installments.interestFree ? ' sem juros' : ''}`);
+  return parts.join(' · ');
+}
+const refLabel = (o) => { const p = o?.price; if (!p) return ''; if (p.pix != null && p.pix === p.card) return ''; return refKind() === 'pix' ? (p.pix != null ? 'no Pix' : 'no cartão') : (p.card != null ? 'no cartão' : 'no Pix'); };
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const scoreColor = (s) => s >= 85 ? 'var(--good)' : s >= 70 ? 'var(--ok)' : s >= 55 ? 'var(--warn)' : 'var(--bad)';
 const ago = (t) => { if (!t) return 'nunca'; const m = Math.round((Date.now() - t) / 60000); return m < 1 ? 'agora' : m < 60 ? `há ${m} min` : m < 1440 ? `há ${Math.round(m / 60)} h` : `há ${Math.round(m / 1440)} d`; };
@@ -104,13 +127,13 @@ function startSearch(q) {
 }
 $('#search').onsubmit = (e) => { e.preventDefault(); startSearch($('#q').value); };
 
-function flagged(list) {   // mesmo critério do servidor
-  const ps = list.map(r => r.price).sort((a, b) => a - b);
+function flagged(list) {   // mesmo critério do servidor (src/extract.js flagOutliers)
+  const ps = list.map(refOf).filter(v => v != null).sort((a, b) => a - b);
   if (ps.length < 5) return list.map(r => ({ ...r, suspeito: false }));
   const med = ps[Math.floor(ps.length / 2)];
-  return list.filter(r => r.price >= med * 0.25).map(r => ({ ...r, suspeito: r.price < med * 0.55 }));
+  return list.filter(r => refOf(r) == null || refOf(r) >= med * 0.25).map(r => ({ ...r, suspeito: refOf(r) != null && refOf(r) < med * 0.55 }));
 }
-function sortList(list, priceOf = (o) => o.price) {
+function sortList(list, priceOf = (o) => refOf(o) ?? Infinity) {
   const key = { price: (o) => priceOf(o), score: (o) => -(scoreOf(o.storeId) ?? -1), balance: (o) => adjusted(priceOf(o), scoreOf(o.storeId)) }[ui.sort];
   return list.sort((a, b) => key(a) - key(b) || priceOf(a) - priceOf(b));
 }
@@ -131,14 +154,15 @@ function renderSearch() {
   let list = flagged(search.results);
   const total = list.length, sus = list.filter(r => r.suspeito).length;
   if (ui.hideSus) list = list.filter(r => !r.suspeito);
-  list = sortList(list.filter(r => r.available !== false || ui.sort !== 'price'));
-  const eligible = list.filter(r => (scoreOf(r.storeId) ?? 100) >= ui.min);
-  const best = [...eligible].sort((a, b) => a.price - b.price)[0];
+  // Ofertas sem preço legível ou sem estoque vão para o fim, mas continuam visíveis.
+  list = sortList(list).sort((a, b) => (refOf(a) == null || a.available === false) - (refOf(b) == null || b.available === false));
+  const eligible = list.filter(r => (scoreOf(r.storeId) ?? 100) >= ui.min && refOf(r) != null && r.available !== false);
+  const best = [...eligible].sort((a, b) => refOf(a) - refOf(b))[0];
   const storesN = new Set(list.map(r => r.storeId)).size;
-  const prices = list.map(r => r.price).sort((a, b) => a - b);
+  const prices = list.map(refOf).filter(v => v != null).sort((a, b) => a - b);
   const med = prices[Math.floor(prices.length / 2)];
   $('#results-summary').innerHTML = total
-    ? `<b>${list.length}</b> ofertas de <b>${storesN}</b> lojas para “${esc(search.q)}” · menor <b>${brl(best?.price)}</b> · mediana <b>${brl(med)}</b>${sus ? ` · ${sus} suspeita(s) ${ui.hideSus ? 'ocultas' : 'marcadas'}` : ''}${search.running ? ' · buscando…' : ''}`
+    ? `<b>${list.length}</b> ofertas de <b>${storesN}</b> lojas para “${esc(search.q)}” · menor <b>${brl(best ? refOf(best) : null)}</b>${refKind() === 'pix' ? ' (Pix)' : ' (cartão)'} · mediana <b>${brl(med)}</b>${sus ? ` · ${sus} suspeita(s) ${ui.hideSus ? 'ocultas' : 'marcadas'}` : ''}${search.running ? ' · buscando…' : ''}`
     : search.running ? 'Buscando nas lojas…' : `Nenhuma oferta encontrada para “${esc(search.q)}”. Tente termos mais simples (ex.: marca + modelo) ou ative a busca profunda.`;
 
   $('#results').innerHTML = list.slice(0, ui.shown).map((r, i) => {
@@ -146,18 +170,24 @@ function renderSearch() {
     const tags = [
       r === best ? '<span class="sticker lime">MELHOR PREÇO.</span>' : '',
       r.suspeito ? '<span class="tag warn" title="Muito abaixo da mediana: pode ser golpe, usado ou outro produto">Suspeito</span>' : '',
-      r.official ? '<span class="tag info">Oficial</span>' : '',
-      r.available === false ? '<span class="tag out">Esgotado</span>' : '',
+      r.seller?.official ? '<span class="tag info">Oficial</span>' : '',
       s.agregador ? '<span class="tag info">Comparador</span>' : '',
     ].join('');
-    const diff = best && r !== best && r.price > best.price ? `<div class="diff">+${brl(r.price - best.price)}</div>` : '';
+    const rp = refOf(r);
+    const diff = best && r !== best && rp != null && rp > refOf(best) ? `<div class="diff">+${brl(rp - refOf(best))}</div>` : '';
+    // "Preço não encontrado nesta página" (falha de leitura) é diferente de "Indisponível" (sem estoque)
+    const priceHtml = rp == null
+      ? `<span class="tag err" title="A loja mostrou o produto, mas o preço não foi lido da página">Preço não encontrado nesta página</span>`
+      : r.available === false
+        ? `<div class="price" style="opacity:.5">${brl(rp)}</div><span class="tag out">Indisponível</span>`
+        : `<div class="price">${brl(rp)} <small class="reflbl">${refLabel(r)}</small></div><div class="pdetail">${priceDetail(r)}</div>${diff}`;
     return `<div class="res ${r === best ? 'top1' : ''} ${below ? 'dim' : ''}">
       ${r.image ? `<img class="thumb" src="${esc(r.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'thumb',textContent:'${esc(s.name[0])}'}))">` : `<div class="thumb" style="background:${s.color}">${esc(s.name[0])}</div>`}
       <div class="info">${/^https?:\/\//i.test(r.url ?? '') ? `<a class="title" href="${esc(r.url)}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer" title="${esc(r.title)}">${esc(r.title)}</a>` : `<div class="title" title="${esc(r.title)}">${esc(r.title)}</div>`}
         <div class="meta"><span class="sdot" style="background:${s.color}"></span>${esc(s.name)} ${tags}</div>
         <div class="code">${barcode(r.url ?? r.title)}<span>SN-${esc(r.storeId.slice(0, 3).toUpperCase())}-${licenseNo(r.url ?? r.title)}</span></div></div>
       <div class="rscore">${ring(sc, true, s.estimado !== false)}</div>
-      <div class="price"><div class="price">${brl(r.price)}</div>${diff}</div>
+      <div class="price">${priceHtml}</div>
       <div class="actions">
         ${pinnedItem(r) ? `<a class="btn small pinned-btn" href="#fixados" title="Já está nos fixados">✓ Fixado</a>` : `<button type="button" class="btn small" data-watch="${i}">📌 Fixar</button>`}
         ${storeLink(r.url, s, search.status[r.storeId]?.url)}
@@ -181,7 +211,7 @@ $('#results').addEventListener('click', (e) => {
   if (e.target.id === 'more') { ui.shown += 40; return renderSearch(); }
   const b = e.target.closest('[data-watch]'); if (!b) return;
   const r = search.view[Number(b.dataset.watch)];
-  openWatchDialog({ name: r.title.slice(0, 80), query: search.q, refPrice: r.price, pin: r.url && !store(r.storeId).agregador ? { storeId: r.storeId, url: r.url } : null });
+  openWatchDialog({ name: r.title.slice(0, 80), query: search.q, refPrice: refOf(r), pin: r.url && !store(r.storeId).agregador ? { storeId: r.storeId, url: r.url } : null });
 });
 for (const b of $$('#sort button')) {
   b.classList.toggle('on', b.dataset.sort === ui.sort);
@@ -200,9 +230,11 @@ function openWatchDialog(v, item = null) {
   $('#w-submit').textContent = item ? 'Salvar' : '📌 Fixar';
   $('#w-alerts').checked = v.alerts !== false;
   $('#w-name').value = v.name ?? ''; $('#w-query').value = v.query ?? '';
-  $('#w-target').value = v.target ?? (v.refPrice ? Math.floor(v.refPrice * 0.95) : '');
-  $('#w-min').value = v.minPrice ?? (v.refPrice ? Math.round(v.refPrice * 0.5) : '');
-  $('#w-max').value = v.maxPrice ?? (v.refPrice ? Math.round(v.refPrice * 2.5) : '');
+  // Os campos mostram reais; o servidor guarda centavos.
+  const reais = (c, casas = 2) => (c == null ? '' : (c / 100).toFixed(casas));
+  $('#w-target').value = v.target != null ? reais(v.target) : (v.refPrice ? reais(Math.floor(v.refPrice * 0.95)) : '');
+  $('#w-min').value = v.minPrice != null ? reais(v.minPrice, 0) : (v.refPrice ? reais(v.refPrice * 0.5, 0) : '');
+  $('#w-max').value = v.maxPrice != null ? reais(v.maxPrice, 0) : (v.refPrice ? reais(v.refPrice * 2.5, 0) : '');
   $('#w-pin-note').hidden = !v.pin;
   if (v.pin) $('#w-pin-note').textContent = `Na ${store(v.pin.storeId).name}, o servidor vai acompanhar exatamente esta oferta. Nas outras lojas, usa o termo de busca.`;
   dlg.showModal();
@@ -210,7 +242,16 @@ function openWatchDialog(v, item = null) {
 $('#w-cancel').onclick = () => dlg.close();
 $('#watch-form').onsubmit = async (e) => {
   e.preventDefault();
-  const body = { name: $('#w-name').value, query: $('#w-query').value, target: $('#w-target').value, minPrice: $('#w-min').value, maxPrice: $('#w-max').value, alerts: $('#w-alerts').checked };
+  // "1.234,56", "1234,56", "1234.56" ou "1200" → centavos (mesma regra do parseBRL do servidor)
+  const cents = (v) => {
+    let t = String(v).trim().replace(/[^\d.,]/g, '');
+    if (!t) return '';
+    if (t.includes(',')) t = t.replace(/\./g, '').replace(',', '.');
+    else if (/^\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, '');
+    const n = parseFloat(t);
+    return Number.isFinite(n) && n > 0 ? Math.round(n * 100) : '';
+  };
+  const body = { name: $('#w-name').value, query: $('#w-query').value, target: cents($('#w-target').value), minPrice: cents($('#w-min').value), maxPrice: cents($('#w-max').value), alerts: $('#w-alerts').checked };
   try {
     if (editing.item) await api(`/api/watch/${editing.item.id}`, { method: 'PATCH', body });
     else await api('/api/watch', { method: 'POST', body: { ...body, pin: editing.pin, refPrice: editing.refPrice } });
@@ -231,15 +272,20 @@ function renderWatch() {
   }
   $('#watch').innerHTML = S.items.map(it => {
     const offers = it.offers.map(o => ({ ...o, sc: scoreOf(o.storeId) }));
-    const valid = offers.filter(o => o.price != null && !o.error && !o.suspeito && (o.sc ?? 100) >= S.settings.alerts.minScore);
+    const valid = offers.filter(o => o.status === 'ok' && o.price != null && !o.suspeito && (o.sc ?? 100) >= S.settings.alerts.minScore);
     const best = [...valid].sort((a, b) => a.price - b.price)[0];
     const hit = best && it.target && best.price <= it.target;
-    const rows = sortList([...offers], (o) => o.price ?? Infinity).sort((a, b) => (a.price == null || a.error ? 1 : 0) - (b.price == null || b.error ? 1 : 0)).map(o => {
+    const rows = sortList([...offers], (o) => o.price ?? Infinity).sort((a, b) => (a.status === 'ok' ? 0 : 1) - (b.status === 'ok' ? 0 : 1)).map(o => {
       const s = store(o.storeId);
       let priceCell;
-      if (o.price != null && !o.error) priceCell = `<div class="price">${brl(o.price)}</div><div class="diff ${o === best ? 'isbest' : ''}">${o === best ? 'menor preço' : best ? '+' + brl(o.price - best.price) : ''}${o.suspeito ? ' <span class="tag warn">Suspeito</span>' : ''}</div>`;
-      else if (o.error) priceCell = `<span class="tag err" title="${esc(o.error)}">⚠ ${esc(shortErr(o.error))}</span>`;
-      else priceCell = `<span class="nolink">${it.checking ? 'buscando…' : 'aguardando'}</span>`;
+      // Cada loja termina com um estado explícito (server.js checkItem): nada some em silêncio.
+      if (o.status === 'ok') priceCell = `<div class="price">${brl(o.price)} <small class="reflbl">${refLabel(o.offer)}</small></div><div class="pdetail">${priceDetail(o.offer)}</div><div class="diff ${o === best ? 'isbest' : ''}">${o === best ? 'menor preço' : best ? '+' + brl(o.price - best.price) : ''}${o.suspeito ? ' <span class="tag warn">Suspeito</span>' : ''}</div>`;
+      else if (o.status === 'error') priceCell = `<span class="tag err" title="${esc(o.message)}">⚠ ${esc(shortErr(o.message))}</span>`;
+      else if (o.status === 'unavailable') priceCell = `<span class="tag out" title="${esc(o.message)}">Indisponível</span>`;
+      else if (o.status === 'price_not_found') priceCell = `<span class="tag err" title="O produto foi encontrado, mas o preço não foi lido da página">Preço não encontrado nesta página</span>`;
+      else if (o.status === 'out_of_range') priceCell = `<span class="tag warn" title="${esc(o.message)}">Fora da faixa: ${brl(refOf(o.offer))}</span><div class="pdetail">ajuste a faixa em Editar se for o produto certo</div>`;
+      else if (o.status) priceCell = `<span class="nolink" title="${esc(o.message)}">${esc(o.message)}</span>`;
+      else priceCell = `<span class="nolink">${it.checking ? 'buscando…' : 'aguardando a primeira verificação'}</span>`;
       return `<div class="row ${o === best ? 'top1' : ''}">
         <div class="store"><div class="chip" style="background:${s.color}">${esc(s.name[0])}</div>
           <div style="min-width:0"><div class="n">${esc(s.name)} ${o.pin ? '<span class="tag info" title="Acompanhando um link fixo">📌</span>' : ''}</div>
@@ -308,6 +354,7 @@ function renderAlerts() {
   if (!alertsFormFilled || !document.activeElement?.closest('#tab-alertas')) {
     $('#al-enabled').checked = a.enabled; $('#al-drop').value = a.dropPct; $('#al-score').value = a.minScore;
     $('#al-sus').checked = a.allowSuspicious; $('#al-interval').value = S.settings.intervalMin;
+    $('#al-ref').value = refKind();
     const mon = new Set(S.settings.monitorStores);
     $('#mon-stores').innerHTML = S.stores.filter(s => !s.deepOnly).map(s => `<button type="button" class="fchip ${mon.has(s.id) ? 'on' : ''}" data-mon="${s.id}" aria-pressed="${mon.has(s.id)}"><i style="background:${s.color}"></i>${esc(s.name)}</button>`).join('');
     alertsFormFilled = true;
@@ -329,7 +376,7 @@ $('#al-save').onclick = async () => {
   try {
     await api('/api/settings', { method: 'POST', body: {
       alerts: { enabled: $('#al-enabled').checked, dropPct: $('#al-drop').value, minScore: $('#al-score').value, allowSuspicious: $('#al-sus').checked },
-      intervalMin: $('#al-interval').value, monitorStores: $$('#mon-stores .fchip.on').map(b => b.dataset.mon) } });
+      intervalMin: $('#al-interval').value, priceReference: $('#al-ref').value, monitorStores: $$('#mon-stores .fchip.on').map(b => b.dataset.mon) } });
     alertsFormFilled = false; toast('Regras salvas');
   } catch (e) { toast(e.message); }
 };
@@ -342,7 +389,7 @@ function renderStatus() {
 }
 let first = true;
 function bestOf(it) {
-  return it.offers.filter(o => o.price != null && !o.error && !o.suspeito && (scoreOf(o.storeId) ?? 100) >= S.settings.alerts.minScore).sort((a, b) => a.price - b.price)[0];
+  return it.offers.filter(o => o.status === 'ok' && o.price != null && !o.suspeito && (scoreOf(o.storeId) ?? 100) >= S.settings.alerts.minScore).sort((a, b) => a.price - b.price)[0];
 }
 function pinnedItem(r) {
   return S.items.find(it => (r.url && Object.values(it.pins ?? {}).includes(r.url)));

@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.4.0 — 2026-11-03
+
+**Correção: lojas sem preço depois da primeira (Fase 1)**
+- **Causa:** o extrator pegava o **menor** valor da página, muitas vezes uma parcela. Nos Fixados, esse valor caía fora da faixa de preço criada a partir da primeira loja e era descartado **sem nenhum estado**, e a loja ficava sem preço e sem mensagem.
+- **Schema único de oferta** (`src/offer.js`): todos os adaptadores passam por `normalizeOffer()`, com Pix, cartão, parcelas, vendedor, frete e URL canônica.
+- **Dinheiro em centavos** em todo o app. Os seus dados antigos (metas, faixas, histórico e alertas) são migrados sozinhos na primeira execução.
+- **Preços classificados pelo nome do campo** (Pix, cartão, parcela, preço "de"), em vez de pegar o menor.
+- **Estados explícitos por loja nos Fixados** (`src/monitor.js`): "Preço não encontrado nesta página", "Indisponível", "Fora da faixa", erro ou sem resultados.
+- **Preço de referência** configurável: Pix (padrão) ou cartão.
+- A interface mostra o Pix, o cartão e as parcelas de cada oferta.
+- Relevância: "rtx 4060" agora encontra "RTX4060".
+- Testes de regressão com páginas de exemplo das 8 lojas, do bug da parcela e da migração dos dados.
+
 ## 2.3.0 — 2026-11-03
 
 **Escopo de lojas (Fase 0)**

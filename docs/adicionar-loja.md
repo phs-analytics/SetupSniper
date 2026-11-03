@@ -15,6 +15,18 @@ minhaloja: {
 },
 ```
 
+O `parse` devolve itens "crus", em reais, que o `src/offer.js` converte para o schema único:
+
+| Campo | Significado |
+|---|---|
+| `pix`, `card` | preço no Pix ou à vista e no crédito (1x) |
+| `price` + `samePrice: true` | a loja cobra o mesmo valor no Pix e no cartão |
+| `price` sozinho | preço sem forma de pagamento definida (vira o preço no cartão) |
+| `installments: { n, value, interestFree }` | parcelamento |
+| `seller: { id, name, official }`, `freeShipping`, `origin: 'BR' \| 'INTL'` | vendedor, frete e origem |
+
+Inclua um teste em `tests/stores.test.js` e uma página de exemplo em `tests/fixtures/`.
+
 Outras opções:
 
 | Opção | Para quê |

@@ -28,15 +28,51 @@ O SetupSniper consulta só estas 8 lojas: **KaBuM!, Pichau, Terabyte, Amazon, Me
 Cada loja tem um adaptador em `src/stores.js` que monta a URL de busca. A leitura segue esta ordem:
 
 1. **API pública**, quando existe (Mercado Livre, Shopee).
-2. **Extrator genérico** (`src/extract.js`): encontra dados embutidos na página (JSON-LD, `__NEXT_DATA__`, estados iniciais como `window.__X__ = {...}`) e percorre tudo atrás de objetos com cara de produto, ou seja, com nome e preço, e opcionalmente link e imagem. Quando o objeto tem vários preços, usa o menor, que costuma ser o preço à vista/PIX.
+2. **Extrator genérico** (`src/extract.js`): encontra dados embutidos na página (JSON-LD, `__NEXT_DATA__`, estados iniciais como `window.__X__ = {...}`) e percorre tudo atrás de objetos com cara de produto, ou seja, com nome e preço, e opcionalmente link e imagem. Os preços são **classificados pelo nome do campo**: Pix ou à vista (`priceWithDiscount`, `avista`, `bestPrice`…), crédito (`price`, `salePrice`, `final_price`…), parcelas (`installments`…) e preço "de" (`oldPrice`, `listPrice`, `fullPrice`…), que é ignorado. Nos cartões em HTML, o contexto decide: "à vista", "no Pix" ou "com Pix" indicam Pix, "10x de R$" indica parcela e "de R$" indica o preço riscado.
 3. **Leitura dos cartões HTML**, como plano B: links de produto com um "R$" por perto.
 4. **Navegador headless**, só na busca profunda e se o Playwright estiver instalado.
+
+## Schema único de oferta (`src/offer.js`)
+
+Todos os adaptadores passam por `normalizeOffer()`. O dinheiro fica **sempre em centavos inteiros** e só é formatado na exibição.
+
+```js
+{
+  store, seller: { id, name, url, official, cnpj }, title, url, canonicalUrl, image,
+  price: { pix, card, installments: { n, value, interestFree } | null, currency: 'BRL', taxesIncluded },
+  shipping: { cost, origin: 'BR' | 'INTL' | null, freeAbove },
+  available, fetchedAt
+}
+```
+
+- **Um preço só:** Amazon, Shopee e AliExpress cobram o mesmo valor no Pix e no cartão (`samePrice`).
+- **Preço sem forma de pagamento:** quando a página só dá um "preço", ele vira o preço no cartão e o Pix fica `null`.
+- **Parcelas:** sem preço no cartão, mas com parcelas sem juros, o total das parcelas vira o preço no cartão. Com parcelas de juros desconhecidos, nada é inventado.
+- **Frete:** desconhecido fica `null`, nunca zero.
+- **`canonicalUrl`:** é a URL sem parâmetros de rastreamento ou de afiliado.
+- **Preço de referência:** é o Pix por padrão. Sem Pix, usa-se o cartão. Dá para trocar para o cartão na aba Alertas (`priceReference` em `data/settings.json`). A ordenação, as metas e os alertas usam esse preço.
+
+## Estado de cada loja nos Fixados (`src/monitor.js`)
+
+Cada loja termina cada verificação com um estado explícito, mostrado na tela:
+
+| Estado | Na tela |
+|---|---|
+| `ok` | Preço de referência, Pix, cartão e parcelas |
+| `price_not_found` | "Preço não encontrado nesta página" (o produto foi achado, mas o preço não foi lido) |
+| `unavailable` | "Indisponível" (sem estoque) |
+| `out_of_range` | "Fora da faixa": o preço lido está fora da faixa válida do produto |
+| `no_match` / `no_results` | Nenhum resultado compatível / nenhum resultado na busca |
+| `error` | O erro da loja, por exemplo "bloqueado" |
+
+> **O bug corrigido na v2.4:** o extrator pegava o **menor** valor da página, que muitas vezes era uma parcela. Esse valor caía fora da faixa de preço que o app cria ao fixar uma oferta (de 50% a 250% do preço da primeira loja) e era descartado. Como nenhum estado era gravado, a loja ficava sem preço e sem mensagem. Só a loja da oferta fixada, lida pela página do produto, mostrava preço.
 
 ## Filtros
 
 - **Relevância:** todos os termos da busca precisam aparecer no título. Com 4 termos ou mais, basta 75% deles. Números e unidades são normalizados ("16 GB" vira "16gb").
 - **Acessórios:** títulos com "suporte", "cooler", "adesivo", "capa" e outros termos parecidos são descartados, a menos que o termo esteja na sua busca.
-- **Preços fora da curva:** abaixo de 25% da mediana o resultado é descartado (acessório ou parcela). Abaixo de 55%, é marcado como **suspeito** (golpe, usado ou outro produto).
+- **Relevância de termos curtos:** termos de 3 letras casam no início de uma palavra, então "rtx 4060" encontra "RTX4060".
+- **Preços fora da curva** (pelo preço de referência): abaixo de 25% da mediana o resultado é descartado (acessório ou peça). Abaixo de 55%, é marcado como **suspeito** (golpe, usado ou outro produto). Ofertas sem preço legível não entram na mediana e continuam na lista como "Preço não encontrado nesta página".
 - **Links:** só `http(s)`. Links fixados precisam ser de uma das lojas suportadas.
 
 ## Score de confiabilidade
