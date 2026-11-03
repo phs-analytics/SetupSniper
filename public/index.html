@@ -6,7 +6,7 @@
   <title>SetupSniper</title>
   <meta name="description" content="Compare preços de peças de PC, veja a confiabilidade das lojas e receba alertas no Telegram.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=Bungee&family=Permanent+Marker&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
@@ -16,9 +16,10 @@
         <svg viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="12" r="7.5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="2" fill="currentColor"/><path d="M12 1.5v5M12 17.5v5M1.5 12h5M17.5 12h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       </div>
       <div>
-        <h1>SetupSniper</h1>
-        <p class="sub">Busca em várias lojas · score de confiança · alertas no Telegram</p>
+        <h1><span class="h1-a">Setup</span><span class="h1-b">Sniper</span></h1>
+        <p class="sub">// caçador de preços de hardware · v2</p>
       </div>
+      <span class="tagline" aria-hidden="true">preço baixo, loja confiável.</span>
     </div>
     <div class="top-actions">
       <span id="live" class="live"><i></i><span id="live-text">Conectando…</span></span>
@@ -32,7 +33,7 @@
       <div class="search-row">
         <svg class="search-ico" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
         <input id="q" type="search" placeholder="Buscar qualquer produto… ex.: RTX 4060, SSD 2TB, Ryzen 5 7600" aria-label="Produto" maxlength="120">
-        <button type="submit" class="btn primary" id="go">Buscar</button>
+        <button type="submit" class="btn primary" id="go">BUSCAR ▶</button>
       </div>
       <div class="search-opts">
         <label class="switch" title="Busca 2 páginas por loja, inclui comparadores (Buscapé, Zoom) e usa navegador headless quando disponível">
@@ -68,7 +69,8 @@
       <div id="results-summary" class="summary-line"></div>
       <div id="results" class="results"></div>
       <div id="empty" class="empty">
-        <h2>O que você quer comprar?</h2>
+        <div class="empty-badge" aria-hidden="true"><span>★</span><span>★</span><span>★</span></div>
+        <h2>O que você quer <em>caçar</em> hoje?</h2>
         <p class="muted">A busca roda em KaBuM!, Pichau, Terabyte, Amazon, Mercado Livre, Magalu, AliExpress e Shopee ao mesmo tempo. Os resultados aparecem conforme cada loja responde.</p>
         <div class="chips" id="suggest"></div>
       </div>

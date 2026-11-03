@@ -23,10 +23,21 @@ async function api(path, opts = {}) {
 }
 function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2800); }
 
+// Score de confiabilidade desenhado como carimbo
 function ring(score, sm = true) {
-  if (score == null) return `<div class="ring ${sm ? 'sm' : ''} na" title="Sem score (comparador)"><span>—</span></div>`;
-  return `<div class="ring ${sm ? 'sm' : ''}" style="--v:${score};--c:${scoreColor(score)}" title="Confiabilidade ${score}/100"><span>${score}</span></div>`;
+  const rot = ((score ?? 7) * 37) % 24 - 12;
+  if (score == null) return `<div class="stamp ${sm ? 'sm' : ''} na" style="--r:${rot}deg" title="Comparador: sem score"><b>—</b><span>comparador</span></div>`;
+  const word = score >= 85 ? 'certificado' : score >= 70 ? 'aprovado' : score >= 55 ? 'regular' : 'atenção';
+  return `<div class="stamp ${sm ? 'sm' : ''}" style="--c:${scoreColor(score)};--r:${rot}deg" title="Confiabilidade ${score}/100"><b>${score}</b><span>${word}</span></div>`;
 }
+// Código de barras decorativo gerado a partir de um texto (sempre igual para o mesmo texto)
+function barcode(seed) {
+  let h = 0; for (const c of String(seed)) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  let x = 0, bars = '';
+  for (let i = 0; i < 38; i++) { h = (h * 1103515245 + 12345) >>> 0; const w = 1 + (h >> 16) % 3; bars += `<rect x="${x}" y="0" width="${w}" height="22"/>`; x += w + 1 + ((h >> 8) % 2); }
+  return `<svg class="barcode" viewBox="0 0 ${x} 22" preserveAspectRatio="none" aria-hidden="true">${bars}</svg>`;
+}
+const licenseNo = (seed) => { let h = 0; for (const c of String(seed)) h = (h * 33 + c.charCodeAt(0)) >>> 0; return String(h % 10000).padStart(4, '0'); };
 function sparkline(hist) {
   if (!hist || hist.length < 2) return '<span class="nolink" style="font-size:12px">sem histórico</span>';
   const w = 160, h = 36, ps = hist.map(x => x.price), mn = Math.min(...ps), mx = Math.max(...ps), r = mx - mn || 1;
@@ -130,7 +141,7 @@ function renderSearch() {
   $('#results').innerHTML = list.slice(0, ui.shown).map((r, i) => {
     const s = store(r.storeId), sc = scoreOf(r.storeId), below = sc != null && sc < ui.min;
     const tags = [
-      r === best ? '<span class="tag good">Melhor</span>' : '',
+      r === best ? '<span class="sticker lime">MELHOR PREÇO.</span>' : '',
       r.suspeito ? '<span class="tag warn" title="Muito abaixo da mediana: pode ser golpe, usado ou outro produto">Suspeito</span>' : '',
       r.official ? '<span class="tag info">Oficial</span>' : '',
       r.available === false ? '<span class="tag out">Esgotado</span>' : '',
@@ -140,7 +151,8 @@ function renderSearch() {
     return `<div class="res ${r === best ? 'top1' : ''} ${below ? 'dim' : ''}">
       ${r.image ? `<img class="thumb" src="${esc(r.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'thumb',textContent:'${esc(s.name[0])}'}))">` : `<div class="thumb" style="background:${s.color}">${esc(s.name[0])}</div>`}
       <div class="info">${/^https?:\/\//i.test(r.url ?? '') ? `<a class="title" href="${esc(r.url)}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer" title="${esc(r.title)}">${esc(r.title)}</a>` : `<div class="title" title="${esc(r.title)}">${esc(r.title)}</div>`}
-        <div class="meta"><span class="sdot" style="background:${s.color}"></span>${esc(s.name)} ${tags}</div></div>
+        <div class="meta"><span class="sdot" style="background:${s.color}"></span>${esc(s.name)} ${tags}</div>
+        <div class="code">${barcode(r.url ?? r.title)}<span>SN-${esc(r.storeId.slice(0, 3).toUpperCase())}-${licenseNo(r.url ?? r.title)}</span></div></div>
       <div class="rscore">${ring(sc)}</div>
       <div class="price"><div class="price">${brl(r.price)}</div>${diff}</div>
       <div class="actions">
@@ -237,7 +249,7 @@ function renderWatch() {
     }).join('');
     return `<article class="product ${it.alerts === false ? 'muted-card' : ''}">
       <div class="product-head">
-        <div style="min-width:0"><h2>${esc(it.name)}</h2>
+        <div style="min-width:0"><div class="lic">Nº DE LICENÇA <b>${licenseNo(it.id)}</b></div><h2>${esc(it.name)}</h2>
           <div class="watch-meta"><span>busca: <b>${esc(it.query)}</b></span>${it.target ? `<span>meta: <b>${brl(it.target)}</b></span>` : '<span>sem meta</span>'}${it.minPrice || it.maxPrice ? `<span>faixa: <b>${brl(it.minPrice)}–${brl(it.maxPrice)}</b></span>` : ''}</div></div>
         <div class="best">${best ? `<div class="p" style="${hit ? 'color:var(--good)' : ''}">${brl(best.price)}</div><div class="s">na ${esc(store(best.storeId).name)}${hit ? ' · <b style="color:var(--good)">meta atingida</b>' : ''}</div>` : `<div class="s">${it.checking ? 'Buscando…' : 'Sem oferta válida ainda'}</div>`}
           <div class="head-actions">
@@ -338,7 +350,8 @@ function renderPinned() {
   if (!S.items.length) return;
   el.innerHTML = `<div class="pinned-head"><b>📌 Fixados</b><a href="#fixados">ver todos →</a></div><div class="pinned-row">` + S.items.map(it => {
     const b = bestOf(it), hit = b && it.target && b.price <= it.target;
-    return `<a class="pcard ${hit ? 'hit' : ''}" href="#fixados" title="${esc(it.name)}">
+    return `<a class="pcard ${hit ? 'hit' : ''}" href="#fixados" title="${esc(it.name)}" style="--band:${b ? store(b.storeId).color : '#888'}">
+      <span class="pc-no">Nº${licenseNo(it.id)}</span>
       <span class="pc-name">${it.alerts === false ? '🔕' : '🔔'} ${esc(it.name)}</span>
       <span class="pc-price">${b ? brl(b.price) : it.checking ? 'buscando…' : '—'}</span>
       <span class="pc-meta">${b ? esc(store(b.storeId).name) : ''}${it.target ? ` · meta ${brl(it.target)}` : ''}${hit ? ' · <b>atingida</b>' : ''}</span></a>`;
