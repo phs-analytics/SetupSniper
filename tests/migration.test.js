@@ -4,25 +4,9 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { spawn } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
+import { startDemoServer } from './helpers/server.js';
 
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-
-async function subir(dataDir, t) {
-  const port = 39000 + Math.floor(Math.random() * 900);
-  const srv = spawn(process.execPath, ['server.js', '--demo'], {
-    cwd: ROOT, stdio: 'ignore',
-    env: { ...process.env, PORT: String(port), HOST: '127.0.0.1', DATA_DIR: dataDir, SENHA: '', TELEGRAM_TOKEN: '', INTERVAL_MIN: '600' },
-  });
-  t.after(() => srv.kill());
-  const base = `http://127.0.0.1:${port}`;
-  for (let i = 0; i < 50; i++) {
-    try { if ((await fetch(`${base}/api/health`)).ok) return { base, srv }; } catch { /* subindo */ }
-    await new Promise((r) => setTimeout(r, 100));
-  }
-  throw new Error('servidor não subiu');
-}
+const subir = (dataDir, t) => startDemoServer(t, dataDir);
 
 test('dados antigos em reais viram centavos uma única vez', async (t) => {
   const dir = mkdtempSync(path.join(tmpdir(), 'setupsniper-mig-'));

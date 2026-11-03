@@ -9,8 +9,16 @@ import { fetchReclameAqui } from './src/reclameaqui.js';
 import { ADAPTERS, searchStore } from './src/stores.js';
 import { activeStoreIds } from './src/scope.js';
 import { cleanResults, flagOutliers } from './src/extract.js';
-import { normalizeOffer, referencePrice, formatBRL, toCents } from './src/offer.js';
+import { normalizeOffer, referencePrice, formatBRL, toCents, canonicalUrl as canonicalUrlOf } from './src/offer.js';
 import { storeState } from './src/monitor.js';
+import { finalTotals } from './src/final-price.js';
+import { parsePromo } from './src/promo-parser.js';
+import { resolveLink } from './src/link-resolver.js';
+import { inferCouponRule, defaultExpiry, isCouponActive, SOURCE_LABEL } from './src/discounts.js';
+import { parseChannelPage, channelUrl, validChannel } from './src/telegram-channels.js';
+import { fetchPtax } from './src/ptax.js';
+import { parseProductPage } from './src/scraper.js';
+import { fetchText } from './src/http.js';
 import { browserAvailable } from './src/browser.js';
 import { startBot, sendMessage, escHtml } from './src/telegram.js';
 import { VERSION, selfUpdate } from './src/update.js';
@@ -21,7 +29,8 @@ try { process.loadEnvFile?.(path.join(ROOT, '.env')); } catch { /* sem .env */ }
 // por exemplo nos testes.
 const CONFIG = (f) => path.join(ROOT, 'data', f);
 const DATA = (f) => path.join(process.env.DATA_DIR || path.join(ROOT, 'data'), f);
-const PORT = Number(process.env.PORT) || 3000;
+// PORT=0 deixa o sistema escolher uma porta livre (usado nos testes); o log mostra a porta real.
+const PORT = process.env.PORT === '0' ? 0 : Number(process.env.PORT) || 3000;
 const HOST = process.env.HOST || '0.0.0.0';
 const DEMO = process.argv.includes('--demo') || process.env.DEMO === '1';
 const SENHA = process.env.SENHA || '';
@@ -49,7 +58,23 @@ const alertState = await readJson('alerts.json', { last: {}, log: [] });
 
 // Preço de referência para ordenar, comparar metas e alertar: Pix (padrão) ou crédito.
 settings.priceReference ??= 'pix';
-const refOf = (o) => referencePrice(o, settings.priceReference === 'card' ? 'card' : 'pix');
+
+// ---------- Fases 2 e 3: cupons, perfil, CEP, cotação e regras configuráveis ----------
+const taxesCfg = await readConfig('taxes.json', { importTaxStores: [] });
+const cepUf = await readConfig('cep-uf.json', { faixas: [] });
+const couponRules = await readConfig('coupon-rules.json', { channelTtlHours: 24, stacking: { default: 1 } });
+const couponsDb = await readJson('coupons.json', { coupons: [] });
+const channelsState = await readJson('channels-state.json', { seen: {} });
+settings.cep ??= '';                                            // fica só em data/settings.json (fora do git), nunca em logs ou no Telegram
+settings.fx ??= { usdBrl: null, mode: 'manual', updatedAt: null };
+settings.profile ??= { boughtAt: [], subscriptions: [] };
+settings.channels ??= [];                                       // canais públicos do Telegram (opt-in)
+settings.channelIntervalH ??= 6;
+const totalsCtx = (store) => ({ taxes: taxesCfg, cepUf, cep: settings.cep, fx: settings.fx?.usdBrl, stacking: couponRules.stacking?.[store] ?? couponRules.stacking?.default ?? 1, now: Date.now() });
+const withTotals = (o) => ({ ...o, totals: finalTotals(o, couponsDb.coupons, settings.profile, totalsCtx(o.store)) });
+const refKind = () => (settings.priceReference === 'card' ? 'card' : 'pix');
+// Referência para ordenar, comparar com a meta e alertar: o TOTAL FINAL (com cupom, frete e impostos) no Pix ou no cartão.
+const refOf = (o) => o?.totals?.[refKind()]?.total ?? referencePrice(o, refKind());
 
 // ---------- migração: até a v2.3 os valores eram reais (float); agora são centavos inteiros ----------
 const reaisParaCentavos = (v) => (typeof v === 'number' && v > 0 ? Math.round(v * 100) : v ?? null);
@@ -102,6 +127,8 @@ function state() {
     settings: publicSettings(),
     stores: storesWithScore(),
     alerts: alertState.log.slice(0, 30),
+    coupons: couponsDb.coupons.filter(c => isCouponActive(c) || Date.now() - Date.parse(c.seenAt ?? 0) < 7 * 864e5).slice(0, 200),
+    taxes: { importTaxStores: taxesCfg.importTaxStores, atualizadoEm: taxesCfg.atualizadoEm },
     items: watch.items.map(it => ({
       ...it, checking: checking.has(it.id),
       bestHistory: (history[`${it.id}:__best`] ?? []).slice(-60),
@@ -151,7 +178,7 @@ async function demoSearch(storeId, q) {
 // ---------- busca ----------
 async function searchOne(storeId, q, deep) {
   const r = DEMO ? await demoSearch(storeId, q) : await searchStore(storeId, q, { deep });
-  const items = cleanResults(r.items.map(x => normalizeOffer(x, storeId)), q).map(x => ({ ...x, storeId }));
+  const items = cleanResults(r.items.map(x => normalizeOffer(x, storeId)), q).map(x => withTotals({ ...x, storeId }));
   return { items, searchUrl: r.searchUrl, raw: r.items.length };
 }
 
@@ -185,7 +212,7 @@ async function checkItem(it) {
       try {
         if (pin && !DEMO) {
           const raw = await fetchPrice({ url: pin, storeId: sid });
-          results[sid] = { raw: 1, offers: [{ ...normalizeOffer({ ...raw, url: raw.url ?? pin }, sid), storeId: sid, pinned: true }] };
+          results[sid] = { raw: 1, offers: [withTotals({ ...normalizeOffer({ ...raw, url: raw.url ?? pin }, sid), storeId: sid, pinned: true })] };
         } else {
           const r = await searchOne(sid, it.query, false);
           results[sid] = { raw: r.raw, offers: r.items, searchUrl: r.searchUrl };
@@ -246,7 +273,7 @@ async function evaluateAlerts(it) {
     const sc = scoreOf(sid);
     if (sc != null && sc < a.minScore) continue;
     const reasons = [];
-    if (it.target && o.price <= it.target) reasons.push(`atingiu sua meta de ${brl(it.target)}`);
+    if (it.target && o.price <= it.target) reasons.push(`total final (${refKind() === 'pix' ? 'Pix' : 'cartão'}) caiu abaixo da sua meta de ${brl(it.target)}`);
     if (avg && o.price <= avg * (1 - a.dropPct / 100)) reasons.push(`${Math.round((1 - o.price / avg) * 100)}% abaixo da média de 30 dias (${brl(avg)})`);
     if (!reasons.length) continue;
     const key = `${it.id}:${sid}`, prev = alertState.last[key];
@@ -277,8 +304,154 @@ async function evaluateAlerts(it) {
   writeJson('alerts.json', alertState);
 }
 
+// ---------- cupons e posts de promoção (Fase 2) ----------
+const saveCoupons = () => {
+  // Remove cupons expirados há mais de 7 dias
+  couponsDb.coupons = couponsDb.coupons.filter(c => isCouponActive(c) || Date.now() - Date.parse(c.expiresAt ?? c.seenAt ?? 0) < 7 * 864e5);
+  return writeJson('coupons.json', couponsDb);
+};
+const pendingFix = new Map();     // id curto → oferta (para o botão "Fixar" do bot)
+const storeName = (id) => storesCfg.stores.find(s => s.id === id)?.name ?? id;
+
+// Guarda (ou atualiza) um cupom; o mesmo código na mesma loja e produto não é duplicado.
+function upsertCoupon(c) {
+  const same = couponsDb.coupons.find(x => x.store === c.store && x.productUrl === c.productUrl && x.codes.join() === c.codes.join());
+  if (same) { Object.assign(same, { ...c, id: same.id, status: same.status === 'confirmed_by_user' ? same.status : c.status }); return same; }
+  couponsDb.coupons.unshift(c);
+  return c;
+}
+
+// Linhas de total (Pix e Crédito) para o bot
+function totalsText(t) {
+  const linha = (rot, x, extra = '') => x ? `<b>${rot}:</b> ${brl(x.total)}${x.complete ? '' : ' <i>(parcial)</i>'}${extra}` : `<b>${rot}:</b> —`;
+  const parc = t.card?.installments ? ` · ${t.card.installments.n}x ${brl(t.card.installments.value)}${t.card.installments.interestFree ? ' sem juros' : ''}` : '';
+  const out = [linha('Total Pix', t.pix), linha('Total Crédito', t.card, parc)];
+  if (t.card?.totalWithInterest && t.card.totalWithInterest !== t.card.total) out.push(`(parcelado com juros: ${brl(t.card.totalWithInterest)})`);
+  if (t.cheaper) out.push(`💡 ${t.cheaper === 'pix' ? 'Pix' : 'Crédito'} economiza ${brl(t.saving)}`);
+  const notas = [...new Set([...(t.pix?.notes ?? []), ...(t.card?.notes ?? [])])];
+  if (notas.length) out.push('⚠️ ' + notas.join(' · '));
+  return out.join('\n');
+}
+
+// Processa um post de promoção: lê o link, a página do produto e o cupom, e calcula os totais.
+// opts: { source: 'telegram_forward'|'telegram_channel'|'manual', sourceName, sourceUrl }
+async function processPromo(text, opts = {}) {
+  const p = parsePromo(text);
+  if (!p.links.length) return { text: 'Não encontrei link de loja nesse post. Encaminhe o post completo, com o link.' };
+  let r;
+  try {
+    r = DEMO ? { finalUrl: p.links[0], canonicalUrl: p.links[0], store: p.store, html: '' } : await resolveLink(p.links[0]);
+  } catch (e) { return { text: `❌ Não consegui abrir o link: ${escHtml(e.message)}` }; }
+  if (!r.store || !activeIds().includes(r.store)) return { text: `Loja fora do escopo do SetupSniper${r.store ? ` (${escHtml(storeName(r.store))})` : ''}. Post descartado.` };
+
+  // Página do produto: preço atual no Pix e no cartão (sem login)
+  let raw = null, erroPagina = null;
+  if (DEMO) {
+    const base = (p.announcedPrice ?? 50000) / 100 * 1.11;
+    raw = ['amazon', 'shopee', 'aliexpress'].includes(r.store) ? { price: base, samePrice: true } : { pix: base, card: Math.round(base * 1.15 * 100) / 100 };
+  } else {
+    try { raw = parseProductPage(r.html, r.store, r.finalUrl); } catch (e) { erroPagina = e.message; }
+  }
+  const offer = withTotals({ ...normalizeOffer({ ...(raw ?? {}), title: raw?.title ?? p.product, url: r.canonicalUrl ?? r.finalUrl }, r.store), storeId: r.store });
+
+  // Cupom: regra do post ou inferida do preço anunciado × preço da página
+  let coupon = null;
+  if (p.coupons.length) {
+    const page = referencePrice(offer, 'pix');
+    const regra = p.rules.find(x => x.type !== 'shipping') ?? (page && p.announcedPrice ? inferCouponRule(page, p.announcedPrice) : null);
+    const now = new Date().toISOString();
+    coupon = upsertCoupon({
+      id: newId(), store: r.store, seller: null, productUrl: offer.canonicalUrl,
+      codes: p.coupons, type: regra?.type ?? 'unknown', value: regra?.value ?? null,
+      minOrder: regra?.minOrder ?? null, maxDiscount: regra?.maxDiscount ?? null,
+      appliesTo: p.appliesTo, conditions: p.conditions, announcedPrice: p.announcedPrice,
+      inferred: !p.rules.some(x => x.type !== 'shipping') && !!regra,
+      source: opts.source ?? 'telegram_forward', sourceName: opts.sourceName ?? SOURCE_LABEL[opts.source ?? 'telegram_forward'],
+      sourceUrl: opts.sourceUrl ?? null, seenAt: now, expiresAt: defaultExpiry(now, couponRules.channelTtlHours ?? 24), status: 'unverified',
+    });
+    await saveCoupons();
+  }
+  const o = withTotals(offer);   // recalcula com o cupom recém-salvo
+  const fixId = newId();
+  pendingFix.set(fixId, o);
+  if (pendingFix.size > 50) pendingFix.delete(pendingFix.keys().next().value);
+
+  const pr = o.price;
+  const sc = scoreOf(r.store);
+  const regraTxt = coupon ? (coupon.type === 'percent' ? `${coupon.value}% OFF` : coupon.type === 'fixed' ? `${brl(coupon.value)} OFF` : 'regra não informada')
+    + (coupon.minOrder ? ` acima de ${brl(coupon.minOrder)}` : '') + (coupon.maxDiscount ? ` (até ${brl(coupon.maxDiscount)})` : '') + (coupon.inferred ? ' · inferida pelo preço anunciado' : '') : '';
+  const html = [
+    `🛒 <b>${escHtml(o.title ?? p.product ?? 'Produto')}</b> · ${escHtml(storeName(r.store))}`,
+    erroPagina ? `⚠️ Não consegui ler o preço na página da loja (${escHtml(erroPagina)}).` : `Na página: Pix ${brl(pr.pix)} · Cartão ${brl(pr.card)}`,
+    p.announcedPrice ? `Anunciado no post: ${brl(p.announcedPrice)}` : '',
+    coupon ? `🎟️ Cupom: <code>${coupon.codes.map(escHtml).join('</code> ou <code>')}</code> — ${escHtml(regraTxt)}\n<i>divulgado por ${escHtml(coupon.sourceName)} em ${new Date(coupon.seenAt).toLocaleString('pt-BR')}, não verificado</i>` : 'Nenhum cupom no post.',
+    '',
+    totalsText(o.totals),
+    sc != null ? `\nConfiança da loja: ${sc}/100 (estimativa)` : '',
+  ].filter(x => x !== '').join('\n');
+  const buttons = [[{ text: '📌 Fixar', data: `fix:${fixId}` }]];
+  if (coupon) buttons.push([{ text: '✅ Funcionou', data: `ok:${coupon.id}` }, { text: '❌ Não funcionou', data: `no:${coupon.id}` }]);
+  return { text: html, buttons, offer: o, coupon, parsed: p };
+}
+
+function setCouponStatus(id, status) {
+  const c = couponsDb.coupons.find(x => x.id === id);
+  if (!c) throw new Error('Cupom não encontrado');
+  c.status = status;
+  saveCoupons(); broadcast();
+  return c;
+}
+
+// ---------- canais públicos do Telegram (opt-in) ----------
+async function readChannels() {
+  for (const canal of (settings.channels ?? []).filter(validChannel)) {
+    try {
+      const html = await fetchText(channelUrl(canal), { useCache: false });
+      const seen = new Set(channelsState.seen[canal] ?? []);
+      const novos = parseChannelPage(html).filter(x => !seen.has(x.id)).slice(-5);   // no máximo 5 posts por canal a cada leitura
+      for (const post of novos) {
+        seen.add(post.id);
+        const p = parsePromo(post.text);
+        if (!p.coupons.length || !p.store || !activeIds().includes(p.store)) continue;
+        await processPromo(post.text, { source: 'telegram_channel', sourceName: '@' + canal.replace(/^@/, ''), sourceUrl: post.url }).catch(e => log(`[canal] ${e.message}`));
+        await sleep(3000);
+      }
+      channelsState.seen[canal] = [...seen].slice(-200);
+    } catch (e) { log(`[canal ${canal}] ${e.message}`); }
+  }
+  await writeJson('channels-state.json', channelsState);
+  broadcast();
+}
+
+async function refreshPtax() {
+  if (settings.fx?.mode !== 'ptax' || DEMO) return;
+  try {
+    const r = await fetchPtax();
+    settings.fx = { ...settings.fx, usdBrl: r.usdBrl, updatedAt: r.data };
+    await writeJson('settings.json', settings); broadcast();
+  } catch (e) { log(`[ptax] ${e.message}`); }
+}
+
 // ---------- comandos do bot ----------
 const botHandlers = {
+  post: async (text) => processPromo(text, { source: 'telegram_forward' }),
+  async callback(data) {
+    const [acao, id] = String(data).split(':');
+    if (acao === 'ok') { const c = setCouponStatus(id, 'confirmed_by_user'); return `✅ Anotado: o cupom ${escHtml(c.codes[0])} funcionou.`; }
+    if (acao === 'no') { const c = setCouponStatus(id, 'expired'); return `Anotado: o cupom ${escHtml(c.codes[0])} foi marcado como expirado e sai dos cálculos.`; }
+    if (acao === 'fix') {
+      const o = pendingFix.get(id);
+      if (!o) return 'Essa oferta expirou. Encaminhe o post de novo.';
+      const it = await addItem({ name: o.title, query: (o.title ?? '').split(/\s+/).slice(0, 6).join(' '), refPrice: refOf(o), pin: { storeId: o.store, url: o.canonicalUrl ?? o.url } });
+      return `📌 Fixado: <b>${escHtml(it.name)}</b>. Vou acompanhar o total final e avisar quando cair.`;
+    }
+    return 'Ação desconhecida.';
+  },
+  async cupons() {
+    const ativos = couponsDb.coupons.filter(c => isCouponActive(c));
+    if (!ativos.length) return 'Nenhum cupom ativo. Encaminhe um post de promoção para eu salvar o cupom.';
+    return '🎟️ <b>Cupons ativos</b>\n\n' + ativos.slice(0, 15).map(c => `<code>${c.codes.map(escHtml).join(' / ')}</code> · ${escHtml(storeName(c.store))} · ${c.status === 'confirmed_by_user' ? 'funcionou' : 'não verificado'}${c.expiresAt ? ` · até ${new Date(c.expiresAt).toLocaleString('pt-BR')}` : ''}`).join('\n');
+  },
   async precos() {
     if (!watch.items.length) return 'Nenhum produto fixado. Use /fixar &lt;produto&gt; ou o botão 📌 Fixar no site.';
     return '📌 <b>Produtos fixados</b>\n\n' + watch.items.map((it, i) => {
@@ -430,8 +603,68 @@ const server = http.createServer(async (req, res) => {
       if ('priceReference' in b) settings.priceReference = b.priceReference === 'card' ? 'card' : 'pix';
       if (Array.isArray(b.monitorStores)) settings.monitorStores = b.monitorStores.filter(id => activeIds().includes(id));
       if (b.intervalMin) { settings.intervalMin = Math.max(5, Math.min(720, Number(b.intervalMin))); schedule(); }
+      // Fase 3: CEP (só 8 dígitos), cotação do dólar, perfil e canais
+      if ('cep' in b) {
+        const cep = String(b.cep ?? '').replace(/\D/g, '');
+        if (cep && cep.length !== 8) return json(res, 400, { error: 'O CEP precisa ter 8 dígitos.' });
+        settings.cep = cep;
+      }
+      if (b.fx) {
+        const mode = b.fx.mode === 'ptax' ? 'ptax' : 'manual';
+        const v = Number(String(b.fx.usdBrl ?? '').replace(',', '.'));
+        settings.fx = { ...settings.fx, mode, ...(mode === 'manual' ? { usdBrl: v > 0 && v < 100 ? v : null, updatedAt: new Date().toISOString() } : {}) };
+        if (mode === 'ptax') refreshPtax();
+      }
+      if (b.profile) {
+        settings.profile = {
+          boughtAt: (b.profile.boughtAt ?? []).filter(id => activeIds().includes(id)),
+          subscriptions: (b.profile.subscriptions ?? []).filter(x => ['meli+', 'prime'].includes(x)),
+        };
+      }
+      if (Array.isArray(b.channels)) {
+        const bad = b.channels.filter(c => !validChannel(c));
+        if (bad.length) return json(res, 400, { error: `Nome de canal inválido: ${bad.join(', ')}` });
+        settings.channels = [...new Set(b.channels.map(c => String(c).replace(/^@/, '')))].slice(0, 10);
+      }
       await writeJson('settings.json', settings); broadcast();
       return json(res, 200, publicSettings());
+    }
+    // ---- cupons (Fase 2) ----
+    if (pathname === '/api/promo' && req.method === 'POST') {
+      const b = await body(req);
+      const r = await processPromo(String(b.text ?? '').slice(0, 4000), { source: 'manual', sourceName: 'post colado no site' });
+      broadcast();
+      return json(res, 200, { text: r.text, offer: r.offer ?? null, coupon: r.coupon ?? null });
+    }
+    if (pathname === '/api/coupons' && req.method === 'POST') {
+      const b = await body(req);
+      const codes = String(b.codes ?? '').toUpperCase().split(/[\s,\/]+|\bOU\b/).map(x => x.trim()).filter(x => /^[A-Z0-9_-]{3,25}$/.test(x));
+      if (!codes.length) return json(res, 400, { error: 'Informe o código do cupom.' });
+      if (!activeIds().includes(b.store)) return json(res, 400, { error: 'Escolha uma das lojas do escopo.' });
+      const type = ['percent', 'fixed', 'shipping'].includes(b.type) ? b.type : 'unknown';
+      const now = new Date().toISOString();
+      const c = upsertCoupon({
+        id: newId(), store: b.store, seller: null, productUrl: storeUrl(b.productUrl) ? canonicalUrlOf(b.productUrl) : null, codes, type,
+        value: type === 'percent' ? Math.min(100, Math.max(1, Number(b.value) || 0)) || null : num(b.value),
+        minOrder: num(b.minOrder), maxDiscount: num(b.maxDiscount),
+        appliesTo: Array.isArray(b.appliesTo) && b.appliesTo.length ? b.appliesTo.filter(x => ['pix', 'card'].includes(x)) : null,
+        conditions: (b.conditions ?? []).filter(x => ['first_purchase', 'app_only', 'subscriber', 'new_account'].includes(x)),
+        announcedPrice: null, inferred: false, source: 'manual', sourceName: 'cadastro manual', sourceUrl: null,
+        seenAt: now, expiresAt: b.expiresAt ? new Date(b.expiresAt).toISOString() : null, status: 'unverified',
+      });
+      await saveCoupons(); broadcast();
+      return json(res, 201, c);
+    }
+    const cm = pathname.match(/^\/api\/coupons\/([\w-]+)$/);
+    if (cm && req.method === 'PATCH') {
+      const b = await body(req);
+      if (!['confirmed_by_user', 'expired', 'unverified'].includes(b.status)) return json(res, 400, { error: 'Status inválido' });
+      try { return json(res, 200, setCouponStatus(cm[1], b.status)); } catch (e) { return json(res, 404, { error: e.message }); }
+    }
+    if (cm && req.method === 'DELETE') {
+      couponsDb.coupons = couponsDb.coupons.filter(c => c.id !== cm[1]);
+      await saveCoupons(); broadcast();
+      return json(res, 200, { ok: true });
     }
     if (pathname === '/api/telegram/test' && req.method === 'POST') {
       const t = settings.telegram;
@@ -465,12 +698,15 @@ async function refreshReclameAqui() {
 }
 
 server.listen(PORT, HOST, () => {
-  console.log(`\n  SetupSniper em http://localhost:${PORT}${DEMO ? '  (MODO DEMO — preços simulados)' : ''}`);
+  console.log(`\n  SetupSniper em http://localhost:${server.address().port}${DEMO ? '  (MODO DEMO — preços simulados)' : ''}`);
   console.log(`  Monitorando ${watch.items.length} produto(s) a cada ${DEMO ? 1 : settings.intervalMin} min · navegador headless: ${browserAvailable() ? 'sim' : 'não'}${SENHA ? ' · com senha' : ''}\n`);
   refreshReclameAqui();
   refreshAll();
   schedule();
   setInterval(refreshReclameAqui, 24 * 3600e3);
+  // Fase 2 e 3: canais públicos do Telegram (opt-in, intervalo longo) e PTAX (opt-in, 1x por dia)
+  if (!DEMO) { setTimeout(readChannels, 60e3); setInterval(readChannels, Math.max(1, settings.channelIntervalH) * 3600e3); }
+  refreshPtax(); setInterval(refreshPtax, 24 * 3600e3);
   const t = settings.telegram;
   if (!DEMO && t.token && t.chatId) sendMessage(t.token, t.chatId, `🟢 <b>SetupSniper</b> ligado (v${VERSION.version}). Acompanhando ${watch.items.length} produto(s) fixado(s).`).catch(e => log('[telegram] ' + e.message));
   startBot({ getSettings: () => settings, saveChatId: async (id) => { settings.telegram.chatId = id; await writeJson('settings.json', settings); broadcast(); }, handlers: botHandlers, log });

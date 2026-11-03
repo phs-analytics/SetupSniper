@@ -3,8 +3,10 @@ const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 // Dinheiro chega do servidor em CENTAVOS inteiros; só é formatado aqui.
 const brl = (c) => c == null || !Number.isFinite(c) ? '—' : (c / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const refKind = () => (S?.settings?.priceReference === 'card' ? 'card' : 'pix');
-// Preço de referência de uma oferta (Pix por padrão; sem Pix, o crédito)
+// Preço de referência de uma oferta: o TOTAL FINAL (cupom, frete e impostos) no Pix por padrão;
+// sem totais, o preço da página (Pix ou, sem Pix, o crédito)
 function refOf(o) {
+  const t = o?.totals?.[refKind()]?.total; if (t != null) return t;
   const p = o?.price; if (!p || typeof p !== 'object') return null;
   const parcelado = p.installments ? p.installments.n * p.installments.value : null;
   return refKind() === 'card' ? (p.card ?? p.pix ?? parcelado) : (p.pix ?? p.card ?? parcelado);
@@ -22,6 +24,37 @@ function priceDetail(o) {
   }
   if (p.installments) parts.push(`${p.installments.n}x ${brl(p.installments.value)}${p.installments.interestFree ? ' sem juros' : ''}`);
   return parts.join(' · ');
+}
+// Blocos "Total Pix" e "Total Crédito" lado a lado, com o cálculo detalhado (Fase 3)
+function totalsHtml(o, { compact = false } = {}) {
+  const t = o?.totals; if (!t || (!t.pix && !t.card)) return '';
+  const linha = (rot, a, b, cls = '') => `<tr class="${cls}"><td>${rot}</td><td>${a}</td><td>${b}</td></tr>`;
+  const v = (x) => (x == null ? '—' : brl(x));
+  const neg = (x) => (x ? '− ' + brl(x) : '—');
+  const add = (x, nulo = '—') => (x == null ? nulo : x === 0 ? 'R$ 0,00' : '+ ' + brl(x));
+  const P = t.pix ?? {}, C = t.card ?? {};
+  const best = t.cheaper;
+  const box = (k, rot, x, extra = '') => x?.total == null ? '' :
+    `<div class="tot ${best === k ? 'best' : ''}" title="${esc([...(x.notes ?? [])].join(' · ') || 'Total com cupom, frete e impostos')}"><span>${rot}${x.complete ? '' : ' <i class="est">estimativa</i>'}</span><b>${brl(x.total)}</b>${extra}</div>`;
+  const parc = C.installments ? `<small>${C.installments.n}x ${brl(C.installments.value)}${C.installments.interestFree ? ' sem juros' : ' com juros'}</small>` : '';
+  const cupons = (P.coupons?.length ? P.coupons : C.coupons ?? []).map(c => c.code).join(', ');
+  const uf = S?.settings?.cep ? '' : ' (informe o CEP)';
+  const tabela = `<table class="calc">
+    <tr><th></th><th>Pix</th><th>Crédito</th></tr>
+    ${linha('Produto', v(P.product), v(C.product))}
+    ${(P.coupons?.length || C.coupons?.length) ? linha(`Cupom ${esc(cupons)}`, neg(P.couponDiscount), neg(C.couponDiscount)) : ''}
+    ${linha('Frete', add(P.shipping, 'não informado'), add(C.shipping, 'não informado'))}
+    ${P.taxStatus === 'ok' || C.taxStatus === 'ok' ? linha('Imposto de importação', add(P.importTax), add(C.importTax)) : ''}
+    ${P.taxStatus === 'ok' || C.taxStatus === 'ok' ? linha(`ICMS${P.icmsRate ? ' ' + Math.round(P.icmsRate * 100) + '%' : uf}`, add(P.icms), add(C.icms)) : ''}
+    ${linha('<b>Total</b>', '<b>' + v(P.total) + '</b>', '<b>' + v(C.total) + '</b>', 'sum')}
+    ${C.totalWithInterest && C.totalWithInterest !== C.total ? linha('Parcelado com juros', '', v(C.totalWithInterest)) : ''}
+  </table>`;
+  const fontes = [...(P.coupons ?? []), ...(C.coupons ?? [])].filter((c, i, a) => a.findIndex(x => x.code === c.code) === i)
+    .map(c => `<div class="cfonte">🎟️ <b>${esc(c.code)}</b>: ${c.status === 'confirmed_by_user' ? 'funcionou para você' : `divulgado por ${esc(c.sourceName ?? 'fonte desconhecida')}${c.seenAt ? ' em ' + new Date(c.seenAt).toLocaleString('pt-BR') : ''}, não verificado`}${c.inferred ? ' · regra inferida pelo preço anunciado' : ''}${(c.notes ?? []).length ? ' · ' + esc(c.notes.join(' · ')) : ''}</div>`).join('');
+  const notas = [...new Set([...(P.notes ?? []), ...(C.notes ?? [])])];
+  return `<div class="totals ${compact ? 'compact' : ''}">${box('pix', 'Total Pix', P)}${box('card', 'Total Crédito', C, parc)}</div>
+    ${best ? `<div class="economia">${best === 'pix' ? 'Pix' : 'Crédito'} economiza ${brl(t.saving)}</div>` : ''}
+    <details class="breakdown"><summary>ver cálculo</summary>${tabela}${fontes}${notas.length ? `<div class="cnotas">${esc(notas.join(' · '))}</div>` : ''}</details>`;
 }
 const refLabel = (o) => { const p = o?.price; if (!p) return ''; if (p.pix != null && p.pix === p.card) return ''; return refKind() === 'pix' ? (p.pix != null ? 'no Pix' : 'no cartão') : (p.card != null ? 'no cartão' : 'no Pix'); };
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -76,7 +109,7 @@ function sparkline(hist) {
 // ================= ABAS =================
 function showTab() {
   const tab = (location.hash.slice(1) || 'busca');
-  const valid = tab === 'monitorados' ? 'fixados' : ['busca', 'fixados', 'lojas', 'alertas'].includes(tab) ? tab : 'busca';
+  const valid = tab === 'monitorados' ? 'fixados' : ['busca', 'fixados', 'cupons', 'lojas', 'alertas'].includes(tab) ? tab : 'busca';
   $$('.tab').forEach(t => t.hidden = t.id !== 'tab-' + valid);
   $$('.tabs a').forEach(a => a.classList.toggle('on', a.dataset.tab === valid));
 }
@@ -180,7 +213,7 @@ function renderSearch() {
       ? `<span class="tag err" title="A loja mostrou o produto, mas o preço não foi lido da página">Preço não encontrado nesta página</span>`
       : r.available === false
         ? `<div class="price" style="opacity:.5">${brl(rp)}</div><span class="tag out">Indisponível</span>`
-        : `<div class="price">${brl(rp)} <small class="reflbl">${refLabel(r)}</small></div><div class="pdetail">${priceDetail(r)}</div>${diff}`;
+        : r.totals ? `${totalsHtml(r)}${diff}` : `<div class="price">${brl(rp)} <small class="reflbl">${refLabel(r)}</small></div><div class="pdetail">${priceDetail(r)}</div>${diff}`;
     return `<div class="res ${r === best ? 'top1' : ''} ${below ? 'dim' : ''}">
       ${r.image ? `<img class="thumb" src="${esc(r.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'thumb',textContent:'${esc(s.name[0])}'}))">` : `<div class="thumb" style="background:${s.color}">${esc(s.name[0])}</div>`}
       <div class="info">${/^https?:\/\//i.test(r.url ?? '') ? `<a class="title" href="${esc(r.url)}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer" title="${esc(r.title)}">${esc(r.title)}</a>` : `<div class="title" title="${esc(r.title)}">${esc(r.title)}</div>`}
@@ -279,7 +312,7 @@ function renderWatch() {
       const s = store(o.storeId);
       let priceCell;
       // Cada loja termina com um estado explícito (server.js checkItem): nada some em silêncio.
-      if (o.status === 'ok') priceCell = `<div class="price">${brl(o.price)} <small class="reflbl">${refLabel(o.offer)}</small></div><div class="pdetail">${priceDetail(o.offer)}</div><div class="diff ${o === best ? 'isbest' : ''}">${o === best ? 'menor preço' : best ? '+' + brl(o.price - best.price) : ''}${o.suspeito ? ' <span class="tag warn">Suspeito</span>' : ''}</div>`;
+      if (o.status === 'ok') priceCell = `${o.offer?.totals ? totalsHtml(o.offer, { compact: true }) : `<div class="price">${brl(o.price)} <small class="reflbl">${refLabel(o.offer)}</small></div><div class="pdetail">${priceDetail(o.offer)}</div>`}<div class="diff ${o === best ? 'isbest' : ''}">${o === best ? 'menor preço' : best ? '+' + brl(o.price - best.price) : ''}${o.suspeito ? ' <span class="tag warn">Suspeito</span>' : ''}</div>`;
       else if (o.status === 'error') priceCell = `<span class="tag err" title="${esc(o.message)}">⚠ ${esc(shortErr(o.message))}</span>`;
       else if (o.status === 'unavailable') priceCell = `<span class="tag out" title="${esc(o.message)}">Indisponível</span>`;
       else if (o.status === 'price_not_found') priceCell = `<span class="tag err" title="O produto foi encontrado, mas o preço não foi lido da página">Preço não encontrado nesta página</span>`;
@@ -409,7 +442,7 @@ function renderPinned() {
 }
 function render() {
   if (!S) return;
-  renderStatus(); renderWatch(); renderPinned(); if (search.q && !search.running) renderSearch(); renderStores(); renderAlerts();
+  renderStatus(); renderWatch(); renderPinned(); renderCoupons(); if (search.q && !search.running) renderSearch(); renderStores(); renderAlerts();
   if (first) { renderStoreFilter(); renderSearch(); first = false;
     const sugg = [...new Set([...S.items.map(i => i.query), 'RTX 4060', 'SSD 2TB NVMe', 'Ryzen 5 7600'])].slice(0, 6);
     $('#suggest').innerHTML = sugg.map(q => `<button type="button" class="fchip on" data-q="${esc(q)}">${esc(q)}</button>`).join('');
@@ -425,3 +458,89 @@ function connect() {
 setInterval(() => S && renderStatus(), 30000);
 showTab();
 connect();
+
+// ================= CUPONS E TOTAIS (Fases 2 e 3) =================
+const brlInput = (v) => {   // "1.234,56" → centavos (mesma regra do servidor)
+  let t = String(v ?? '').trim().replace(/[^\d.,]/g, '');
+  if (!t) return null;
+  if (t.includes(',')) t = t.replace(/\./g, '').replace(',', '.'); else if (/^\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, '');
+  const n = parseFloat(t); return Number.isFinite(n) && n > 0 ? Math.round(n * 100) : null;
+};
+let cfgFilled = false;
+function renderCoupons() {
+  const list = S.coupons ?? [];
+  const ativos = list.filter(c => c.status !== 'expired' && (!c.expiresAt || Date.parse(c.expiresAt) > Date.now()));
+  $('#count-cup').textContent = ativos.length;
+  const regra = (c) => c.type === 'percent' ? `${c.value}% OFF` : c.type === 'fixed' ? `${brl(c.value)} OFF` : c.type === 'shipping' ? 'frete grátis' : 'regra não informada';
+  $('#coupon-list').innerHTML = list.length ? list.map(c => {
+    const exp = c.status === 'expired' || (c.expiresAt && Date.parse(c.expiresAt) <= Date.now());
+    return `<div class="alog ${exp ? 'dim' : ''}">
+      <span class="sdot" style="background:${store(c.store).color}"></span>
+      <div><b>${c.codes.map(esc).join(' ou ')}</b> · ${esc(store(c.store).name)} · ${esc(regra(c))}${c.minOrder ? ` acima de ${brl(c.minOrder)}` : ''}${c.maxDiscount ? ` (até ${brl(c.maxDiscount)})` : ''}${c.appliesTo ? ` · só no ${c.appliesTo.includes('pix') ? 'Pix' : 'cartão'}` : ''}${c.inferred ? ' · inferida' : ''}
+        <div class="r">${c.status === 'confirmed_by_user' ? '✅ funcionou para você' : exp ? 'expirado' : `divulgado por ${esc(c.sourceName ?? '—')} em ${c.seenAt ? new Date(c.seenAt).toLocaleString('pt-BR') : '—'}, não verificado`}${c.expiresAt ? ` · válido até ${new Date(c.expiresAt).toLocaleString('pt-BR')}` : ''}${c.productUrl ? ` · <a href="${esc(c.productUrl)}" target="_blank" rel="noopener noreferrer">produto</a>` : ' · loja toda'}</div></div>
+      <div class="actions">
+        <button type="button" class="btn small" data-cok="${c.id}">✅ Funcionou</button>
+        <button type="button" class="btn small" data-cno="${c.id}">❌ Não funcionou</button>
+        <button type="button" class="btn small danger" data-cdel="${c.id}" aria-label="Apagar cupom">🗑</button>
+      </div></div>`;
+  }).join('') : '<p class="muted">Nenhum cupom ainda. Cole um post acima ou encaminhe um para o bot do Telegram.</p>';
+  if (!$('#c-store').options.length) $('#c-store').innerHTML = S.stores.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
+  if (!cfgFilled || !document.activeElement?.closest('#tab-cupons')) {
+    const st = S.settings;
+    $('#cfg-cep').value = st.cep ? st.cep.replace(/^(\d{5})(\d{3})$/, '$1-$2') : '';
+    $('#cfg-fx').value = st.fx?.usdBrl ? String(st.fx.usdBrl).replace('.', ',') : '';
+    $('#cfg-ptax').checked = st.fx?.mode === 'ptax';
+    $('#cfg-fx').disabled = st.fx?.mode === 'ptax';
+    $('#cfg-fx-info').textContent = st.fx?.usdBrl ? `Cotação usada: R$ ${String(st.fx.usdBrl).replace('.', ',')}${st.fx.mode === 'ptax' ? ` (PTAX ${st.fx.updatedAt ?? ''})` : ' (manual)'}` : 'Sem cotação: os importados mostram "informe a cotação".';
+    const bought = new Set(st.profile?.boughtAt ?? []), subs = new Set(st.profile?.subscriptions ?? []);
+    $('#cfg-bought').innerHTML = S.stores.map(s => `<button type="button" class="fchip ${bought.has(s.id) ? 'on' : ''}" data-bought="${s.id}" aria-pressed="${bought.has(s.id)}"><i style="background:${s.color}"></i>${esc(s.name)}</button>`).join('');
+    $$('#cfg-subs [data-sub]').forEach(b => { b.classList.toggle('on', subs.has(b.dataset.sub)); b.setAttribute('aria-pressed', subs.has(b.dataset.sub)); });
+    $('#cfg-channels').value = (st.channels ?? []).join('\n');
+    cfgFilled = true;
+  }
+}
+$('#cfg-bought').addEventListener('click', (e) => { const b = e.target.closest('[data-bought]'); if (b) { b.classList.toggle('on'); b.setAttribute('aria-pressed', b.classList.contains('on')); } });
+$('#cfg-subs').addEventListener('click', (e) => { const b = e.target.closest('[data-sub]'); if (b) { b.classList.toggle('on'); b.setAttribute('aria-pressed', b.classList.contains('on')); } });
+$('#cfg-ptax').onchange = (e) => { $('#cfg-fx').disabled = e.target.checked; };
+$('#cfg-save').onclick = async () => {
+  try {
+    await api('/api/settings', { method: 'POST', body: {
+      cep: $('#cfg-cep').value,
+      fx: { mode: $('#cfg-ptax').checked ? 'ptax' : 'manual', usdBrl: $('#cfg-fx').value },
+      profile: { boughtAt: $$('#cfg-bought .fchip.on').map(b => b.dataset.bought), subscriptions: $$('#cfg-subs .fchip.on').map(b => b.dataset.sub) },
+      channels: $('#cfg-channels').value.split(/\s+/).map(x => x.trim()).filter(Boolean),
+    } });
+    cfgFilled = false; toast('Ajustes salvos. Os totais são recalculados na próxima busca ou verificação.');
+  } catch (e) { toast(e.message); }
+};
+$('#promo-go').onclick = async () => {
+  const text = $('#promo-text').value.trim(); if (!text) return toast('Cole o post de promoção');
+  const out = $('#promo-out'); out.hidden = false; out.innerHTML = '<span class="muted">Abrindo o link e lendo o preço…</span>';
+  try {
+    const r = await api('/api/promo', { method: 'POST', body: { text } });
+    // r.text é HTML gerado pelo servidor só com texto escapado (o mesmo enviado ao Telegram)
+    out.innerHTML = `<div class="promo-msg">${r.text.replace(/\n/g, '<br>')}</div>${r.offer?.totals ? totalsHtml(r.offer) : ''}${r.offer?.url ? storeLink(r.offer.url, store(r.offer.store)) : ''}`;
+  } catch (e) { out.innerHTML = `<span class="tag err">${esc(e.message)}</span>`; }
+};
+$('#coupon-list').addEventListener('click', async (e) => {
+  const ok = e.target.closest('[data-cok]'), no = e.target.closest('[data-cno]'), del = e.target.closest('[data-cdel]');
+  try {
+    if (ok) { await api(`/api/coupons/${ok.dataset.cok}`, { method: 'PATCH', body: { status: 'confirmed_by_user' } }); toast('Anotado: o cupom funcionou'); }
+    if (no) { await api(`/api/coupons/${no.dataset.cno}`, { method: 'PATCH', body: { status: 'expired' } }); toast('Cupom marcado como expirado'); }
+    if (del) { await api(`/api/coupons/${del.dataset.cdel}`, { method: 'DELETE' }); toast('Cupom apagado'); }
+  } catch (err) { toast(err.message); }
+});
+$('#coupon-form').onsubmit = async (e) => {
+  e.preventDefault();
+  const type = $('#c-type').value;
+  try {
+    await api('/api/coupons', { method: 'POST', body: {
+      store: $('#c-store').value, codes: $('#c-codes').value, type,
+      value: type === 'percent' ? Number(String($('#c-value').value).replace(',', '.')) : brlInput($('#c-value').value),
+      minOrder: brlInput($('#c-min').value), maxDiscount: brlInput($('#c-max').value),
+      appliesTo: $('#c-applies').value ? [$('#c-applies').value] : null,
+      expiresAt: $('#c-expires').value || null, productUrl: $('#c-url').value || null,
+    } });
+    e.target.reset(); toast('Cupom salvo');
+  } catch (err) { toast(err.message); }
+};

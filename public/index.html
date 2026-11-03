@@ -47,6 +47,7 @@
     <nav class="tabs" role="tablist">
       <a href="#busca" data-tab="busca">Busca</a>
       <a href="#fixados" data-tab="fixados">📌 Fixados <span class="count" id="count-mon">0</span></a>
+      <a href="#cupons" data-tab="cupons">🎟️ Cupons <span class="count" id="count-cup">0</span></a>
       <a href="#lojas" data-tab="lojas">Lojas</a>
       <a href="#alertas" data-tab="alertas">Alertas <span class="dot" id="tg-dot" hidden></span></a>
     </nav>
@@ -92,6 +93,62 @@
     </section>
 
     <!-- LOJAS -->
+    <!-- CUPONS E TOTAIS (Fases 2 e 3) -->
+    <section id="tab-cupons" class="tab" hidden>
+      <div class="alert-grid">
+        <div class="panel">
+          <div class="panel-head"><h2>Colar post de promoção</h2></div>
+          <p class="muted">Cole um post de grupo ou canal (com link e cupom). O SetupSniper abre o link, lê o preço na loja, salva o cupom e calcula os totais. No Telegram, basta encaminhar o post para o seu bot.</p>
+          <label class="field" for="promo-text">Post<textarea id="promo-text" rows="6" placeholder="🔥 Monitor Gamer 27&quot;&#10;Preço: R$ 547&#10;🎟️ Cupom: VOLTESEMPRE OU SEMPREPROMO&#10;https://meli.la/..."></textarea></label>
+          <button type="button" class="btn primary" id="promo-go">Calcular com o cupom</button>
+          <div id="promo-out" class="promo-out" hidden></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h2>Cálculo do total</h2></div>
+          <div class="form-grid">
+            <label class="field" for="cfg-cep">Seu CEP <small class="muted-i">para o ICMS de importados (fica só no seu servidor)</small>
+              <input id="cfg-cep" inputmode="numeric" autocomplete="postal-code" maxlength="9" placeholder="00000-000"></label>
+            <div class="field">Cotação do dólar <small class="muted-i">para o imposto de Amazon, AliExpress e Shopee (importados)</small>
+              <span class="with-unit">R$ <input id="cfg-fx" inputmode="decimal" placeholder="5,40"> por US$</span>
+              <label class="check"><input type="checkbox" id="cfg-ptax"> usar a PTAX do Banco Central (atualiza 1x por dia)</label>
+              <small class="muted-i" id="cfg-fx-info"></small></div>
+            <div class="field">Já comprei em <small class="muted-i">esconde cupons de "primeira compra"</small><div class="chips" id="cfg-bought"></div></div>
+            <div class="field">Assinaturas<div class="chips" id="cfg-subs">
+              <button type="button" class="fchip" data-sub="meli+">Meli+</button><button type="button" class="fchip" data-sub="prime">Amazon Prime</button></div></div>
+            <label class="field" for="cfg-channels">Canais públicos do Telegram <small class="muted-i">opcional: lidos a cada 6 h pela prévia pública t.me/s, um por linha</small>
+              <textarea id="cfg-channels" rows="3" placeholder="canal_de_promocoes"></textarea></label>
+            <button type="button" class="btn primary" id="cfg-save">Salvar</button>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h2>Cupons salvos</h2><p class="muted">Cupom de post ou canal vale por 24 h e aparece como "não verificado" até você marcar se funcionou.</p></div>
+        <div id="coupon-list" class="alert-log"></div>
+        <details class="addc"><summary>Cadastrar cupom manualmente</summary>
+          <form id="coupon-form" class="form-grid">
+            <div class="two">
+              <label class="field" for="c-store">Loja<select id="c-store"></select></label>
+              <label class="field" for="c-codes">Código(s) <small class="muted-i">alternativas separadas por "ou"</small><input id="c-codes" required placeholder="VOLTESEMPRE ou SEMPREPROMO"></label>
+            </div>
+            <div class="two">
+              <label class="field" for="c-type">Tipo<select id="c-type"><option value="percent">% de desconto</option><option value="fixed">valor fixo (R$)</option><option value="shipping">frete grátis</option></select></label>
+              <label class="field" for="c-value">Valor <small class="muted-i">% ou R$</small><input id="c-value" inputmode="decimal" placeholder="10"></label>
+            </div>
+            <div class="two">
+              <label class="field" for="c-min">Pedido mínimo (R$)<input id="c-min" inputmode="decimal"></label>
+              <label class="field" for="c-max">Desconto máximo (R$)<input id="c-max" inputmode="decimal"></label>
+            </div>
+            <div class="two">
+              <label class="field" for="c-applies">Vale no<select id="c-applies"><option value="">Pix e cartão</option><option value="pix">só no Pix</option><option value="card">só no cartão</option></select></label>
+              <label class="field" for="c-expires">Válido até<input id="c-expires" type="datetime-local"></label>
+            </div>
+            <label class="field" for="c-url">Link do produto <small class="muted-i">opcional: vazio vale para a loja toda</small><input id="c-url" type="url"></label>
+            <button type="submit" class="btn primary">Salvar cupom</button>
+          </form>
+        </details>
+      </div>
+    </section>
+
     <section id="tab-lojas" class="tab" hidden>
       <div class="panel-head">
         <h2>Confiabilidade das lojas</h2>

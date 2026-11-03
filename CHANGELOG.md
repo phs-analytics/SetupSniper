@@ -1,5 +1,22 @@
 # Changelog
 
+## 2.5.0 — 2026-11-03
+
+**Cupons (Fase 2)**
+- Pesquisa de fontes de cupom por loja, com tabela de decisão: `docs/cupons.md`.
+- `src/promo-parser.js`: lê posts de promoção. Testado com 24 posts de exemplo e o post real.
+- `src/link-resolver.js`: resolve links encurtados de afiliado até a URL canônica, sem login.
+- `src/discounts.js`: regras de cupom (percentual com teto, valor fixo com mínimo, frete, forma de pagamento, primeira compra, assinantes), inferência pelo preço anunciado, empilhamento configurável e oportunidade de carrinho.
+- Bot do Telegram: posts encaminhados, botões "📌 Fixar", "✅ Funcionou" e "❌ Não funcionou", e o comando `/cupons`.
+- Aba **🎟️ Cupons**: colar post, cupons salvos e cadastro manual.
+- Leitura opt-in de canais públicos do Telegram (`t.me/s`), a cada 6 h.
+
+**Total final (Fase 3)**
+- `src/final-price.js`: Total Pix e Total Crédito com cupom, frete, imposto de importação e ICMS, além de parcelas e juros.
+- `src/import-tax.js` e `data/taxes.json`: regras confirmadas e vigentes em 03/11/2026, para Amazon, AliExpress e Shopee: `docs/impostos-importacao.md`.
+- `data/cep-uf.json`: UF pelo CEP, sem API externa. Cotação manual, com PTAX opcional.
+- A ordenação, as metas e os alertas usam o total final (Pix por padrão).
+
 ## 2.4.0 — 2026-11-03
 
 **Correção: lojas sem preço depois da primeira (Fase 1)**

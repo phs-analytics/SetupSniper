@@ -353,3 +353,29 @@ dialog .btn.ghost { color: var(--ink); border-color: var(--ink); }
 .pdetail { font: 11px var(--mono); color: var(--ink2); max-width: 260px; white-space: normal; text-align: right; }
 .row .pdetail { text-align: left; }
 .field select { background: var(--paper); color: var(--ink); border: 2px solid var(--ink); border-radius: 5px; padding: 9px 12px; font: 14px var(--mono); max-width: 260px; }
+
+/* Fases 2 e 3: totais Pix/Crédito, cálculo e cupons */
+.totals { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; min-width: 250px; }
+.totals.compact { min-width: 230px; }
+.tot { border: 2px solid var(--ink); border-radius: 6px; padding: 6px 9px; background: rgba(255,255,255,.55); display: grid; gap: 1px; text-align: left; }
+.tot span { font: 700 9.5px var(--mono); text-transform: uppercase; letter-spacing: .06em; color: var(--ink2); }
+.tot b { font: 700 18px var(--mono); letter-spacing: -.02em; color: var(--ink); }
+.tot small { font: 10px var(--mono); color: var(--ink2); }
+.tot.best { background: var(--lime); }
+.tot .est { font-style: normal; color: #9a6b00; text-transform: none; letter-spacing: 0; }
+.economia { font: 700 11px var(--mono); color: var(--good); margin-top: 4px; text-align: left; }
+.breakdown { margin-top: 4px; text-align: left; }
+.breakdown summary { cursor: pointer; font: 700 11px var(--mono); color: var(--ink2); }
+.calc { border-collapse: collapse; font: 11px var(--mono); margin: 6px 0; width: 100%; }
+.calc th, .calc td { padding: 2px 6px; border-bottom: 1px dashed var(--rule); text-align: right; color: var(--ink); white-space: nowrap; }
+.calc th:first-child, .calc td:first-child { text-align: left; white-space: normal; }
+.calc tr.sum td { border-top: 2px solid var(--ink); }
+.cfonte, .cnotas { font: 10.5px/1.4 var(--mono); color: var(--ink2); margin-top: 4px; max-width: 360px; white-space: normal; }
+.res > .price { text-align: left; }
+.promo-out { background: var(--paper); color: var(--ink); border: 2px solid var(--ink); border-radius: 8px; padding: 12px; display: grid; gap: 8px; font-size: 14px; }
+.promo-msg code { background: var(--yellow); color: var(--ink); }
+#tab-cupons textarea, .field textarea { width: 100%; background: var(--paper); color: var(--ink); border: 2px solid var(--ink); border-radius: 5px; padding: 9px 12px; font: 13px var(--mono); }
+.addc summary { cursor: pointer; font: 700 13px var(--body); color: var(--yellow); margin: 6px 0; }
+.alog.dim { opacity: .55; }
+.alog .actions { display: flex; gap: 6px; flex-wrap: wrap; }
+@media (max-width: 900px) { .totals { min-width: 0; } .res > .price { grid-column: 1 / -1; } }

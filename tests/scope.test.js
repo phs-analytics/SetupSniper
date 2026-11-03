@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { spawn } from 'node:child_process';
+import { startDemoServer } from './helpers/server.js';
 import { fileURLToPath } from 'node:url';
 import { activeStoreIds } from '../src/scope.js';
 import { ADAPTERS } from '../src/stores.js';
@@ -43,19 +43,8 @@ test('importTaxStores começa com Amazon, AliExpress e Shopee', () => {
 // e confere quais lojas o /api/search realmente consulta.
 test('o servidor só consulta as lojas do escopo, inclusive na busca profunda', async (t) => {
   const dataDir = mkdtempSync(path.join(tmpdir(), 'setupsniper-'));
-  const port = 39000 + Math.floor(Math.random() * 900);
-  const srv = spawn(process.execPath, ['server.js', '--demo'], {
-    cwd: ROOT,
-    env: { ...process.env, PORT: String(port), HOST: '127.0.0.1', DATA_DIR: dataDir, SENHA: '', TELEGRAM_TOKEN: '' },
-    stdio: 'ignore',
-  });
-  t.after(() => { srv.kill(); rmSync(dataDir, { recursive: true, force: true }); });
-
-  const base = `http://127.0.0.1:${port}`;
-  for (let i = 0; i < 50; i++) {
-    try { if ((await fetch(`${base}/api/health`)).ok) break; } catch { /* ainda subindo */ }
-    await new Promise((r) => setTimeout(r, 100));
-  }
+  t.after(() => rmSync(dataDir, { recursive: true, force: true }));
+  const { base } = await startDemoServer(t, dataDir);
 
   const lojasConsultadas = async (qs) => {
     const body = await (await fetch(`${base}/api/search?${qs}`)).text();
