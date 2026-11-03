@@ -24,11 +24,14 @@ async function api(path, opts = {}) {
 function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2800); }
 
 // Score de confiabilidade desenhado como carimbo
-function ring(score, sm = true) {
+// Score de confiabilidade desenhado como carimbo.
+// É uma nota calculada pelo SetupSniper, não uma certificação: as palavras evitam sugerir selo oficial.
+function ring(score, sm = true, estimado = true) {
   const rot = ((score ?? 7) * 37) % 24 - 12;
-  if (score == null) return `<div class="stamp ${sm ? 'sm' : ''} na" style="--r:${rot}deg" title="Comparador: sem score"><b>—</b><span>comparador</span></div>`;
-  const word = score >= 85 ? 'certificado' : score >= 70 ? 'aprovado' : score >= 55 ? 'regular' : 'atenção';
-  return `<div class="stamp ${sm ? 'sm' : ''}" style="--c:${scoreColor(score)};--r:${rot}deg" title="Confiabilidade ${score}/100"><b>${score}</b><span>${word}</span></div>`;
+  if (score == null) return `<div class="stamp ${sm ? 'sm' : ''} na" style="--r:${rot}deg" title="Comparador: sem nota"><b>—</b><span>comparador</span></div>`;
+  const word = score >= 85 ? 'confiável' : score >= 70 ? 'bom' : score >= 55 ? 'regular' : 'cautela';
+  const tip = `Nota de confiança ${score}/100 calculada pelo SetupSniper${estimado ? ' a partir de dados estimados' : ''}. Não é uma certificação nem um dado oficial do Reclame Aqui ou da loja.`;
+  return `<div class="stamp ${sm ? 'sm' : ''}" style="--c:${scoreColor(score)};--r:${rot}deg" title="${tip}"><b>${score}</b><span>${word}</span></div>`;
 }
 // Código de barras decorativo gerado a partir de um texto (sempre igual para o mesmo texto)
 function barcode(seed) {
@@ -153,7 +156,7 @@ function renderSearch() {
       <div class="info">${/^https?:\/\//i.test(r.url ?? '') ? `<a class="title" href="${esc(r.url)}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer" title="${esc(r.title)}">${esc(r.title)}</a>` : `<div class="title" title="${esc(r.title)}">${esc(r.title)}</div>`}
         <div class="meta"><span class="sdot" style="background:${s.color}"></span>${esc(s.name)} ${tags}</div>
         <div class="code">${barcode(r.url ?? r.title)}<span>SN-${esc(r.storeId.slice(0, 3).toUpperCase())}-${licenseNo(r.url ?? r.title)}</span></div></div>
-      <div class="rscore">${ring(sc)}</div>
+      <div class="rscore">${ring(sc, true, s.estimado !== false)}</div>
       <div class="price"><div class="price">${brl(r.price)}</div>${diff}</div>
       <div class="actions">
         ${pinnedItem(r) ? `<a class="btn small pinned-btn" href="#fixados" title="Já está nos fixados">✓ Fixado</a>` : `<button type="button" class="btn small" data-watch="${i}">📌 Fixar</button>`}
@@ -242,7 +245,7 @@ function renderWatch() {
           <div style="min-width:0"><div class="n">${esc(s.name)} ${o.pin ? '<span class="tag info" title="Acompanhando um link fixo">📌</span>' : ''}</div>
           <div class="t" title="${esc(o.title)}">${esc(o.title ?? '')}${o.updatedAt ? ' · ' + ago(o.updatedAt) : ''}</div></div></div>
         <div class="pcell">${priceCell}</div>
-        <div class="score">${ring(o.sc, false)}<div class="tier">${s.reliability?.tier ?? ''}</div></div>
+        <div class="score">${ring(o.sc, false, s.estimado !== false)}<div class="tier">${s.reliability?.tier ?? ''}</div></div>
         <div class="spk">${sparkline(o.history)}</div>
         <div class="actions">${storeLink(o.url, s, o.searchUrl)}</div>
       </div>`;
@@ -285,9 +288,9 @@ function renderStores() {
     const r = s.reliability, ra = s.reclameAqui ?? {};
     if (!r) return `<div class="scard"><div class="scard-head"><div class="chip" style="background:${s.color}">${esc(s.name[0])}</div><div class="n">${esc(s.name)}<div class="tier muted">Comparador de preços</div></div>${ring(null, false)}</div>${s.observacao ? `<div class="note">${esc(s.observacao)}</div>` : ''}</div>`;
     return `<div class="scard">
-      <div class="scard-head"><div class="chip" style="background:${s.color}">${esc(s.name[0])}</div><div class="n">${esc(s.name)}<div class="tier muted">${r.tier}</div></div>${ring(r.score, false)}</div>
+      <div class="scard-head"><div class="chip" style="background:${s.color}">${esc(s.name[0])}</div><div class="n">${esc(s.name)}<div class="tier muted">${r.tier}</div></div>${ring(r.score, false, s.estimado !== false)}</div>
       <div class="bars">${Object.entries(r.parts).map(([k, v]) => `<div class="bar"><span>${labels[k]} <small style="color:var(--dim)">${Math.round(r.weights[k] * 100)}%</small></span><div class="track"><div class="fill" style="width:${v ?? 0}%;background:${scoreColor(v ?? 0)}"></div></div><b>${v ?? '—'}</b></div>`).join('')}</div>
-      <div class="facts"><span>RA nota <b>${ra.nota?.toFixed(1) ?? '—'}</b></span><span>Solução <b>${ra.solucao != null ? Math.round(ra.solucao) + '%' : '—'}</b></span><span>Voltaria <b>${ra.voltaria != null ? Math.round(ra.voltaria) + '%' : '—'}</b></span>${ra.ra1000 ? '<span><b style="color:var(--good)">RA1000</b></span>' : ''}<span>★ <b>${s.rating?.media ?? '—'}</b> (${fmt(s.rating?.avaliacoes ?? 0)})</span><span>~<b>${fmt(s.vendas ?? 0)}</b> vendas</span></div>
+      <div class="facts"><span>RA nota${s.estimado !== false ? ' (est.)' : ''} <b>${ra.nota?.toFixed(1) ?? '—'}</b></span><span>Solução <b>${ra.solucao != null ? Math.round(ra.solucao) + '%' : '—'}</b></span><span>Voltaria <b>${ra.voltaria != null ? Math.round(ra.voltaria) + '%' : '—'}</b></span>${ra.ra1000 ? '<span><b style="color:var(--good)">RA1000</b></span>' : ''}<span>★ <b>${s.rating?.media ?? '—'}</b> (${fmt(s.rating?.avaliacoes ?? 0)})</span><span>~<b>${fmt(s.vendas ?? 0)}</b> vendas</span></div>
       ${s.observacao ? `<div class="note">${esc(s.observacao)}</div>` : ''}
       <div class="src">Fonte: ${esc(s.raFonte)} · ${esc(s.atualizadoEm)}</div></div>`;
   }).join('');

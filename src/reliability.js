@@ -1,4 +1,5 @@
-// Score de confiabilidade 0–100 de uma loja.
+// Nota de confiança 0–100 de uma loja, calculada pelo SetupSniper.
+// Não é certificação nem dado oficial: com os valores de data/stores.json, é uma estimativa.
 // Pesos: Reclame Aqui 40% · Avaliação da loja 25% · Volume de vendas 20% · Reviews/comentários 15%
 export const WEIGHTS = { reclameAqui: 0.40, rating: 0.25, vendas: 0.20, reviews: 0.15 };
 
@@ -41,7 +42,7 @@ export function computeReliability(store) {
   const score = wsum ? Math.round(sum / wsum) : 0;
   return {
     score,
-    tier: score >= 85 ? 'Excelente' : score >= 70 ? 'Bom' : score >= 55 ? 'Regular' : 'Atenção',
+    tier: score >= 85 ? 'Excelente' : score >= 70 ? 'Bom' : score >= 55 ? 'Regular' : 'Cautela',
     parts: Object.fromEntries(Object.entries(parts).map(([k, v]) => [k, v == null ? null : Math.round(v)])),
     weights: WEIGHTS,
   };

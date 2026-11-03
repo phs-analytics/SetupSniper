@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.2.0 — 2026-11-03
+
+- O carimbo da nota de confiança passa a dizer "confiável", "bom", "regular" ou "cautela", em vez de "certificado", para não sugerir certificação oficial. A classificação "Atenção" vira "Cautela".
+- As notas estimadas aparecem como "(est.)", e a aba Lojas mostra um aviso de que as notas não são dados oficiais do Reclame Aqui nem das lojas.
+- README, guias e CONTRIBUTING: avisos de uso pessoal e de respeito aos termos de uso das lojas.
+
 ## 2.1.1 — 2026-11-03
 
 - `scripts/ligar.sh`: liga tudo com um comando e mostra o status (SetupSniper, nuvem, SSH, início automático e vigia).

@@ -13,7 +13,7 @@ O SetupSniper mostra o menor preço da página, que costuma ser o preço à vist
 Ficaram muito abaixo da mediana das outras lojas, o que pode indicar golpe, produto usado ou outro produto. Eles ficam escondidos por padrão e não geram alerta.
 
 **Os números de confiabilidade são oficiais?**
-Não. São estimativas iniciais em `data/stores.json`. Ajuste conforme o Reclame Aqui e a sua experiência. Em marketplaces (Mercado Livre, Shopee, Magalu, AliExpress), o score vale para a plataforma, não para o vendedor.
+Não. A nota é calculada pelo SetupSniper e não é uma certificação. Os indicadores são estimativas iniciais em `data/stores.json`. Ao divulgar o projeto, deixe claro que preços e notas mostrados são ilustrativos. Ajuste conforme o Reclame Aqui e a sua experiência. Em marketplaces (Mercado Livre, Shopee, Magalu, AliExpress), o score vale para a plataforma, não para o vendedor.
 
 **Posso deixar o site aberto na internet?**
 Não é recomendado. Use o Tailscale. Se precisar mesmo, defina `SENHA` e use HTTPS (por exemplo, o Cloudflare Tunnel).

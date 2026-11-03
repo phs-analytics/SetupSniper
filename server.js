@@ -51,7 +51,7 @@ function storesWithScore() {
   return storesCfg.stores.map(s => {
     const live = raLive[s.id];
     const merged = live ? { ...s, reclameAqui: { ...s.reclameAqui, ...Object.fromEntries(Object.entries(live.data).filter(([, v]) => v != null)) } } : s;
-    return { ...merged, deepOnly: !!ADAPTERS[s.id]?.deepOnly, raFonte: live ? `Reclame Aqui ao vivo (${live.at})` : s.fonte,
+    return { ...merged, deepOnly: !!ADAPTERS[s.id]?.deepOnly, estimado: !live, raFonte: live ? `Reclame Aqui ao vivo (${live.at})` : `${s.fonte ?? 'estimativa'} (não oficial)`,
       reliability: s.agregador ? null : computeReliability(merged) };
   });
 }

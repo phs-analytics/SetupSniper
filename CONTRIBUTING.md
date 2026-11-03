@@ -28,7 +28,8 @@ Não há dependências: só o Node.js 18.18 ou mais novo.
 
 - **Sem dependências obrigatórias.** O projeto precisa rodar no Termux de um celular antigo. Bibliotecas opcionais (como o Playwright) devem ser carregadas só se estiverem instaladas.
 - **Dados do usuário ficam fora do git.** Qualquer arquivo novo com dados pessoais vai para o `.gitignore` e para a lista em `scripts/check.js`.
-- **Seja gentil com as lojas.** Nada de intervalos agressivos nem de contornar bloqueios de forma abusiva.
+- **Seja gentil com as lojas.** Nada de intervalos agressivos nem de contornar bloqueios de forma abusiva. Respeite os termos de uso de cada site.
+- **Notas não são certificações.** Não use palavras como "certificado" ou "oficial" para as notas de confiança, e marque como estimativa todo valor que não vier de uma fonte verificável.
 - **Interface em português do Brasil**, com textos curtos e diretos.
 - **Teste o que mudar.** Ao mexer em um adaptador, inclua um trecho da página em `tests/extract.test.js`.
 
