@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.1.1 — 2026-11-03
+
+- `scripts/ligar.sh`: liga tudo com um comando e mostra o status (SetupSniper, nuvem, SSH, início automático e vigia).
+- O boot agora usa o `ligar.sh` e grava `logs/boot.log`, para facilitar o diagnóstico.
+
 ## 2.1.0 — 2026-11-03
 
 - **Vigia** (`scripts/vigia.sh`): a cada 15 min, pelo agendador do Android, religa o SetupSniper, a nuvem e o SSH se tiverem caído.
