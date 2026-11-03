@@ -23,7 +23,7 @@ Não precisa instalar nenhuma dependência: basta ter o Node.js. Roda no PC ou n
 Requer **Node.js 18+**, sem `npm install`.
 
 ```bash
-git clone https://github.com/SEU-USUARIO/SetupSniper.git
+git clone https://github.com/phs-analytics/SetupSniper.git
 cd SetupSniper
 cp .env.example .env      # defina uma SENHA
 npm start                 # http://localhost:3000
@@ -45,17 +45,33 @@ Use o [Termux](https://f-droid.org/packages/com.termux/) (pelo F-Droid, **não**
 
 ```bash
 pkg install -y git
-git clone https://github.com/SEU-USUARIO/SetupSniper.git && cd SetupSniper
+git clone https://github.com/phs-analytics/SetupSniper.git && cd SetupSniper
 ./scripts/instalar-termux.sh       # instala Node, git, tmux, ssh e configura o boot
 nano .env                          # defina SENHA
 ./scripts/iniciar.sh --tmux        # liga em segundo plano e reinicia sozinho se cair
 ```
+
+Com isso, o celular vira um servidor pessoal com duas coisas: o SetupSniper (porta 3000) e uma nuvem de arquivos (porta 8090, veja abaixo).
 
 - **Acesso de qualquer lugar**: instale o [Tailscale](https://tailscale.com) no celular servidor e nos seus aparelhos e abra `http://IP-tailscale:3000`.
 - **Ver o que está acontecendo**: `tmux attach -t sniper` (sair: CTRL+B, depois D), `tail -f logs/server.log` ou `/status` no Telegram.
 - **Atualizar**: `./scripts/atualizar.sh` ou `/atualizar` no Telegram.
 - **Acesso remoto ao terminal**: rode `passwd` e `sshd` no Termux; do PC, use `ssh -p 8022 usuario@IP-tailscale`.
 - Em **Configurações → Apps → Termux → Bateria**, escolha **Sem restrições**.
+
+## Nuvem de arquivos (opcional)
+
+O celular servidor também pode guardar seus arquivos. O `scripts/nuvem.sh` liga o [dufs](https://github.com/sigoden/dufs): uma página web para enviar, baixar, buscar e apagar arquivos, que também funciona como WebDAV.
+
+```bash
+nano .env                        # defina NUVEM_SENHA (e, se quiser, NUVEM_USUARIO e NUVEM_PASTA)
+./scripts/nuvem.sh --tmux        # liga em segundo plano
+```
+
+- **No navegador** (celular ou PC, com Tailscale): abra `http://IP-tailscale:8090` e entre com o usuário e a senha.
+- **Como pasta no PC ou no celular**: use um app com suporte a WebDAV no endereço `http://IP-tailscale:8090`. Por exemplo: RaiDrive no Windows, Arquivos no iPhone, Solid Explorer ou CX no Android, ou `rclone mount`.
+- **Onde ficam os arquivos**: por padrão em `Nuvem/`, no armazenamento interno do Android, visíveis também no gerenciador de arquivos do celular.
+- **Sem senha a nuvem não liga.** Use apenas pelo Tailscale e nunca abra a porta 8090 no roteador.
 
 ## Telegram
 
@@ -76,7 +92,7 @@ nano .env                          # defina SENHA
 
 - **Seus dados ficam só na sua máquina.** O token, os produtos fixados, o histórico e os alertas ficam em `data/settings.json`, `data/watchlist.json`, `data/history.json`, `data/alerts.json` e `.env`. Todos estão no `.gitignore` e **nunca** vão para o git.
 - **Defina `SENHA` no `.env`**: quem abre o site pode alterar os produtos fixados e as configurações.
-- **Não exponha a porta 3000 direto na internet.** Prefira o Tailscale, que é privado e criptografado.
+- **Não exponha as portas 3000 e 8090 direto na internet.** Prefira o Tailscale, que é privado e criptografado.
 - **Links fixos são restritos às lojas suportadas**, então o servidor não busca endereços arbitrários.
 - **Se o token do bot vazar**, gere outro no @BotFather (`/revoke`).
 
@@ -96,7 +112,7 @@ src/reliability.js     cálculo do score de confiabilidade
 src/telegram.js        bot do Telegram
 src/browser.js         navegador headless opcional (Playwright)
 src/update.js          versão e autoatualização via git
-scripts/               iniciar, atualizar e instalar no Termux
+scripts/               iniciar, atualizar, nuvem de arquivos e instalar no Termux
 data/stores.json       lojas e indicadores de confiabilidade
 public/                interface
 ```
