@@ -1,0 +1,191 @@
+{
+  "_ajuda": "Valores de referência INICIAIS e aproximados — confira em reclameaqui.com.br e nas próprias lojas e ajuste. Se 'reclameAquiSlug' estiver preenchido, o servidor tenta atualizar os dados do Reclame Aqui sozinho (melhor esforço).",
+  "stores": [
+    {
+      "id": "kabum",
+      "name": "KaBuM!",
+      "color": "#ff6500",
+      "reclameAquiSlug": "kabum",
+      "reclameAqui": {
+        "nota": 8.0,
+        "solucao": 90,
+        "voltaria": 75,
+        "respondidas": 99,
+        "ra1000": false
+      },
+      "rating": {
+        "media": 4.6,
+        "avaliacoes": 500000
+      },
+      "vendas": 10000000,
+      "reviewsPositivas": 82,
+      "atualizadoEm": "2026-11-02",
+      "fonte": "estimativa inicial"
+    },
+    {
+      "id": "pichau",
+      "name": "Pichau",
+      "color": "#e3262c",
+      "reclameAquiSlug": "pichau-informatica",
+      "reclameAqui": {
+        "nota": 7.6,
+        "solucao": 88,
+        "voltaria": 70,
+        "respondidas": 99,
+        "ra1000": false
+      },
+      "rating": {
+        "media": 4.5,
+        "avaliacoes": 150000
+      },
+      "vendas": 3000000,
+      "reviewsPositivas": 78,
+      "atualizadoEm": "2026-11-02",
+      "fonte": "estimativa inicial"
+    },
+    {
+      "id": "terabyte",
+      "name": "Terabyte Shop",
+      "color": "#1d6fd8",
+      "reclameAquiSlug": "terabyteshop",
+      "reclameAqui": {
+        "nota": 8.3,
+        "solucao": 92,
+        "voltaria": 78,
+        "respondidas": 100,
+        "ra1000": true
+      },
+      "rating": {
+        "media": 4.6,
+        "avaliacoes": 80000
+      },
+      "vendas": 2000000,
+      "reviewsPositivas": 84,
+      "atualizadoEm": "2026-11-02",
+      "fonte": "estimativa inicial"
+    },
+    {
+      "id": "amazon",
+      "name": "Amazon.com.br",
+      "color": "#f2a33a",
+      "reclameAquiSlug": "amazon",
+      "reclameAqui": {
+        "nota": 7.5,
+        "solucao": 85,
+        "voltaria": 72,
+        "respondidas": 98,
+        "ra1000": false
+      },
+      "rating": {
+        "media": 4.7,
+        "avaliacoes": 2000000
+      },
+      "vendas": 50000000,
+      "reviewsPositivas": 85,
+      "atualizadoEm": "2026-11-02",
+      "fonte": "estimativa inicial"
+    },
+    {
+      "id": "mercadolivre",
+      "name": "Mercado Livre",
+      "color": "#ffe600",
+      "reclameAquiSlug": "mercado-livre",
+      "reclameAqui": {
+        "nota": 7.2,
+        "solucao": 84,
+        "voltaria": 68,
+        "respondidas": 97,
+        "ra1000": false
+      },
+      "rating": {
+        "media": 4.5,
+        "avaliacoes": 5000000
+      },
+      "vendas": 100000000,
+      "reviewsPositivas": 76,
+      "atualizadoEm": "2026-11-02",
+      "fonte": "estimativa inicial",
+      "observacao": "Marketplace: confira a reputação do vendedor específico (prefira Loja Oficial)."
+    },
+    {
+      "id": "magalu",
+      "name": "Magazine Luiza",
+      "color": "#0086ff",
+      "reclameAquiSlug": "magazine-luiza-loja-online",
+      "reclameAqui": {
+        "nota": 7.4,
+        "solucao": 86,
+        "voltaria": 70,
+        "respondidas": 99,
+        "ra1000": false
+      },
+      "rating": {
+        "media": 4.5,
+        "avaliacoes": 1000000
+      },
+      "vendas": 30000000,
+      "reviewsPositivas": 78,
+      "atualizadoEm": "2026-11-02",
+      "fonte": "estimativa inicial",
+      "observacao": "Marketplace: verifique se é vendido e entregue pela Magalu."
+    },
+    {
+      "id": "aliexpress",
+      "name": "AliExpress",
+      "color": "#ff4747",
+      "reclameAquiSlug": "aliexpress",
+      "reclameAqui": {
+        "nota": 6.8,
+        "solucao": 80,
+        "voltaria": 62,
+        "respondidas": 95,
+        "ra1000": false
+      },
+      "rating": {
+        "media": 4.3,
+        "avaliacoes": 3000000
+      },
+      "vendas": 100000000,
+      "reviewsPositivas": 70,
+      "atualizadoEm": "2026-11-03",
+      "fonte": "estimativa inicial",
+      "observacao": "Importação: prazo longo e possível taxa. Prefira vendedores 'Choice' e com nota alta; desconfie de preços muito abaixo da média."
+    },
+    {
+      "id": "shopee",
+      "name": "Shopee",
+      "color": "#ee4d2d",
+      "reclameAquiSlug": "shopee",
+      "reclameAqui": {
+        "nota": 7.3,
+        "solucao": 85,
+        "voltaria": 68,
+        "respondidas": 98,
+        "ra1000": false
+      },
+      "rating": {
+        "media": 4.5,
+        "avaliacoes": 5000000
+      },
+      "vendas": 100000000,
+      "reviewsPositivas": 72,
+      "atualizadoEm": "2026-11-03",
+      "fonte": "estimativa inicial",
+      "observacao": "Marketplace: prefira 'Loja Oficial' ou 'Indicado'; hardware barato demais costuma ser golpe ou usado."
+    },
+    {
+      "id": "buscape",
+      "name": "Buscapé",
+      "color": "#2f9e44",
+      "agregador": true,
+      "observacao": "Comparador: o link leva à página com as ofertas de várias lojas. Confira a loja final antes de comprar."
+    },
+    {
+      "id": "zoom",
+      "name": "Zoom",
+      "color": "#7048e8",
+      "agregador": true,
+      "observacao": "Comparador: o link leva à página com as ofertas de várias lojas. Confira a loja final antes de comprar."
+    }
+  ]
+}
