@@ -191,7 +191,7 @@ function avg30(it) {
 
 async function evaluateAlerts(it) {
   const a = settings.alerts;
-  if (!a.enabled) return;
+  if (!a.enabled || it.alerts === false) return;   // alertas desligados no geral ou só neste produto
   const avg = avg30(it);
   const hits = [];
   for (const [sid, o] of Object.entries(offers[it.id] ?? {})) {
@@ -233,19 +233,33 @@ async function evaluateAlerts(it) {
 // ---------- comandos do bot ----------
 const botHandlers = {
   async precos() {
-    if (!watch.items.length) return 'Nenhum produto monitorado. Adicione pela aba Monitorados.';
-    return '📊 <b>Melhores preços agora</b>\n\n' + watch.items.map(it => {
+    if (!watch.items.length) return 'Nenhum produto fixado. Use /fixar &lt;produto&gt; ou o botão 📌 Fixar no site.';
+    return '📌 <b>Produtos fixados</b>\n\n' + watch.items.map((it, i) => {
       const best = Object.entries(offers[it.id] ?? {}).filter(([sid, o]) => o.price && !o.error && !o.suspeito && (scoreOf(sid) ?? 100) >= settings.alerts.minScore)
         .sort((a, b) => a[1].price - b[1].price)[0];
       const name = storesCfg.stores.find(s => s.id === best?.[0])?.name;
-      return `<b>${escHtml(it.name)}</b>\n` + (best ? `${brl(best[1].price)} na ${escHtml(name)}${it.target ? ` · meta ${brl(it.target)}` : ''}\n<a href="${escHtml(best[1].url)}">abrir</a>` : 'sem oferta ainda');
+      return `${i + 1}. <b>${escHtml(it.name)}</b>${it.alerts === false ? ' 🔕' : ''}\n` + (best ? `${brl(best[1].price)} na ${escHtml(name)}${it.target ? ` · meta ${brl(it.target)}` : ''}\n<a href="${escHtml(best[1].url)}">abrir</a>` : 'sem oferta ainda');
     }).join('\n\n');
+  },
+  async fixar(args) {
+    // "/fixar ryzen 5 7600 meta 1200" (ou "R$ 1200", "até 1200") → busca "ryzen 5 7600", meta R$ 1.200
+    const m = args.match(/^(.*?)\s+(?:meta|r\$|at[eé]|por)\s*:?\s*(?:r\$\s*)?([\d.]+(?:,\d{1,2})?)$/i);
+    const query = (m ? m[1] : args).trim(), target = m ? Number(m[2].replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.')) || null : null;
+    const it = await addItem({ query, target });
+    return `📌 Fixado: <b>${escHtml(it.name)}</b>${target ? `\nMeta: ${brl(target)}` : '\nSem meta: aviso quando cair ' + settings.alerts.dropPct + '% abaixo da média.'}\n\nVou buscar os preços agora. Veja com /fixados.`;
+  },
+  async desafixar(arg) {
+    const n = Number(arg), it = watch.items[n - 1];
+    if (!it) return 'Use /desafixar &lt;número&gt; — veja os números em /fixados.';
+    watch.items = watch.items.filter(x => x !== it); delete offers[it.id];
+    await writeJson('watchlist.json', watch); broadcast();
+    return `Removido: <b>${escHtml(it.name)}</b>`;
   },
   async status() {
     const up = process.uptime(), mem = process.memoryUsage().rss / 1048576;
     return `🖥 <b>SetupSniper</b> v${VERSION.version}${VERSION.commit ? ` (${VERSION.commit})` : ''}\n` +
       `Ligado há ${Math.floor(up / 3600)} h ${Math.floor(up % 3600 / 60)} min · memória ${mem.toFixed(0)} MB\n` +
-      `${watch.items.length} produto(s) monitorado(s) · última verificação ${lastRefresh ? new Date(lastRefresh).toLocaleTimeString('pt-BR') : 'ainda não'}\n` +
+      `${watch.items.length} produto(s) fixado(s) · última verificação ${lastRefresh ? new Date(lastRefresh).toLocaleTimeString('pt-BR') : 'ainda não'}\n` +
       `Use /atualizar para baixar a versão mais nova do GitHub.`;
   },
   async atualizar() {
@@ -269,9 +283,22 @@ async function body(req) { let b = ''; for await (const c of req) { b += c; if (
 const json = (res, code, v) => { res.writeHead(code, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(v)); };
 const STORE_HOSTS = Object.values(ADAPTERS).map(a => new URL(a.base).hostname.replace(/^(www|pt|lista)\./, ''));
 function storeUrl(u) {
+  if (DEMO) return /^https?:\/\//.test(u ?? '') ? u : null;   // demo usa links fictícios
   try { const h = new URL(u); return /^https?:$/.test(h.protocol) && STORE_HOSTS.some(d => h.hostname === d || h.hostname.endsWith('.' + d)) ? h.href : null; } catch { return null; }
 }
 const num = (v) => v === '' || v == null ? null : Number.isFinite(Number(v)) && Number(v) > 0 ? Number(v) : null;
+async function addItem(b) {
+  const query = String(b.query ?? '').trim();
+  if (query.length < 2) throw new Error('Informe o que buscar');
+  const ref = num(b.refPrice);
+  const it = { id: newId(), name: String(b.name || query).slice(0, 120), query, target: num(b.target), alerts: b.alerts !== false,
+    minPrice: num(b.minPrice) ?? (ref ? Math.round(ref * 0.5) : null), maxPrice: num(b.maxPrice) ?? (ref ? Math.round(ref * 2.5) : null),
+    pins: b.pin?.storeId && ADAPTERS[b.pin.storeId] && storeUrl(b.pin.url) ? { [b.pin.storeId]: storeUrl(b.pin.url) } : {}, createdAt: Date.now() };
+  watch.items.unshift(it);
+  await writeJson('watchlist.json', watch);
+  checkItem(it).then(() => writeJson('history.json', history));
+  return it;
+}
 const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
 const server = http.createServer(async (req, res) => {
@@ -310,17 +337,7 @@ const server = http.createServer(async (req, res) => {
     if (pathname === '/api/refresh' && req.method === 'POST') { refreshAll(); return json(res, 202, { ok: true }); }
 
     if (pathname === '/api/watch' && req.method === 'POST') {
-      const b = await body(req);
-      const query = String(b.query ?? '').trim();
-      if (query.length < 2) return json(res, 400, { error: 'Informe o que buscar' });
-      const ref = num(b.refPrice);
-      const it = { id: newId(), name: String(b.name || query).slice(0, 120), query, target: num(b.target),
-        minPrice: num(b.minPrice) ?? (ref ? Math.round(ref * 0.5) : null), maxPrice: num(b.maxPrice) ?? (ref ? Math.round(ref * 2.5) : null),
-        pins: b.pin?.storeId && ADAPTERS[b.pin.storeId] && storeUrl(b.pin.url) ? { [b.pin.storeId]: storeUrl(b.pin.url) } : {}, createdAt: Date.now() };
-      watch.items.unshift(it);
-      await writeJson('watchlist.json', watch);
-      checkItem(it).then(() => writeJson('history.json', history));
-      return json(res, 201, it);
+      try { return json(res, 201, await addItem(await body(req))); } catch (e) { return json(res, 400, { error: e.message }); }
     }
     const wm = pathname.match(/^\/api\/watch\/([\w-]+)(\/check)?$/);
     if (wm) {
@@ -336,13 +353,15 @@ const server = http.createServer(async (req, res) => {
         if ('name' in b && String(b.name).trim()) it.name = String(b.name).trim().slice(0, 120);
         if ('query' in b && String(b.query).trim().length >= 2) it.query = String(b.query).trim();
         for (const k of ['target', 'minPrice', 'maxPrice']) if (k in b) it[k] = num(b[k]);
+        if ('alerts' in b) it.alerts = !!b.alerts;
         if (b.pin?.storeId && ADAPTERS[b.pin.storeId]) {
           it.pins ??= {};
           if (!b.pin.url) delete it.pins[b.pin.storeId];
           else if (storeUrl(b.pin.url)) it.pins[b.pin.storeId] = storeUrl(b.pin.url);
           else return json(res, 400, { error: 'O link precisa ser de uma das lojas suportadas' });
         }
-        await writeJson('watchlist.json', watch); broadcast(); checkItem(it);
+        await writeJson('watchlist.json', watch); broadcast();
+        if (Object.keys(b).some(k => k !== 'alerts')) checkItem(it);
         return json(res, 200, it);
       }
     }
@@ -404,6 +423,6 @@ server.listen(PORT, HOST, () => {
   schedule();
   setInterval(refreshReclameAqui, 24 * 3600e3);
   const t = settings.telegram;
-  if (!DEMO && t.token && t.chatId) sendMessage(t.token, t.chatId, `🟢 <b>SetupSniper</b> ligado (v${VERSION.version}). Monitorando ${watch.items.length} produto(s).`).catch(e => log('[telegram] ' + e.message));
+  if (!DEMO && t.token && t.chatId) sendMessage(t.token, t.chatId, `🟢 <b>SetupSniper</b> ligado (v${VERSION.version}). Acompanhando ${watch.items.length} produto(s) fixado(s).`).catch(e => log('[telegram] ' + e.message));
   startBot({ getSettings: () => settings, saveChatId: async (id) => { settings.telegram.chatId = id; await writeJson('settings.json', settings); broadcast(); }, handlers: botHandlers, log });
 });
