@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.1.0 — 2026-11-03
+
+- **Vigia** (`scripts/vigia.sh`): a cada 15 min, pelo agendador do Android, religa o SetupSniper, a nuvem e o SSH se tiverem caído.
+- Guia "Mantenha sempre ativo" em `docs/celular-servidor.md`, com ajustes por marca e o limite de processos do Android 12+.
+
 ## 2.0.0 — 2026-11-03
 
 **Novidades**
