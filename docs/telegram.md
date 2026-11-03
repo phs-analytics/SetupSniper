@@ -24,8 +24,28 @@ Cada produto fixado tem um sininho 🔔 para ligar ou desligar os alertas só de
 | `/fixar ryzen 5 7600 meta 1200` | Fixa um produto. A meta é opcional e também aceita `R$ 1200` ou `até 1200`. |
 | `/desafixar 2` | Remove o fixado nº 2 da lista |
 | `/buscar rtx 4060` | Busca rápida nas lojas |
+| `/cupons` | Lista os cupons ativos |
+| *(post encaminhado)* | Calcula o Total Pix e o Total Crédito com o cupom |
 | `/status` | Versão, tempo ligado e memória do servidor |
 | `/atualizar` | Baixa a versão nova do GitHub e reinicia (precisa ter sido instalado com `git clone`) |
+
+## Encaminhar posts de promoção
+
+Encaminhe ao bot um post de grupo ou canal de promoções, com link e cupom. O bot:
+
+1. lê o produto, o preço anunciado, os cupons ("X OU Y") e as regras;
+2. resolve o link encurtado (meli.la, amzn.to, s.shopee.com.br, a.aliexpress.com…) até a página da loja, sem login. Loja fora do escopo é descartada;
+3. lê o preço atual no Pix e no cartão;
+4. salva o cupom. Sem regra no post, ele **infere** o desconto pelo preço anunciado;
+5. responde com o **Total Pix** e o **Total Crédito**, a confiança da loja e três botões:
+   - **📌 Fixar:** passa a acompanhar o produto;
+   - **✅ Funcionou** e **❌ Não funcionou:** marcam o cupom como confirmado ou expirado.
+
+Também dá para colar o post na aba **🎟️ Cupons** do site. O comando `/cupons` lista os cupons ativos.
+
+### Canais públicos (opcional)
+
+Na aba Cupons, liste canais públicos (um por linha). O servidor lê a prévia pública `https://t.me/s/<canal>` a cada 6 h, no máximo 5 posts por canal, e salva os cupons das lojas do escopo. Nada é lido se a lista estiver vazia.
 
 ## Segurança
 

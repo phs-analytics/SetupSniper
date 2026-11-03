@@ -67,6 +67,58 @@ Cada loja termina cada verificação com um estado explícito, mostrado na tela:
 
 > **O bug corrigido na v2.4:** o extrator pegava o **menor** valor da página, que muitas vezes era uma parcela. Esse valor caía fora da faixa de preço que o app cria ao fixar uma oferta (de 50% a 250% do preço da primeira loja) e era descartado. Como nenhum estado era gravado, a loja ficava sem preço e sem mensagem. Só a loja da oferta fixada, lida pela página do produto, mostrava preço.
 
+## Total final: Pix e crédito (`src/final-price.js`)
+
+Cada oferta mostra **dois totais**, lado a lado, porque o desconto no Pix, o cupom e a base dos impostos mudam conforme a forma de pagamento:
+
+```
+                    PIX                CRÉDITO
+Produto             R$ 608,00          R$ 699,00
+Cupom VOLTESEMPRE   − R$ 60,80         − R$ 69,90
+Frete               + R$ 0,00          + R$ 0,00
+Imposto Import.     —                  —            (só importados)
+ICMS (UF)           —                  —            (só importados)
+TOTAL               R$ 547,20          R$ 629,10    10x R$ 62,91 sem juros
+```
+
+- **Cupom de uma forma só:** só entra naquela forma de pagamento (`appliesTo`). Sem essa informação, entra nas duas, com o aviso "pode não valer no crédito".
+- **Juros:** no crédito, vale a melhor parcela lida da página. Se houver juros, vale o total com juros.
+- **Frete:** sem consulta pública, aparece "frete não informado", nunca zero, e o total fica marcado como **estimativa**.
+- **Destaque:** o menor total é destacado, com o aviso "Pix economiza R$ X".
+- **Tudo usa o total final:** a ordenação, o "custo × confiança", os Fixados e os alertas usam o **total final** da forma de referência (Pix por padrão). O alerta diz "total final caiu abaixo da sua meta".
+
+### Impostos de importação (`src/import-tax.js`, `data/taxes.json`)
+
+- **Lojas com imposto:** só **Amazon, AliExpress e Shopee** (lista `importTaxStores`). As outras são nacionais. Se aparecer um item internacional nelas, a tela avisa "possível importação, imposto não calculado".
+- **Nacional ou internacional:** a origem do envio vem da oferta (`shipping.origin`). Envio do Brasil não paga imposto de importação.
+- **Regras vigentes**, com fonte e vigência em `data/taxes.json`, detalhadas em [impostos-importacao.md](impostos-importacao.md):
+  - Remessa Conforme até US$ 50: II zero;
+  - de US$ 50,01 a US$ 3.000: 60% menos US$ 30;
+  - fora do programa: 60%.
+- **ICMS "por dentro"** pela UF do seu CEP: `((valor + II) / (1 − alíquota)) × alíquota`. O valor aduaneiro inclui o frete.
+- **CEP → UF localmente**, pelas faixas de `data/cep-uf.json`, sem API externa.
+- **Cotação do dólar:** é manual por padrão. A PTAX do Banco Central é opcional. A cotação usada aparece na tela.
+- **Preço com imposto já incluído:** quando a loja informa isso (`taxesIncluded`), o imposto não é cobrado de novo. Quando não se sabe, aparece um aviso.
+
+## Cupons (`src/discounts.js`, `src/promo-parser.js`)
+
+- **Fontes, em ordem:**
+  - posts **encaminhados ao bot** ou colados na aba Cupons;
+  - **canais públicos** do Telegram (opt-in, lidos pela prévia `t.me/s/<canal>` a cada 6 h);
+  - **cadastro manual**.
+- **Como cada fonte foi escolhida:** a pesquisa de fontes está em [cupons.md](cupons.md).
+- **O parser lê:**
+  - produto e preço anunciado ("de R$ 699 por R$ 547");
+  - cupons ("X OU Y" são alternativas);
+  - regras: "R$ 50 OFF acima de R$ 300", "10% OFF limitado a R$ 100", frete grátis, só no Pix, primeira compra, só no app, Meli+;
+  - link.
+- **Link encurtado:** é resolvido seguindo os redirecionamentos públicos (`src/link-resolver.js`), sem login. O resultado é a URL canônica, sem parâmetros de afiliado. Link fora das lojas do escopo é descartado.
+- **Regra inferida:** sem regra no post, ela é **inferida** comparando o preço anunciado com o da página. Por exemplo, R$ 608 → R$ 547 dá 10%.
+- **Empilhamento:** 1 cupom por pedido (`data/coupon-rules.json`). Cada cupom vale 24 h e fica "não verificado" até você marcar **Funcionou** ou **Não funcionou**.
+- **Perfil local** (já comprei na loja, sou assinante): esconde cupons a que você não tem direito.
+- **Oportunidade de carrinho:** `basketOpportunity()` diz quanto falta para o pedido mínimo e o preço efetivo do item.
+- **Nunca:** testar códigos em massa, gerar cupons nem aplicar cupom no checkout.
+
 ## Filtros
 
 - **Relevância:** todos os termos da busca precisam aparecer no título. Com 4 termos ou mais, basta 75% deles. Números e unidades são normalizados ("16 GB" vira "16gb").
@@ -111,3 +163,5 @@ A cada `INTERVAL_MIN` minutos, o servidor:
 | `POST /api/watch/:id/check` · `POST /api/refresh` | verificar agora |
 | `POST /api/settings` · `POST /api/telegram/test` | configurações |
 | `GET /api/health` | saúde do servidor |
+| `POST /api/promo` | processa um post de promoção (link, página, cupom e totais) |
+| `POST /api/coupons` · `PATCH/DELETE /api/coupons/:id` | cadastro manual e "Funcionou" / "Não funcionou" |

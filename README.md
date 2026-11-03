@@ -25,6 +25,8 @@ Roda no seu PC ou num **celular Android antigo** usado como servidor pessoal, qu
 | 🛒 **8 lojas** | KaBuM!, Pichau, Terabyte, Amazon, Mercado Livre, Magalu, Shopee e AliExpress. A **busca profunda** lê mais páginas de cada loja e, no PC, pode usar um navegador headless. O conjunto de lojas é configurável. |
 | 🛡️ **Nota de confiança** | De 0 a 100 por loja, combinando Reclame Aqui, avaliação, volume de vendas e reviews. É uma estimativa do projeto, não uma certificação. |
 | 🧹 **Filtro de lixo** | Descarta acessórios e marca como **suspeito** o preço bom demais para ser verdade. |
+| 💳 **Total Pix e Total Crédito** | Cada oferta mostra os dois totais finais, com cupom, frete e, nos importados de Amazon, AliExpress e Shopee, imposto de importação e ICMS da sua UF. |
+| 🎟️ **Cupons** | Encaminhe ao bot um post de promoção: ele resolve o link, lê o preço na loja, salva o cupom e calcula os totais. |
 | 📌 **Fixar produtos** | Fixe uma oferta com **meta de preço**. O servidor confere de tempos em tempos e guarda o histórico. |
 | 🔔 **Alertas no Telegram** | Avisa quando o preço atinge a meta ou cai abaixo da média. Também dá para fixar produtos pelo próprio bot. |
 | ↗️ **Link direto** | O botão "Ver na loja" leva direto à página do produto. |

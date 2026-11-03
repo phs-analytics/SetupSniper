@@ -9,6 +9,9 @@ data/settings.json
 data/watchlist.json
 data/history.json
 data/alerts.json
+# cupons salvos, canais lidos e cotação/perfil (ficam em settings.json)
+data/coupons.json
+data/channels-state.json
 logs/
 
 # ---- Outros ----
