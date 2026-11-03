@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.3.0 — 2026-11-03
+
+**Escopo de lojas (Fase 0)**
+- O SetupSniper passa a consultar só KaBuM!, Pichau, Terabyte, Amazon, Mercado Livre, Magalu, Shopee e AliExpress.
+- O escopo vem de `"enabled"` em `data/stores.json` e pode ser sobrescrito por `"enabledStores"` em `data/settings.json`. A regra fica em `src/scope.js`.
+- Buscapé e Zoom foram desativados por configuração; o código dos adaptadores continua no projeto.
+- Novo `data/taxes.json`, com `importTaxStores` (Amazon, AliExpress e Shopee).
+- `DATA_DIR` permite guardar os dados do usuário fora da pasta do projeto (usado nos testes).
+- Teste de integração garante que o servidor só consulta as lojas do escopo, inclusive na busca profunda.
+
 ## 2.2.0 — 2026-11-03
 
 - O carimbo da nota de confiança passa a dizer "confiável", "bom", "regular" ou "cautela", em vez de "certificado", para não sugerir certificação oficial. A classificação "Atenção" vira "Cautela".

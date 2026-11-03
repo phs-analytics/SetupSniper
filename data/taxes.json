@@ -1,0 +1,5 @@
+{
+  "_ajuda": "Regras de impostos de importação. Só as lojas em importTaxStores têm o imposto calculado; as outras são tratadas como nacionais. As regras de alíquota entram na Fase 3, cada uma com fonte e vigência.",
+  "atualizadoEm": "2026-11-03",
+  "importTaxStores": ["amazon", "aliexpress", "shopee"]
+}

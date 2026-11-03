@@ -13,6 +13,16 @@ navegador ──SSE──▶ server.js ──▶ src/stores.js (adaptadores) ─
 - **Sem dependências:** só a biblioteca padrão do Node.js. O Playwright é opcional.
 - **Tempo real:** a interface recebe atualizações por Server-Sent Events (`/api/stream`), e cada busca chega em streaming, loja por loja (`/api/search`).
 
+## Lojas no escopo
+
+O SetupSniper consulta só estas 8 lojas: **KaBuM!, Pichau, Terabyte, Amazon, Mercado Livre, Magalu, Shopee e AliExpress**.
+
+- **Onde fica a lista:** cada loja tem `"enabled": true` ou `false` em `data/stores.json`. Uma loja sem `"enabled": true` fica de fora, para nenhuma loja nova entrar por acidente.
+- **Para mudar só na sua máquina:** use `"enabledStores": ["kabum", "pichau", ...]` em `data/settings.json`. Ele sobrescreve o padrão.
+- **Quem segue a lista:** a regra fica em `src/scope.js`, e a busca, os Fixados, os alertas e o bot do Telegram a respeitam. Pedir uma loja desativada pela API não faz o servidor consultá-la.
+- **Comparadores:** o código do Buscapé e do Zoom continua em `src/stores.js`, mas eles estão desativados.
+- **Imposto de importação:** só vale para as lojas em `importTaxStores` no `data/taxes.json` (hoje Amazon, AliExpress e Shopee). As outras são tratadas como nacionais.
+
 ## Como os preços são lidos
 
 Cada loja tem um adaptador em `src/stores.js` que monta a URL de busca. A leitura segue esta ordem:
