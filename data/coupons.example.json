@@ -1,0 +1,26 @@
+{
+  "_ajuda": "Exemplo do formato. Seus cupons ficam em data/coupons.json (fora do git). Valores em centavos.",
+  "coupons": [
+    {
+      "id": "exemplo-1",
+      "store": "mercadolivre",
+      "seller": null,
+      "productUrl": null,
+      "codes": ["VOLTESEMPRE", "SEMPREPROMO"],
+      "type": "percent",
+      "value": 10,
+      "minOrder": null,
+      "maxDiscount": null,
+      "appliesTo": null,
+      "conditions": [],
+      "announcedPrice": 54700,
+      "inferred": true,
+      "source": "telegram_forward",
+      "sourceName": "post encaminhado",
+      "sourceUrl": null,
+      "seenAt": "2026-11-03T12:00:00.000Z",
+      "expiresAt": "2026-11-04T12:00:00.000Z",
+      "status": "unverified"
+    }
+  ]
+}
