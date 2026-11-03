@@ -1,0 +1,7 @@
+{
+  "_ajuda": "Regras de cupom por loja. stacking = quantos cupons valem no mesmo pedido (sem confirmação da loja, 1). channelTtlHours = validade padrão de cupom vindo de post ou canal.",
+  "atualizadoEm": "2026-11-03",
+  "channelTtlHours": 24,
+  "stacking": { "default": 1 },
+  "fontes": "Ver docs/cupons.md. Empilhamento não confirmado em nenhuma loja: padrão conservador de 1 cupom por pedido."
+}

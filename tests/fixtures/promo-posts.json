@@ -1,0 +1,538 @@
+[
+  {
+    "id": "ml-01",
+    "loja_esperada": "mercadolivre",
+    "texto": "Monitor Gamer 27\" Acer Nitro KG273 G0bi\n\nPreço: R$ 547\n🎟️ Cupom: VOLTESEMPRE OU SEMPREPROMO\n\nhttps://meli.la/2Xk9QaT",
+    "esperado": {
+      "produto": "Monitor Gamer 27\" Acer Nitro KG273 G0bi",
+      "preco_anunciado_centavos": 54700,
+      "cupons": [
+        "VOLTESEMPRE",
+        "SEMPREPROMO"
+      ],
+      "regras": [],
+      "link": "https://meli.la/2Xk9QaT"
+    }
+  },
+  {
+    "id": "ml-02",
+    "loja_esperada": "mercadolivre",
+    "texto": "🔥 Placa de Vídeo MSI GeForce RTX 5060 Ventus 2X OC 8GB\n\n✅ R$ 2.279 com cupom: MELITEC\n💳 ou R$ 2.499 em até 10x\n\n🛒 https://meli.la/1bR7TzQ",
+    "esperado": {
+      "produto": "Placa de Vídeo MSI GeForce RTX 5060 Ventus 2X OC 8GB",
+      "preco_anunciado_centavos": 227900,
+      "cupons": [
+        "MELITEC"
+      ],
+      "regras": [],
+      "link": "https://meli.la/1bR7TzQ"
+    }
+  },
+  {
+    "id": "ml-03",
+    "loja_esperada": "mercadolivre",
+    "texto": "SSD Kingston NV3 1TB NVMe M.2\n\nde R$ 459 por R$ 389 😱\n🎟️ Use o cupom TECH15 (15% OFF limitado a R$ 70)\n⚠️ Exclusivo Meli+\n\nhttps://meli.la/3hP2LmW",
+    "esperado": {
+      "produto": "SSD Kingston NV3 1TB NVMe M.2",
+      "preco_anunciado_centavos": 38900,
+      "cupons": [
+        "TECH15"
+      ],
+      "regras": [
+        {
+          "tipo": "percent",
+          "valor": 15,
+          "teto_centavos": 7000,
+          "minimo_centavos": null
+        },
+        {
+          "tipo": "condicao",
+          "valor": "subscriber"
+        }
+      ],
+      "link": "https://meli.la/3hP2LmW"
+    }
+  },
+  {
+    "id": "ml-04",
+    "loja_esperada": "mercadolivre",
+    "texto": "🚨 BAIXOU MUITO\nProcessador AMD Ryzen 7 7800X3D AM5\n\n💰 R$ 2.199,90 no Pix\n🏷 Cupom: R100OFF / CUPOMTECH\nR$ 100 OFF acima de R$ 1.500 • quantidade limitada\n\n👉 https://meli.la/4nV8YcE",
+    "esperado": {
+      "produto": "Processador AMD Ryzen 7 7800X3D AM5",
+      "preco_anunciado_centavos": 219990,
+      "cupons": [
+        "R100OFF",
+        "CUPOMTECH"
+      ],
+      "regras": [
+        {
+          "tipo": "fixed",
+          "valor_centavos": 10000,
+          "minimo_centavos": 150000
+        },
+        {
+          "tipo": "pagamento",
+          "valor": "pix"
+        },
+        {
+          "tipo": "condicao",
+          "valor": "limited_quantity"
+        }
+      ],
+      "link": "https://meli.la/4nV8YcE"
+    }
+  },
+  {
+    "id": "ml-05",
+    "loja_esperada": "mercadolivre",
+    "texto": "Memória RAM Kingston Fury Beast 16GB DDR5 5600MHz\n\nPor R$ 329\n📲 Aplica o cupom de R$ 30 direto no anúncio (sem código)\n🚚 Frete grátis\n\nhttps://meli.la/5qA1BxD",
+    "esperado": {
+      "produto": "Memória RAM Kingston Fury Beast 16GB DDR5 5600MHz",
+      "preco_anunciado_centavos": 32900,
+      "cupons": [],
+      "regras": [
+        {
+          "tipo": "fixed",
+          "valor_centavos": 3000,
+          "minimo_centavos": null
+        },
+        {
+          "tipo": "shipping",
+          "minimo_centavos": null
+        }
+      ],
+      "link": "https://meli.la/5qA1BxD"
+    }
+  },
+  {
+    "id": "amz-01",
+    "loja_esperada": "amazon",
+    "texto": "Mouse Gamer Logitech G502 HERO\n\nR$ 189,90\n✅ Ative o cupom de 10% na página do produto\n\nhttps://amzn.to/4fXk2Pq",
+    "esperado": {
+      "produto": "Mouse Gamer Logitech G502 HERO",
+      "preco_anunciado_centavos": 18990,
+      "cupons": [],
+      "regras": [
+        {
+          "tipo": "percent",
+          "valor": 10,
+          "teto_centavos": null,
+          "minimo_centavos": null
+        }
+      ],
+      "link": "https://amzn.to/4fXk2Pq"
+    }
+  },
+  {
+    "id": "amz-02",
+    "loja_esperada": "amazon",
+    "texto": "🎟️ CUPOM AMAZON\nR$ 150 OFF acima de R$ 999 em eletrônicos\nCódigo: 150TECHBR\n\nExemplo: Monitor LG UltraGear 27GS60F 27\" 180Hz\nde R$ 1.149 por R$ 999 💥\n\nhttps://amzn.to/3Zq8LkV",
+    "esperado": {
+      "produto": "Monitor LG UltraGear 27GS60F 27\" 180Hz",
+      "preco_anunciado_centavos": 99900,
+      "cupons": [
+        "150TECHBR"
+      ],
+      "regras": [
+        {
+          "tipo": "fixed",
+          "valor_centavos": 15000,
+          "minimo_centavos": 99900
+        }
+      ],
+      "link": "https://amzn.to/3Zq8LkV"
+    }
+  },
+  {
+    "id": "amz-03",
+    "loja_esperada": "amazon",
+    "texto": "Kindle 16GB (2024) Preto\n\n💸 R$ 499\n🔖 código: PRIMEIRACOMPRA20 (R$ 20 OFF na primeira compra pelo app)\n\n➡️ https://amzn.to/49TmWc2",
+    "esperado": {
+      "produto": "Kindle 16GB (2024) Preto",
+      "preco_anunciado_centavos": 49900,
+      "cupons": [
+        "PRIMEIRACOMPRA20"
+      ],
+      "regras": [
+        {
+          "tipo": "fixed",
+          "valor_centavos": 2000,
+          "minimo_centavos": null
+        },
+        {
+          "tipo": "condicao",
+          "valor": "first_purchase"
+        },
+        {
+          "tipo": "condicao",
+          "valor": "app_only"
+        }
+      ],
+      "link": "https://amzn.to/49TmWc2"
+    }
+  },
+  {
+    "id": "shp-01",
+    "loja_esperada": "shopee",
+    "texto": "Teclado Mecânico Redragon Kumara K552 RGB Switch Blue\n\n🔥 R$ 159,90\n🎟️ Resgate o cupom da loja: R$ 20 OFF acima de R$ 150\n🎟️ + cupom SHOPEETECH10 (10% OFF limitado a R$ 25)\n🚚 Frete grátis só no app\n\nhttps://s.shopee.com.br/7AbCdEfG",
+    "esperado": {
+      "produto": "Teclado Mecânico Redragon Kumara K552 RGB Switch Blue",
+      "preco_anunciado_centavos": 15990,
+      "cupons": [
+        "SHOPEETECH10"
+      ],
+      "regras": [
+        {
+          "tipo": "fixed",
+          "valor_centavos": 2000,
+          "minimo_centavos": 15000
+        },
+        {
+          "tipo": "percent",
+          "valor": 10,
+          "teto_centavos": 2500,
+          "minimo_centavos": null
+        },
+        {
+          "tipo": "shipping",
+          "minimo_centavos": null
+        },
+        {
+          "tipo": "condicao",
+          "valor": "app_only"
+        }
+      ],
+      "link": "https://s.shopee.com.br/7AbCdEfG"
+    }
+  },
+  {
+    "id": "shp-02",
+    "loja_esperada": "shopee",
+    "texto": "Headset Gamer HyperX Cloud Stinger 2 Core\n\nde R$ 249 por R$ 179\nCupom: HEADSET30 OU SHOPEE30\n\nhttps://s.shopee.com.br/1xYz9Qw",
+    "esperado": {
+      "produto": "Headset Gamer HyperX Cloud Stinger 2 Core",
+      "preco_anunciado_centavos": 17900,
+      "cupons": [
+        "HEADSET30",
+        "SHOPEE30"
+      ],
+      "regras": [],
+      "link": "https://s.shopee.com.br/1xYz9Qw"
+    }
+  },
+  {
+    "id": "shp-03",
+    "loja_esperada": "shopee",
+    "texto": "🚨 Mouse Pad Gamer Extra Grande 90x40 Speed\n\nSó R$ 39,90 😍\nUse o cupom FRETE0 — frete grátis acima de R$ 19\n\nhttps://shopee.ee/9kLmN0pQr",
+    "esperado": {
+      "produto": "Mouse Pad Gamer Extra Grande 90x40 Speed",
+      "preco_anunciado_centavos": 3990,
+      "cupons": [
+        "FRETE0"
+      ],
+      "regras": [
+        {
+          "tipo": "shipping",
+          "minimo_centavos": 1900
+        }
+      ],
+      "link": "https://shopee.ee/9kLmN0pQr"
+    }
+  },
+  {
+    "id": "ali-01",
+    "loja_esperada": "aliexpress",
+    "texto": "SSD Lexar NM790 2TB NVMe Gen4 (envio do Brasil)\n\n💰 R$ 749,90\n🎟️ Cupons: AFFTECH60 (R$ 60 OFF acima de R$ 369) / AFFTECH30 (R$ 30 OFF acima de R$ 199)\n➕ moedas + cupom da loja\n\nhttps://a.aliexpress.com/_mK4pQr2",
+    "esperado": {
+      "produto": "SSD Lexar NM790 2TB NVMe Gen4",
+      "preco_anunciado_centavos": 74990,
+      "cupons": [
+        "AFFTECH60",
+        "AFFTECH30"
+      ],
+      "regras": [
+        {
+          "tipo": "fixed",
+          "valor_centavos": 6000,
+          "minimo_centavos": 36900
+        },
+        {
+          "tipo": "fixed",
+          "valor_centavos": 3000,
+          "minimo_centavos": 19900
+        }
+      ],
+      "link": "https://a.aliexpress.com/_mK4pQr2"
+    }
+  },
+  {
+    "id": "ali-02",
+    "loja_esperada": "aliexpress",
+    "texto": "Fonte Gamer MSI MAG A650BN 650W 80 Plus Bronze\n\nPreço final: 289,90\n🏷️ código: BRFIRST — R$ 60 OFF na primeira compra (acima de R$ 250)\n\n👉 https://a.aliexpress.com/_oPq8Lx1",
+    "esperado": {
+      "produto": "Fonte Gamer MSI MAG A650BN 650W 80 Plus Bronze",
+      "preco_anunciado_centavos": 28990,
+      "cupons": [
+        "BRFIRST"
+      ],
+      "regras": [
+        {
+          "tipo": "fixed",
+          "valor_centavos": 6000,
+          "minimo_centavos": 25000
+        },
+        {
+          "tipo": "condicao",
+          "valor": "first_purchase"
+        }
+      ],
+      "link": "https://a.aliexpress.com/_oPq8Lx1"
+    }
+  },
+  {
+    "id": "ali-03",
+    "loja_esperada": "aliexpress",
+    "texto": "⚡ Water Cooler Thermalright Aqua Elite 360 V3 ARGB\n\nR$ 329\nSem cupom, preço direto no link 👇\n\nhttps://a.aliexpress.com/_xT3vW9c",
+    "esperado": {
+      "produto": "Water Cooler Thermalright Aqua Elite 360 V3 ARGB",
+      "preco_anunciado_centavos": 32900,
+      "cupons": [],
+      "regras": [],
+      "link": "https://a.aliexpress.com/_xT3vW9c"
+    }
+  },
+  {
+    "id": "mgl-01",
+    "loja_esperada": "magalu",
+    "texto": "Smart TV 50\" Samsung Crystal UHD 4K U8000F\n\n💥 R$ 2.099 no Pix\n🎟️ cupom: MAGALU100 (R$ 100 OFF acima de R$ 1.500, só no app)\n\nhttps://www.magazinevoce.com.br/magazineofertasdemo/p/0000000000/",
+    "esperado": {
+      "produto": "Smart TV 50\" Samsung Crystal UHD 4K U8000F",
+      "preco_anunciado_centavos": 209900,
+      "cupons": [
+        "MAGALU100"
+      ],
+      "regras": [
+        {
+          "tipo": "fixed",
+          "valor_centavos": 10000,
+          "minimo_centavos": 150000
+        },
+        {
+          "tipo": "pagamento",
+          "valor": "pix"
+        },
+        {
+          "tipo": "condicao",
+          "valor": "app_only"
+        }
+      ],
+      "link": "https://www.magazinevoce.com.br/magazineofertasdemo/p/0000000000/"
+    }
+  },
+  {
+    "id": "mgl-02",
+    "loja_esperada": "magalu",
+    "texto": "Notebook Lenovo IdeaPad Slim 3 Ryzen 5 16GB 512GB SSD\n\nde R$ 3.499 por R$ 2.799\nUse o cupom BEMVINDO50 / PRIMEIRA50 (primeira compra)\n🚚 frete grátis\n\nhttps://divulgador.magalu.com/aB3cD4eF",
+    "esperado": {
+      "produto": "Notebook Lenovo IdeaPad Slim 3 Ryzen 5 16GB 512GB SSD",
+      "preco_anunciado_centavos": 279900,
+      "cupons": [
+        "BEMVINDO50",
+        "PRIMEIRA50"
+      ],
+      "regras": [
+        {
+          "tipo": "condicao",
+          "valor": "first_purchase"
+        },
+        {
+          "tipo": "shipping",
+          "minimo_centavos": null
+        }
+      ],
+      "link": "https://divulgador.magalu.com/aB3cD4eF"
+    }
+  },
+  {
+    "id": "kbm-01",
+    "loja_esperada": "kabum",
+    "texto": "🖥️ Placa de Vídeo Gigabyte Radeon RX 9060 XT Gaming OC 16GB\n\n✅ R$ 2.599,99 à vista no Pix\n🎟️ Cupom: GPU10 (10% OFF limitado a R$ 100)\n\n🔗 https://tidd.ly/4kBmZ7r",
+    "esperado": {
+      "produto": "Placa de Vídeo Gigabyte Radeon RX 9060 XT Gaming OC 16GB",
+      "preco_anunciado_centavos": 259999,
+      "cupons": [
+        "GPU10"
+      ],
+      "regras": [
+        {
+          "tipo": "percent",
+          "valor": 10,
+          "teto_centavos": 10000,
+          "minimo_centavos": null
+        },
+        {
+          "tipo": "pagamento",
+          "valor": "pix"
+        }
+      ],
+      "link": "https://tidd.ly/4kBmZ7r"
+    }
+  },
+  {
+    "id": "kbm-02",
+    "loja_esperada": "kabum",
+    "texto": "Placa-Mãe ASUS TUF Gaming B650-PLUS WiFi AM5\n\nR$ 1.199,90 no Pix\nou 10x de R$ 133,32 sem juros\nCupom ninja: NINJAMB / KABUMMB 🥷\n\nhttps://www.kabum.com.br/produto/000001/placa-mae-exemplo-b650",
+    "esperado": {
+      "produto": "Placa-Mãe ASUS TUF Gaming B650-PLUS WiFi AM5",
+      "preco_anunciado_centavos": 119990,
+      "cupons": [
+        "NINJAMB",
+        "KABUMMB"
+      ],
+      "regras": [
+        {
+          "tipo": "pagamento",
+          "valor": "pix"
+        }
+      ],
+      "link": "https://www.kabum.com.br/produto/000001/placa-mae-exemplo-b650"
+    }
+  },
+  {
+    "id": "pch-01",
+    "loja_esperada": "pichau",
+    "texto": "Gabinete Gamer Pichau Kazan 2 Vidro Temperado ARGB\n\n🔥 R$ 229,90 no Pix\n🎟️ Cupom: PICHAU20 — R$ 20 OFF acima de R$ 200\n\nhttps://www.pichau.com.br/gabinete-exemplo-kazan-2?utm_source=afiliado",
+    "esperado": {
+      "produto": "Gabinete Gamer Pichau Kazan 2 Vidro Temperado ARGB",
+      "preco_anunciado_centavos": 22990,
+      "cupons": [
+        "PICHAU20"
+      ],
+      "regras": [
+        {
+          "tipo": "fixed",
+          "valor_centavos": 2000,
+          "minimo_centavos": 20000
+        },
+        {
+          "tipo": "pagamento",
+          "valor": "pix"
+        }
+      ],
+      "link": "https://www.pichau.com.br/gabinete-exemplo-kazan-2?utm_source=afiliado"
+    }
+  },
+  {
+    "id": "pch-02",
+    "loja_esperada": "pichau",
+    "texto": "Processador Intel Core i5-14400F LGA1700\n\n💰 547,90 à vista\n💳 ou R$ 644,59 no cartão\n📌 use o cupom INTEL5 (5% OFF, só no Pix)\n\nhttps://www.pichau.com.br/processador-exemplo-i5-14400f",
+    "esperado": {
+      "produto": "Processador Intel Core i5-14400F LGA1700",
+      "preco_anunciado_centavos": 54790,
+      "cupons": [
+        "INTEL5"
+      ],
+      "regras": [
+        {
+          "tipo": "percent",
+          "valor": 5,
+          "teto_centavos": null,
+          "minimo_centavos": null
+        },
+        {
+          "tipo": "pagamento",
+          "valor": "pix"
+        }
+      ],
+      "link": "https://www.pichau.com.br/processador-exemplo-i5-14400f"
+    }
+  },
+  {
+    "id": "tbt-01",
+    "loja_esperada": "terabyte",
+    "texto": "🚀 Fonte Corsair RM850e 850W 80 Plus Gold Modular\n\nR$ 699,90 no Pix (desconto à vista já incluso)\n🎟️ Cupom: TERA50 — R$ 50 OFF acima de R$ 300\n\nhttps://www.terabyteshop.com.br/produto/00000/fonte-exemplo-rm850e?p=000000",
+    "esperado": {
+      "produto": "Fonte Corsair RM850e 850W 80 Plus Gold Modular",
+      "preco_anunciado_centavos": 69990,
+      "cupons": [
+        "TERA50"
+      ],
+      "regras": [
+        {
+          "tipo": "fixed",
+          "valor_centavos": 5000,
+          "minimo_centavos": 30000
+        },
+        {
+          "tipo": "pagamento",
+          "valor": "pix"
+        }
+      ],
+      "link": "https://www.terabyteshop.com.br/produto/00000/fonte-exemplo-rm850e?p=000000"
+    }
+  },
+  {
+    "id": "fora-01",
+    "loja_esperada": null,
+    "texto": "Air Fryer Mondial 5L\n\nR$ 299\n🎟️ Cupom: CASA20\n\nhttps://loja-fora-do-escopo.example/p/airfryer-123",
+    "esperado": {
+      "produto": "Air Fryer Mondial 5L",
+      "preco_anunciado_centavos": 29900,
+      "cupons": [
+        "CASA20"
+      ],
+      "regras": [],
+      "link": "https://loja-fora-do-escopo.example/p/airfryer-123"
+    }
+  },
+  {
+    "id": "fora-02",
+    "loja_esperada": null,
+    "texto": "🔥 iPhone 16 128GB\n\nde R$ 5.999 por R$ 4.799 no Pix\nCódigo: APPLE300 (R$ 300 OFF acima de R$ 4.000)\n\nhttps://outra-loja.example/iphone-16?aff=demo",
+    "esperado": {
+      "produto": "iPhone 16 128GB",
+      "preco_anunciado_centavos": 479900,
+      "cupons": [
+        "APPLE300"
+      ],
+      "regras": [
+        {
+          "tipo": "fixed",
+          "valor_centavos": 30000,
+          "minimo_centavos": 400000
+        },
+        {
+          "tipo": "pagamento",
+          "valor": "pix"
+        }
+      ],
+      "link": "https://outra-loja.example/iphone-16?aff=demo"
+    }
+  },
+  {
+    "id": "fora-03",
+    "loja_esperada": null,
+    "texto": "Console PlayStation 5 Slim Digital\n\nR$ 3.199,00\ncupom: GAMER10 OU PS5OFF (10% OFF limitado a R$ 200)\nfrete grátis\n\nhttps://bit.ly/exemploFora3",
+    "esperado": {
+      "produto": "Console PlayStation 5 Slim Digital",
+      "preco_anunciado_centavos": 319900,
+      "cupons": [
+        "GAMER10",
+        "PS5OFF"
+      ],
+      "regras": [
+        {
+          "tipo": "percent",
+          "valor": 10,
+          "teto_centavos": 20000,
+          "minimo_centavos": null
+        },
+        {
+          "tipo": "shipping",
+          "minimo_centavos": null
+        }
+      ],
+      "link": "https://bit.ly/exemploFora3"
+    }
+  }
+]
