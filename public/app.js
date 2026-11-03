@@ -139,16 +139,26 @@ function renderSearch() {
     const diff = best && r !== best && r.price > best.price ? `<div class="diff">+${brl(r.price - best.price)}</div>` : '';
     return `<div class="res ${r === best ? 'top1' : ''} ${below ? 'dim' : ''}">
       ${r.image ? `<img class="thumb" src="${esc(r.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'thumb',textContent:'${esc(s.name[0])}'}))">` : `<div class="thumb" style="background:${s.color}">${esc(s.name[0])}</div>`}
-      <div class="info"><div class="title" title="${esc(r.title)}">${esc(r.title)}</div>
+      <div class="info">${/^https?:\/\//i.test(r.url ?? '') ? `<a class="title" href="${esc(r.url)}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer" title="${esc(r.title)}">${esc(r.title)}</a>` : `<div class="title" title="${esc(r.title)}">${esc(r.title)}</div>`}
         <div class="meta"><span class="sdot" style="background:${s.color}"></span>${esc(s.name)} ${tags}</div></div>
       <div class="rscore">${ring(sc)}</div>
       <div class="price"><div class="price">${brl(r.price)}</div>${diff}</div>
       <div class="actions">
         ${pinnedItem(r) ? `<a class="btn small pinned-btn" href="#fixados" title="Já está nos fixados">✓ Fixado</a>` : `<button type="button" class="btn small" data-watch="${i}">📌 Fixar</button>`}
-        ${r.url ? `<a class="icon-btn go" href="${esc(r.url)}" target="_blank" rel="noopener" aria-label="Abrir oferta na ${esc(s.name)}">↗</a>` : ''}
+        ${storeLink(r.url, s, search.status[r.storeId]?.url)}
       </div></div>`;
   }).join('') + (list.length > ui.shown ? `<div class="more"><button type="button" class="btn" id="more">Mostrar mais ${list.length - ui.shown}</button></div>` : '');
   search.view = list;
+}
+// Botão que leva direto à página do produto na loja (ou, sem link direto, à busca da loja)
+function storeLink(url, s, fallbackUrl) {
+  const safe = (u) => /^https?:\/\//i.test(u ?? '') ? u : null;
+  const u = safe(url), f = safe(fallbackUrl);
+  const hex = (s.color ?? '#ff5a1f').replace('#', ''), [r, g, b] = [0, 2, 4].map(i => parseInt(hex.slice(i, i + 2), 16));
+  const ink = (0.299 * r + 0.587 * g + 0.114 * b) > 150 ? '#111' : '#fff';   // texto legível sobre a cor da loja
+  if (u) return `<a class="btn small shop" href="${esc(u)}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer" style="--sc:${s.color};--ink:${ink}" aria-label="Ver produto na ${esc(s.name)}">${s.agregador ? 'Ver ofertas' : 'Ver na loja'} ↗</a>`;
+  if (f) return `<a class="btn small" href="${esc(f)}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer" title="Sem link direto: abre a busca da loja">Buscar na loja ↗</a>`;
+  return '';
 }
 const shortErr = (e = '') => /bloqueio/.test(e) ? 'bloqueado' : /Playwright/.test(e) ? 'precisa navegador' : /abort|timeout/i.test(e) ? 'sem resposta' : e.length > 22 ? e.slice(0, 20) + '…' : e;
 
@@ -222,7 +232,7 @@ function renderWatch() {
         <div class="pcell">${priceCell}</div>
         <div class="score">${ring(o.sc, false)}<div class="tier">${s.reliability?.tier ?? ''}</div></div>
         <div class="spk">${sparkline(o.history)}</div>
-        <div class="actions">${o.url ? `<a class="icon-btn go" href="${esc(o.url)}" target="_blank" rel="noopener" aria-label="Abrir na ${esc(s.name)}">↗</a>` : ''}</div>
+        <div class="actions">${storeLink(o.url, s, o.searchUrl)}</div>
       </div>`;
     }).join('');
     return `<article class="product ${it.alerts === false ? 'muted-card' : ''}">
@@ -290,7 +300,7 @@ function renderAlerts() {
   $('#alert-log').innerHTML = S.alerts.length ? S.alerts.map(x => `<div class="alog">
       <span class="sdot" style="background:${store(x.storeId).color}"></span>
       <div><b>${esc(x.item)}</b> · ${esc(x.store)}<div class="r">${esc(x.reasons.join(' · '))} · ${ago(x.t)} · ${x.sent ? 'enviado no Telegram' : x.error ? 'falha: ' + esc(x.error) : 'Telegram não configurado'}</div></div>
-      <a class="p" href="${esc(x.url ?? '#')}" target="_blank" rel="noopener">${brl(x.price)}</a></div>`).join('')
+      <a class="p" href="${esc(/^https?:\/\//i.test(x.url ?? '') ? x.url : '#')}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">${brl(x.price)}</a></div>`).join('')
     : '<p class="muted">Nenhum alerta ainda. Quando um produto fixado atingir a meta ou cair abaixo da média, ele aparece aqui.</p>';
 }
 $('#mon-stores').addEventListener('click', (e) => { const b = e.target.closest('[data-mon]'); if (b) { b.classList.toggle('on'); b.setAttribute('aria-pressed', b.classList.contains('on')); } });

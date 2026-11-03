@@ -297,3 +297,10 @@ main > *, .tab > * { min-width: 0; }
 .bell.on { border-color: rgba(255,90,31,.5); }
 .pinned-btn { color: var(--good); text-decoration: none; border-color: rgba(34,197,94,.4); }
 .product.muted-card .product-head h2 { color: var(--muted); }
+
+/* Link direto para a loja */
+.btn.shop { background: var(--sc, var(--accent)); border-color: transparent; color: #111; text-decoration: none; white-space: nowrap; font-weight: 700; }
+.btn.shop:hover { filter: brightness(1.1); background: var(--sc, var(--accent)); }
+a.title { color: var(--text); text-decoration: none; }
+a.title:hover { text-decoration: underline; text-underline-offset: 3px; }
+.btn.shop { color: var(--ink, #111); }

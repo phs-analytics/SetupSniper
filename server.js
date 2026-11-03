@@ -71,7 +71,7 @@ function state() {
     items: watch.items.map(it => ({
       ...it, checking: checking.has(it.id),
       bestHistory: (history[`${it.id}:__best`] ?? []).slice(-60),
-      offers: settings.monitorStores.map(sid => ({ storeId: sid, pin: it.pins?.[sid] ?? null, ...offers[it.id]?.[sid], history: (history[`${it.id}:${sid}`] ?? []).slice(-40) })),
+      offers: settings.monitorStores.map(sid => ({ storeId: sid, pin: it.pins?.[sid] ?? null, searchUrl: ADAPTERS[sid]?.url(it.query, 1), ...offers[it.id]?.[sid], history: (history[`${it.id}:${sid}`] ?? []).slice(-40) })),
     })),
   };
 }
