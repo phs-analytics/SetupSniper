@@ -68,7 +68,7 @@ function renderStoreFilter() {
   const sel = new Set(storeFilterIds());
   $('#store-filter').innerHTML = S.stores.filter(s => ui.deep || !s.deepOnly).map(s =>
     `<button type="button" class="fchip ${sel.has(s.id) ? 'on' : ''}" data-store="${s.id}" aria-pressed="${sel.has(s.id)}"><i style="background:${s.color}"></i>${esc(s.name)}${s.deepOnly ? ' <small>profunda</small>' : ''}</button>`).join('');
-  $('#deep-hint').textContent = S.browser ? 'mais páginas + comparadores + navegador' : 'mais páginas + comparadores';
+  $('#deep-hint').textContent = S.browser ? 'mais páginas por loja + navegador' : 'mais páginas por loja';
 }
 $('#store-filter').addEventListener('click', (e) => {
   const b = e.target.closest('[data-store]'); if (!b) return;

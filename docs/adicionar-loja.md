@@ -22,7 +22,7 @@ Outras opções:
 | `api(q, page)` | quando a loja tem uma API JSON pública (tentada antes do HTML) |
 | `headers` | cookies ou cabeçalhos extras (ex.: moeda/região) |
 | `pages` | quantas páginas ler na busca profunda (padrão 2) |
-| `deepOnly: true` | só aparece na busca profunda (comparadores) |
+| `deepOnly: true` | só é consultada na busca profunda |
 | `browserCapture` + `fromCaptured` | no modo navegador, captura respostas JSON da página |
 
 ## 2. Entrada em `data/stores.json`
@@ -39,6 +39,8 @@ Outras opções:
 ```
 
 Para comparadores de preço, use `"agregador": true` e não preencha os indicadores.
+
+A loja só entra no escopo com `"enabled": true`. Sem isso, o adaptador existe, mas a loja não é consultada. Se a loja vender produtos importados com imposto, inclua o `id` dela em `importTaxStores`, no `data/taxes.json`.
 
 ## 3. Teste
 

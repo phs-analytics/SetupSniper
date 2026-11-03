@@ -1,8 +1,9 @@
 {
-  "_ajuda": "Valores de referência INICIAIS e aproximados — confira em reclameaqui.com.br e nas próprias lojas e ajuste. Se 'reclameAquiSlug' estiver preenchido, o servidor tenta atualizar os dados do Reclame Aqui sozinho (melhor esforço).",
+  "_ajuda": "Valores de referência INICIAIS e aproximados — confira em reclameaqui.com.br e nas próprias lojas e ajuste. Se 'reclameAquiSlug' estiver preenchido, o servidor tenta atualizar os dados do Reclame Aqui sozinho (melhor esforço). \"enabled\": true coloca a loja no escopo padrão; para mudar só na sua máquina, use \"enabledStores\" em data/settings.json.",
   "stores": [
     {
       "id": "kabum",
+      "enabled": true,
       "name": "KaBuM!",
       "color": "#ff6500",
       "reclameAquiSlug": "kabum",
@@ -24,6 +25,7 @@
     },
     {
       "id": "pichau",
+      "enabled": true,
       "name": "Pichau",
       "color": "#e3262c",
       "reclameAquiSlug": "pichau-informatica",
@@ -45,6 +47,7 @@
     },
     {
       "id": "terabyte",
+      "enabled": true,
       "name": "Terabyte Shop",
       "color": "#1d6fd8",
       "reclameAquiSlug": "terabyteshop",
@@ -66,6 +69,7 @@
     },
     {
       "id": "amazon",
+      "enabled": true,
       "name": "Amazon.com.br",
       "color": "#f2a33a",
       "reclameAquiSlug": "amazon",
@@ -87,6 +91,7 @@
     },
     {
       "id": "mercadolivre",
+      "enabled": true,
       "name": "Mercado Livre",
       "color": "#ffe600",
       "reclameAquiSlug": "mercado-livre",
@@ -109,6 +114,7 @@
     },
     {
       "id": "magalu",
+      "enabled": true,
       "name": "Magazine Luiza",
       "color": "#0086ff",
       "reclameAquiSlug": "magazine-luiza-loja-online",
@@ -131,6 +137,7 @@
     },
     {
       "id": "aliexpress",
+      "enabled": true,
       "name": "AliExpress",
       "color": "#ff4747",
       "reclameAquiSlug": "aliexpress",
@@ -153,6 +160,7 @@
     },
     {
       "id": "shopee",
+      "enabled": true,
       "name": "Shopee",
       "color": "#ee4d2d",
       "reclameAquiSlug": "shopee",
@@ -175,6 +183,7 @@
     },
     {
       "id": "buscape",
+      "enabled": false,
       "name": "Buscapé",
       "color": "#2f9e44",
       "agregador": true,
@@ -182,6 +191,7 @@
     },
     {
       "id": "zoom",
+      "enabled": false,
       "name": "Zoom",
       "color": "#7048e8",
       "agregador": true,

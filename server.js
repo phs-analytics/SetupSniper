@@ -7,6 +7,7 @@ import { fetchPrice } from './src/scraper.js';
 import { computeReliability } from './src/reliability.js';
 import { fetchReclameAqui } from './src/reclameaqui.js';
 import { ADAPTERS, searchStore } from './src/stores.js';
+import { activeStoreIds } from './src/scope.js';
 import { cleanResults, flagOutliers } from './src/extract.js';
 import { browserAvailable } from './src/browser.js';
 import { startBot, sendMessage, escHtml } from './src/telegram.js';
@@ -14,7 +15,10 @@ import { VERSION, selfUpdate } from './src/update.js';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 try { process.loadEnvFile?.(path.join(ROOT, '.env')); } catch { /* sem .env */ }
-const DATA = (f) => path.join(ROOT, 'data', f);
+// data/ versionado (configuração) e dados do usuário (fora do git). DATA_DIR permite separar os dados do usuário,
+// por exemplo nos testes.
+const CONFIG = (f) => path.join(ROOT, 'data', f);
+const DATA = (f) => path.join(process.env.DATA_DIR || path.join(ROOT, 'data'), f);
 const PORT = Number(process.env.PORT) || 3000;
 const HOST = process.env.HOST || '0.0.0.0';
 const DEMO = process.argv.includes('--demo') || process.env.DEMO === '1';
@@ -22,14 +26,18 @@ const SENHA = process.env.SENHA || '';
 const HISTORY_MAX = 300;
 
 const readJson = async (f, fb) => existsSync(DATA(f)) ? JSON.parse(await readFile(DATA(f), 'utf8')) : fb;
+const readConfig = async (f, fb) => existsSync(CONFIG(f)) ? JSON.parse(await readFile(CONFIG(f), 'utf8')) : fb;
 const saving = {};
 const writeJson = (f, v) => (saving[f] = (saving[f] ?? Promise.resolve()).then(() => writeFile(DATA(f), JSON.stringify(v, null, 2))).catch(e => console.error(e)));
 
-const storesCfg = await readJson('stores.json', { stores: [] });
-const watch = await readJson('watchlist.json', null) ?? await readJson('watchlist.example.json', { items: [] });
+const storesCfg = await readConfig('stores.json', { stores: [] });
+const watch = await readJson('watchlist.json', null) ?? await readConfig('watchlist.example.json', { items: [] });
 const settings = await readJson('settings.json', {});
 settings.intervalMin ??= Number(process.env.INTERVAL_MIN) || 15;
-settings.monitorStores ??= storesCfg.stores.filter(s => !s.agregador).map(s => s.id);
+// Escopo: só as lojas ativas são consultadas (src/scope.js). monitorStores escolhe, dentro delas, quais os Fixados conferem.
+const activeIds = () => activeStoreIds(storesCfg.stores, settings, ADAPTERS);
+settings.monitorStores ??= activeIds();
+const monitorIds = () => settings.monitorStores.filter(id => activeIds().includes(id));
 settings.alerts ??= { enabled: true, dropPct: 10, minScore: 60, allowSuspicious: false };
 settings.telegram ??= { token: '', chatId: '' };
 if (process.env.TELEGRAM_TOKEN) settings.telegram.token = process.env.TELEGRAM_TOKEN;
@@ -48,7 +56,8 @@ const log = (...a) => console.log(new Date().toLocaleTimeString('pt-BR'), ...a);
 
 // ---------- lojas e score ----------
 function storesWithScore() {
-  return storesCfg.stores.map(s => {
+  const ativos = activeIds();
+  return storesCfg.stores.filter(s => ativos.includes(s.id)).map(s => {
     const live = raLive[s.id];
     const merged = live ? { ...s, reclameAqui: { ...s.reclameAqui, ...Object.fromEntries(Object.entries(live.data).filter(([, v]) => v != null)) } } : s;
     return { ...merged, deepOnly: !!ADAPTERS[s.id]?.deepOnly, estimado: !live, raFonte: live ? `Reclame Aqui ao vivo (${live.at})` : `${s.fonte ?? 'estimativa'} (não oficial)`,
@@ -71,7 +80,7 @@ function state() {
     items: watch.items.map(it => ({
       ...it, checking: checking.has(it.id),
       bestHistory: (history[`${it.id}:__best`] ?? []).slice(-60),
-      offers: settings.monitorStores.map(sid => ({ storeId: sid, pin: it.pins?.[sid] ?? null, searchUrl: ADAPTERS[sid]?.url(it.query, 1), ...offers[it.id]?.[sid], history: (history[`${it.id}:${sid}`] ?? []).slice(-40) })),
+      offers: monitorIds().map(sid => ({ storeId: sid, pin: it.pins?.[sid] ?? null, searchUrl: ADAPTERS[sid]?.url(it.query, 1), ...offers[it.id]?.[sid], history: (history[`${it.id}:${sid}`] ?? []).slice(-40) })),
     })),
   };
 }
@@ -118,8 +127,9 @@ async function searchOne(storeId, q, deep) {
 }
 
 async function runSearch(q, { deep = false, stores, onStore } = {}) {
-  const ids = (stores?.length ? stores : storesCfg.stores.map(s => s.id))
-    .filter(id => ADAPTERS[id] && (deep || !ADAPTERS[id].deepOnly));
+  const ativos = activeIds();
+  const ids = (stores?.length ? stores : ativos)
+    .filter(id => ativos.includes(id) && ADAPTERS[id] && (deep || !ADAPTERS[id].deepOnly));
   const all = [];
   await Promise.all(ids.map(async (id) => {
     const t0 = Date.now();
@@ -141,7 +151,7 @@ async function checkItem(it) {
   try {
     const res = (offers[it.id] ??= {});
     const found = [];
-    await Promise.all(settings.monitorStores.map(async (sid) => {
+    await Promise.all(monitorIds().map(async (sid) => {
       const pin = it.pins?.[sid];
       try {
         if (pin && !DEMO) {
@@ -157,7 +167,7 @@ async function checkItem(it) {
       }
     }));
     const flagged = flagOutliers(found);
-    for (const sid of settings.monitorStores) {
+    for (const sid of monitorIds()) {
       const cands = flagged.filter(x => x.storeId === sid && x.available !== false).sort((a, b) => (a.suspeito - b.suspeito) || (a.price - b.price));
       const best = cands[0];
       if (!best) continue;
@@ -268,7 +278,7 @@ const botHandlers = {
     return r.message;
   },
   async buscar(q) {
-    const res = (await runSearch(q, { stores: settings.monitorStores })).filter(r => !r.suspeito && r.available !== false).sort((a, b) => a.price - b.price).slice(0, 6);
+    const res = (await runSearch(q, { stores: monitorIds() })).filter(r => !r.suspeito && r.available !== false).sort((a, b) => a.price - b.price).slice(0, 6);
     if (!res.length) return `Nada encontrado para "${escHtml(q)}".`;
     return `🔎 <b>${escHtml(q)}</b>\n\n` + res.map(r => {
       const sc = scoreOf(r.storeId), n = storesCfg.stores.find(s => s.id === r.storeId)?.name;
@@ -379,7 +389,7 @@ const server = http.createServer(async (req, res) => {
         if ('dropPct' in a) settings.alerts.dropPct = Math.min(80, Math.max(1, Number(a.dropPct) || 10));
         if ('minScore' in a) settings.alerts.minScore = Math.min(100, Math.max(0, Number(a.minScore) || 0));
       }
-      if (Array.isArray(b.monitorStores)) settings.monitorStores = b.monitorStores.filter(id => ADAPTERS[id]);
+      if (Array.isArray(b.monitorStores)) settings.monitorStores = b.monitorStores.filter(id => activeIds().includes(id));
       if (b.intervalMin) { settings.intervalMin = Math.max(5, Math.min(720, Number(b.intervalMin))); schedule(); }
       await writeJson('settings.json', settings); broadcast();
       return json(res, 200, publicSettings());
@@ -406,7 +416,7 @@ function schedule() { clearInterval(timer); timer = setInterval(refreshAll, (DEM
 
 async function refreshReclameAqui() {
   if (DEMO) return;
-  for (const s of storesCfg.stores) {
+  for (const s of storesCfg.stores.filter(x => activeIds().includes(x.id))) {
     if (!s.reclameAquiSlug) continue;
     const data = await fetchReclameAqui(s.reclameAquiSlug);
     if (data) raLive[s.id] = { data, at: new Date().toLocaleDateString('pt-BR') };
