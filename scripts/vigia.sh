@@ -27,7 +27,7 @@ command -v termux-wake-lock >/dev/null 2>&1 && termux-wake-lock
 # SetupSniper
 if ! tmux has-session -t sniper 2>/dev/null; then
   echo "[$(agora)] SetupSniper estava parado — religando" >> "$LOG"
-  "$DIR/scripts/iniciar.sh" --tmux >> "$LOG" 2>&1
+  sh "$DIR/scripts/iniciar.sh" --tmux >> "$LOG" 2>&1
 else
   PORTA=$(grep -E '^PORT=' .env 2>/dev/null | cut -d= -f2); PORTA=${PORTA:-3000}
   # sessão existe mas o servidor não responde há tempo demais → reinicia o processo (o laço do iniciar.sh sobe de novo)
@@ -43,7 +43,7 @@ fi
 # Nuvem (só se houver senha configurada)
 if grep -qE '^NUVEM_SENHA=.+' .env 2>/dev/null && ! tmux has-session -t nuvem 2>/dev/null; then
   echo "[$(agora)] nuvem estava parada — religando" >> "$LOG"
-  "$DIR/scripts/nuvem.sh" --tmux >> "$LOG" 2>&1
+  sh "$DIR/scripts/nuvem.sh" --tmux >> "$LOG" 2>&1
 fi
 
 # SSH (se você configurou senha com passwd)

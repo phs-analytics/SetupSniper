@@ -14,15 +14,15 @@ mkdir -p ~/.termux/boot logs
 cat > ~/.termux/boot/setupsniper.sh <<BOOT
 #!/data/data/com.termux/files/usr/bin/sh
 termux-wake-lock
-$(pwd)/scripts/ligar.sh > $(pwd)/logs/boot.log 2>&1
+sh $(pwd)/scripts/ligar.sh > $(pwd)/logs/boot.log 2>&1
 BOOT
 chmod +x ~/.termux/boot/setupsniper.sh
 
 # Vigia: religa o que cair, a cada 15 min (precisa do app Termux:API)
-./scripts/vigia.sh --instalar || echo "Vigia não ativado: instale o app Termux:API e rode ./scripts/vigia.sh --instalar"
+sh scripts/vigia.sh --instalar || echo "Vigia não ativado: instale o app Termux:API e rode: sh scripts/vigia.sh --instalar"
 
 echo
 echo "Pronto! Próximos passos:"
 echo "  1. nano .env                      (defina SENHA e NUVEM_SENHA)"
 echo "  2. passwd                         (senha do SSH, opcional)"
-echo "  3. ./scripts/ligar.sh             (liga tudo e mostra o status)"
+echo "  3. sh scripts/ligar.sh            (liga tudo e mostra o status)"
