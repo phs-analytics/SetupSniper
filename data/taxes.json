@@ -1,5 +1,236 @@
 {
-  "_ajuda": "Regras de impostos de importação. Só as lojas em importTaxStores têm o imposto calculado; as outras são tratadas como nacionais. As regras de alíquota entram na Fase 3, cada uma com fonte e vigência.",
+  "_ajuda": "Regras de impostos de importação (RTS) para pessoa física. Só as lojas em importTaxStores têm o imposto calculado; as outras são tratadas como nacionais. Valores com verificar=true não foram confirmados em fonte oficial. Triagem informativa, não é parecer tributário. Detalhes e fontes em docs/impostos-importacao.md.",
   "atualizadoEm": "2026-11-03",
-  "importTaxStores": ["amazon", "aliexpress", "shopee"]
+  "importTaxStores": [
+    "amazon",
+    "aliexpress",
+    "shopee"
+  ],
+  "baseInclui": [
+    "produto",
+    "frete",
+    "seguro"
+  ],
+  "formulaIcms": "por_dentro",
+  "cotacao": {
+    "modo": "manual",
+    "observacao": "A Receita converte pela taxa de câmbio da data de registro da declaração (DIR). A PTAX exata usada não foi confirmada. No Remessa Conforme a plataforma cobra no checkout com cotação própria. Informe a cotação manualmente (ex.: PTAX venda do dia) e trate o total como estimativa."
+  },
+  "regras": [
+    {
+      "id": "prc_pf_ate_50",
+      "descricao": "Remessa Conforme, pessoa física, valor aduaneiro até US$ 50: II zero; incide só ICMS.",
+      "remessaConforme": true,
+      "vigenteDesde": "2026-05-12",
+      "fonte": "https://www.gov.br/receitafederal/pt-br/assuntos/aduana-e-comercio-exterior/manuais/remessas-postal-e-expressa/topicos/tributacao",
+      "verificar": false,
+      "aliquotaII": 0,
+      "deducaoUSD": 0,
+      "faixaUSD": [
+        0,
+        50
+      ]
+    },
+    {
+      "id": "prc_pf_50_3000",
+      "descricao": "Remessa Conforme, pessoa física, US$ 50,01 a US$ 3.000: II de 60% com dedução fixa de US$ 30 (Lei 15.502/2026 permite reduzir para até 30%, sem ato encontrado até 03/11/2026).",
+      "remessaConforme": true,
+      "vigenteDesde": "2026-05-12",
+      "fonte": "https://www.gov.br/receitafederal/pt-br/assuntos/aduana-e-comercio-exterior/manuais/remessas-postal-e-expressa/topicos/tributacao",
+      "verificar": true,
+      "aliquotaII": 0.6,
+      "deducaoUSD": 30,
+      "faixaUSD": [
+        50.01,
+        3000
+      ]
+    },
+    {
+      "id": "fora_prc_ate_3000",
+      "descricao": "Fora do Remessa Conforme, até US$ 3.000: II de 60% sem dedução, inclusive abaixo de US$ 50.",
+      "remessaConforme": false,
+      "vigenteDesde": "2024-08-01",
+      "fonte": "https://www.gov.br/receitafederal/pt-br/assuntos/aduana-e-comercio-exterior/manuais/remessas-postal-e-expressa/preciso-pagar-impostos-nas-compras-internacionais/quanto-pagarei-de-imposto",
+      "verificar": false,
+      "aliquotaII": 0.6,
+      "deducaoUSD": 0,
+      "faixaUSD": [
+        0,
+        3000
+      ]
+    }
+  ],
+  "taxaDespachoPostalBRL": {
+    "valor": 15.0,
+    "aplicaSe": "fora do Remessa Conforme, entregue pelos Correios com imposto a pagar na chegada",
+    "fonte": "https://toexceed.com.br/blog/2026/09/09/importacao-pelos-correios-regras-tributacao-e-como-funciona/",
+    "verificar": true
+  },
+  "icms": {
+    "AC": {
+      "aliquota": 0.2,
+      "fonte": "https://comsefaz.org.br/novo/informacoes-fiscais/",
+      "verificar": false
+    },
+    "AL": {
+      "aliquota": 0.2,
+      "fonte": "https://comsefaz.org.br/novo/informacoes-fiscais/",
+      "verificar": false
+    },
+    "AP": {
+      "aliquota": 0.18,
+      "fonte": "https://www.gabrieldevs.com.br/2026/10/fim-da-taxa-das-blusinhas-quanto-de.html",
+      "verificar": true
+    },
+    "AM": {
+      "aliquota": 0.17,
+      "fonte": "https://comsefaz.org.br/novo/informacoes-fiscais/",
+      "verificar": true
+    },
+    "BA": {
+      "aliquota": 0.2,
+      "fonte": "https://comsefaz.org.br/novo/informacoes-fiscais/",
+      "verificar": false
+    },
+    "CE": {
+      "aliquota": 0.2,
+      "fonte": "https://comsefaz.org.br/novo/informacoes-fiscais/",
+      "verificar": false
+    },
+    "DF": {
+      "aliquota": 0.17,
+      "fonte": "https://comsefaz.org.br/novo/informacoes-fiscais/",
+      "verificar": true
+    },
+    "ES": {
+      "aliquota": 0.17,
+      "fonte": "https://comsefaz.org.br/novo/informacoes-fiscais/",
+      "verificar": true
+    },
+    "GO": {
+      "aliquota": 0.17,
+      "fonte": "https://comsefaz.org.br/novo/informacoes-fiscais/",
+      "verificar": true
+    },
+    "MA": {
+      "aliquota": 0.17,
+      "fonte": "https://comsefaz.org.br/novo/informacoes-fiscais/",
+      "verificar": true
+    },
+    "MT": {
+      "aliquota": 0.17,
+      "fonte": "https://comsefaz.org.br/novo/informacoes-fiscais/",
+      "verificar": true
+    },
+    "MS": {
+      "aliquota": 0.17,
+      "fonte": "https://comsefaz.org.br/novo/informacoes-fiscais/",
+      "verificar": true
+    },
+    "MG": {
+      "aliquota": 0.17,
+      "fonte": "https://tribunademinas.com.br/noticias/economia/01-04-2025/governo-de-minas-derruba-decreto-que-aumentava-o-icmssobre-compras-internacionais-comeca-a-valer-em-todo-o-estado.html",
+      "verificar": false
+    },
+    "PA": {
+      "aliquota": 0.19,
+      "fonte": "https://portalbenews.com.br/taxa-das-blusinhas-icms-ainda-e-cobrado/",
+      "verificar": true
+    },
+    "PB": {
+      "aliquota": 0.2,
+      "fonte": "https://comsefaz.org.br/novo/informacoes-fiscais/",
+      "verificar": false
+    },
+    "PR": {
+      "aliquota": 0.17,
+      "fonte": "https://comsefaz.org.br/novo/informacoes-fiscais/",
+      "verificar": true
+    },
+    "PE": {
+      "aliquota": 0.17,
+      "fonte": "https://comsefaz.org.br/novo/informacoes-fiscais/",
+      "verificar": true
+    },
+    "PI": {
+      "aliquota": 0.2,
+      "fonte": "https://comsefaz.org.br/novo/informacoes-fiscais/",
+      "verificar": false
+    },
+    "RJ": {
+      "aliquota": 0.17,
+      "fonte": "https://comsefaz.org.br/novo/informacoes-fiscais/",
+      "verificar": true
+    },
+    "RN": {
+      "aliquota": 0.2,
+      "fonte": "https://comsefaz.org.br/novo/informacoes-fiscais/",
+      "verificar": false
+    },
+    "RS": {
+      "aliquota": 0.17,
+      "fonte": "https://comsefaz.org.br/novo/informacoes-fiscais/",
+      "verificar": true
+    },
+    "RO": {
+      "aliquota": 0.17,
+      "fonte": "https://comsefaz.org.br/novo/informacoes-fiscais/",
+      "verificar": true
+    },
+    "RR": {
+      "aliquota": 0.2,
+      "fonte": "https://comsefaz.org.br/novo/informacoes-fiscais/",
+      "verificar": false
+    },
+    "SC": {
+      "aliquota": 0.17,
+      "fonte": "https://comsefaz.org.br/novo/informacoes-fiscais/",
+      "verificar": true
+    },
+    "SP": {
+      "aliquota": 0.17,
+      "fonte": "https://comsefaz.org.br/novo/informacoes-fiscais/",
+      "verificar": true
+    },
+    "SE": {
+      "aliquota": 0.2,
+      "fonte": "https://comsefaz.org.br/novo/informacoes-fiscais/",
+      "verificar": false
+    },
+    "TO": {
+      "aliquota": 0.17,
+      "fonte": "https://comsefaz.org.br/novo/informacoes-fiscais/",
+      "verificar": true
+    },
+    "_padrao": {
+      "aliquota": 0.17,
+      "fonte": "docs/impostos-importacao.md (alíquota mais comum; usada quando a UF não é informada)",
+      "verificar": true
+    }
+  },
+  "lojasRemessaConforme": {
+    "amazon": {
+      "certificada": true,
+      "desde": "2023-11-03",
+      "observacao": "ADE Coana 10/2023 substituído pelo ADE Coana 51/2025 (com alterações até 21/10/2026). Vale para amazon.com.br e amazon.com.",
+      "verificar": true
+    },
+    "aliexpress": {
+      "certificada": true,
+      "desde": "2023-09-18",
+      "observacao": "Data de registro segundo a imprensa; início da operação ~15/10/2023.",
+      "verificar": true
+    },
+    "shopee": {
+      "certificada": true,
+      "desde": "2023-10-09",
+      "observacao": "Data segundo a imprensa.",
+      "verificar": true
+    }
+  },
+  "remessaConforme": {
+    "amazon": true,
+    "aliexpress": true,
+    "shopee": true
+  }
 }
