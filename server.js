@@ -9,6 +9,8 @@ import { fetchReclameAqui } from './src/reclameaqui.js';
 import { ADAPTERS, searchStore } from './src/stores.js';
 import { activeStoreIds } from './src/scope.js';
 import { cleanResults, flagOutliers } from './src/extract.js';
+import { normalizeOffer, referencePrice, formatBRL, toCents } from './src/offer.js';
+import { storeState } from './src/monitor.js';
 import { browserAvailable } from './src/browser.js';
 import { startBot, sendMessage, escHtml } from './src/telegram.js';
 import { VERSION, selfUpdate } from './src/update.js';
@@ -45,13 +47,36 @@ if (process.env.TELEGRAM_CHAT_ID) settings.telegram.chatId = process.env.TELEGRA
 const history = await readJson('history.json', {});        // "itemId:storeId" e "itemId:__best" -> [{t, price}]
 const alertState = await readJson('alerts.json', { last: {}, log: [] });
 
+// Preço de referência para ordenar, comparar metas e alertar: Pix (padrão) ou crédito.
+settings.priceReference ??= 'pix';
+const refOf = (o) => referencePrice(o, settings.priceReference === 'card' ? 'card' : 'pix');
+
+// ---------- migração: até a v2.3 os valores eram reais (float); agora são centavos inteiros ----------
+const reaisParaCentavos = (v) => (typeof v === 'number' && v > 0 ? Math.round(v * 100) : v ?? null);
+if (watch.schemaVersion !== 2) {
+  for (const it of watch.items) for (const k of ['target', 'minPrice', 'maxPrice']) it[k] = reaisParaCentavos(it[k]);
+  watch.schemaVersion = 2;
+  if (existsSync(DATA('watchlist.json'))) writeJson('watchlist.json', watch);
+}
+if (history.__schema !== 2) {
+  for (const [k, h] of Object.entries(history)) if (Array.isArray(h)) for (const e of h) e.price = reaisParaCentavos(e.price);
+  history.__schema = 2;
+  if (existsSync(DATA('history.json'))) writeJson('history.json', history);
+}
+if (alertState.schema !== 2) {
+  for (const e of alertState.log) e.price = reaisParaCentavos(e.price);
+  for (const v of Object.values(alertState.last)) v.price = reaisParaCentavos(v.price);
+  alertState.schema = 2;
+  if (existsSync(DATA('alerts.json'))) writeJson('alerts.json', alertState);
+}
+
 const offers = {};       // offers[itemId][storeId] = {price, title, url, image, updatedAt, error, suspeito}
 const checking = new Set();
 const raLive = {};
 let lastRefresh = null, refreshing = false;
 const clients = new Set();
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-const brl = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const brl = formatBRL;   // recebe centavos
 const log = (...a) => console.log(new Date().toLocaleTimeString('pt-BR'), ...a);
 
 // ---------- lojas e score ----------
@@ -111,10 +136,14 @@ async function demoSearch(storeId, q) {
   const items = Array.from({ length: n }, (_, i) => {
     const drift = Math.sin(Date.now() / 6e5 + h + i) * 0.03;
     const f = 0.9 + ((h >> (i * 3)) % 25) / 100 + drift + (storeId === 'aliexpress' ? -0.12 : 0);
+    const card = Math.round(base * f * 100) / 100;
+    // Como nas lojas reais: Amazon, Shopee e AliExpress têm um preço só; as outras dão desconto no Pix.
+    const preco = ['amazon', 'shopee', 'aliexpress'].includes(storeId) ? { price: card, samePrice: true } : { pix: Math.round(card * 0.9 * 100) / 100, card };
     return { title: `${q.replace(/\b\w/g, c => c.toUpperCase())} ${variants[(h + i) % variants.length]}`.trim(),
-      price: Math.round(base * f * 100) / 100, url: `https://example.com/${storeId}/${i}`, image: null, available: (h + i) % 9 !== 0, official: i === 0 };
+      ...preco, installments: { n: 10, value: Math.round(card * 10) / 100, interestFree: true },
+      url: `https://example.com/${storeId}/${i}`, image: null, available: (h + i) % 9 !== 0, official: i === 0 };
   });
-  if (['shopee', 'aliexpress'].includes(storeId)) items.push({ title: `${q} Promoção`, price: Math.round(base * 0.45), url: `https://example.com/${storeId}/x`, available: true });
+  if (['shopee', 'aliexpress'].includes(storeId)) items.push({ title: `${q} Promoção`, price: Math.round(base * 0.45), samePrice: true, url: `https://example.com/${storeId}/x`, available: true });
   items.push({ title: `Adesivo ${q}`, price: Math.round(base * 0.05), url: `https://example.com/${storeId}/a`, available: true });
   return { items, searchUrl: ADAPTERS[storeId]?.url(q, 1) };
 }
@@ -122,7 +151,7 @@ async function demoSearch(storeId, q) {
 // ---------- busca ----------
 async function searchOne(storeId, q, deep) {
   const r = DEMO ? await demoSearch(storeId, q) : await searchStore(storeId, q, { deep });
-  const items = cleanResults(r.items, q).map(x => ({ ...x, storeId }));
+  const items = cleanResults(r.items.map(x => normalizeOffer(x, storeId)), q).map(x => ({ ...x, storeId }));
   return { items, searchUrl: r.searchUrl, raw: r.items.length };
 }
 
@@ -141,7 +170,7 @@ async function runSearch(q, { deep = false, stores, onStore } = {}) {
       onStore?.({ storeId: id, status: 'error', error: e.message, items: [], searchUrl: ADAPTERS[id].url(q, 1), ms: Date.now() - t0 });
     }
   }));
-  return flagOutliers(all);
+  return flagOutliers(all, refOf);
 }
 
 // ---------- monitoramento ----------
@@ -150,32 +179,40 @@ async function checkItem(it) {
   checking.add(it.id); broadcast();
   try {
     const res = (offers[it.id] ??= {});
-    const found = [];
+    const results = {};   // sid -> { offers, raw } | { error }
     await Promise.all(monitorIds().map(async (sid) => {
       const pin = it.pins?.[sid];
       try {
         if (pin && !DEMO) {
-          const r = await fetchPrice({ url: pin, storeId: sid, minPrice: it.minPrice ?? 0, maxPrice: it.maxPrice ?? Infinity });
-          found.push({ ...r, url: pin, storeId: sid, pinned: true });
+          const raw = await fetchPrice({ url: pin, storeId: sid });
+          results[sid] = { raw: 1, offers: [{ ...normalizeOffer({ ...raw, url: raw.url ?? pin }, sid), storeId: sid, pinned: true }] };
         } else {
           const r = await searchOne(sid, it.query, false);
-          found.push(...r.items.filter(x => (!it.minPrice || x.price >= it.minPrice) && (!it.maxPrice || x.price <= it.maxPrice)));
-          if (!r.items.length) res[sid] = { ...res[sid], error: r.raw ? 'Nenhum resultado compatível' : 'Nenhum resultado', errorAt: Date.now(), searchUrl: r.searchUrl };
+          results[sid] = { raw: r.raw, offers: r.items, searchUrl: r.searchUrl };
         }
       } catch (e) {
-        res[sid] = { ...res[sid], error: e.message, errorAt: Date.now() };
+        results[sid] = { error: e.message };
       }
     }));
-    const flagged = flagOutliers(found);
+    const flagged = flagOutliers(Object.values(results).flatMap(r => r.offers ?? []), refOf);
+    const now = Date.now();
     for (const sid of monitorIds()) {
-      const cands = flagged.filter(x => x.storeId === sid && x.available !== false).sort((a, b) => (a.suspeito - b.suspeito) || (a.price - b.price));
-      const best = cands[0];
-      if (!best) continue;
-      res[sid] = { price: best.price, title: best.title, url: best.url, image: best.image, suspeito: !!best.suspeito, pinned: !!best.pinned,
-        official: !!best.official, count: cands.length, updatedAt: Date.now(), error: null };
-      record(`${it.id}:${sid}`, best.price);
+      const r = results[sid];
+      if (!r) continue;
+      const mine = r.offers ? flagged.filter(o => o.storeId === sid) : undefined;
+      const st = storeState(r.error ? r : { raw: r.raw, offers: mine }, it, refOf);
+      const o = st.offer;
+      res[sid] = {
+        ...(st.status === 'error' ? res[sid] : {}),
+        status: st.status, message: st.message, error: st.status === 'error' ? st.message : null,
+        updatedAt: now, errorAt: st.status === 'error' ? now : undefined, searchUrl: r.searchUrl,
+        price: st.price, offer: o,
+        title: o?.title ?? res[sid]?.title ?? null, url: o?.url ?? res[sid]?.url ?? null, image: o?.image ?? null,
+        suspeito: !!o?.suspeito, pinned: !!o?.pinned, official: !!o?.seller?.official, count: st.count ?? 0,
+      };
+      if (st.status === 'ok') record(`${it.id}:${sid}`, st.price);
     }
-    const valid = Object.entries(res).filter(([sid, o]) => o.price && !o.error && !o.suspeito && (scoreOf(sid) ?? 0) >= settings.alerts.minScore);
+    const valid = Object.entries(res).filter(([sid, o]) => o.status === 'ok' && !o.suspeito && (scoreOf(sid) ?? 0) >= settings.alerts.minScore);
     if (valid.length) record(`${it.id}:__best`, Math.min(...valid.map(([, o]) => o.price)));
     await evaluateAlerts(it);
   } finally {
@@ -205,7 +242,7 @@ async function evaluateAlerts(it) {
   const avg = avg30(it);
   const hits = [];
   for (const [sid, o] of Object.entries(offers[it.id] ?? {})) {
-    if (!o.price || o.error || (o.suspeito && !a.allowSuspicious)) continue;
+    if (o.status !== 'ok' || !o.price || (o.suspeito && !a.allowSuspicious)) continue;
     const sc = scoreOf(sid);
     if (sc != null && sc < a.minScore) continue;
     const reasons = [];
@@ -245,7 +282,7 @@ const botHandlers = {
   async precos() {
     if (!watch.items.length) return 'Nenhum produto fixado. Use /fixar &lt;produto&gt; ou o botão 📌 Fixar no site.';
     return '📌 <b>Produtos fixados</b>\n\n' + watch.items.map((it, i) => {
-      const best = Object.entries(offers[it.id] ?? {}).filter(([sid, o]) => o.price && !o.error && !o.suspeito && (scoreOf(sid) ?? 100) >= settings.alerts.minScore)
+      const best = Object.entries(offers[it.id] ?? {}).filter(([sid, o]) => o.status === 'ok' && o.price && !o.suspeito && (scoreOf(sid) ?? 100) >= settings.alerts.minScore)
         .sort((a, b) => a[1].price - b[1].price)[0];
       const name = storesCfg.stores.find(s => s.id === best?.[0])?.name;
       return `${i + 1}. <b>${escHtml(it.name)}</b>${it.alerts === false ? ' 🔕' : ''}\n` + (best ? `${brl(best[1].price)} na ${escHtml(name)}${it.target ? ` · meta ${brl(it.target)}` : ''}\n<a href="${escHtml(best[1].url)}">abrir</a>` : 'sem oferta ainda');
@@ -254,7 +291,7 @@ const botHandlers = {
   async fixar(args) {
     // "/fixar ryzen 5 7600 meta 1200" (ou "R$ 1200", "até 1200") → busca "ryzen 5 7600", meta R$ 1.200
     const m = args.match(/^(.*?)\s+(?:meta|r\$|at[eé]|por)\s*:?\s*(?:r\$\s*)?([\d.]+(?:,\d{1,2})?)$/i);
-    const query = (m ? m[1] : args).trim(), target = m ? Number(m[2].replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.')) || null : null;
+    const query = (m ? m[1] : args).trim(), target = m ? toCents(m[2]) : null;   // centavos
     const it = await addItem({ query, target });
     return `📌 Fixado: <b>${escHtml(it.name)}</b>${target ? `\nMeta: ${brl(target)}` : '\nSem meta: aviso quando cair ' + settings.alerts.dropPct + '% abaixo da média.'}\n\nVou buscar os preços agora. Veja com /fixados.`;
   },
@@ -278,11 +315,11 @@ const botHandlers = {
     return r.message;
   },
   async buscar(q) {
-    const res = (await runSearch(q, { stores: monitorIds() })).filter(r => !r.suspeito && r.available !== false).sort((a, b) => a.price - b.price).slice(0, 6);
+    const res = (await runSearch(q, { stores: monitorIds() })).filter(r => !r.suspeito && r.available !== false && refOf(r) != null).sort((a, b) => refOf(a) - refOf(b)).slice(0, 6);
     if (!res.length) return `Nada encontrado para "${escHtml(q)}".`;
     return `🔎 <b>${escHtml(q)}</b>\n\n` + res.map(r => {
       const sc = scoreOf(r.storeId), n = storesCfg.stores.find(s => s.id === r.storeId)?.name;
-      return `${brl(r.price)} · ${escHtml(n)}${sc != null ? ` (${sc})` : ''}\n<a href="${escHtml(r.url ?? '')}">${escHtml(r.title.slice(0, 70))}</a>`;
+      return `${brl(refOf(r))} · ${escHtml(n)}${sc != null ? ` (${sc})` : ''}\n<a href="${escHtml(r.url ?? '')}">${escHtml(r.title.slice(0, 70))}</a>`;
     }).join('\n\n');
   },
 };
@@ -296,7 +333,8 @@ function storeUrl(u) {
   if (DEMO) return /^https?:\/\//.test(u ?? '') ? u : null;   // demo usa links fictícios
   try { const h = new URL(u); return /^https?:$/.test(h.protocol) && STORE_HOSTS.some(d => h.hostname === d || h.hostname.endsWith('.' + d)) ? h.href : null; } catch { return null; }
 }
-const num = (v) => v === '' || v == null ? null : Number.isFinite(Number(v)) && Number(v) > 0 ? Number(v) : null;
+// Valores de dinheiro na API: centavos inteiros.
+const num = (v) => v === '' || v == null ? null : Number.isInteger(Number(v)) && Number(v) > 0 ? Number(v) : null;
 async function addItem(b) {
   const query = String(b.query ?? '').trim();
   if (query.length < 2) throw new Error('Informe o que buscar');
@@ -389,6 +427,7 @@ const server = http.createServer(async (req, res) => {
         if ('dropPct' in a) settings.alerts.dropPct = Math.min(80, Math.max(1, Number(a.dropPct) || 10));
         if ('minScore' in a) settings.alerts.minScore = Math.min(100, Math.max(0, Number(a.minScore) || 0));
       }
+      if ('priceReference' in b) settings.priceReference = b.priceReference === 'card' ? 'card' : 'pix';
       if (Array.isArray(b.monitorStores)) settings.monitorStores = b.monitorStores.filter(id => activeIds().includes(id));
       if (b.intervalMin) { settings.intervalMin = Math.max(5, Math.min(720, Number(b.intervalMin))); schedule(); }
       await writeJson('settings.json', settings); broadcast();

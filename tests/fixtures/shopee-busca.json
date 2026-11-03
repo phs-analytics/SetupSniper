@@ -1,0 +1,29 @@
+{
+ "items": [
+  {
+   "item_basic": {
+    "itemid": 2222,
+    "shopid": 1111,
+    "name": "Processador AMD Ryzen 7 7800X3D Novo Lacrado",
+    "price": 175000000,
+    "price_min": 175000000,
+    "stock": 5,
+    "image": "abc",
+    "shop_location": "Mainland China",
+    "is_official_shop": false,
+    "shopee_verified": false
+   }
+  },
+  {
+   "item_basic": {
+    "itemid": 2223,
+    "shopid": 1112,
+    "name": "Processador AMD Ryzen 7 7800X3D Envio Nacional",
+    "price": 189990000,
+    "stock": 3,
+    "shop_location": "São Paulo",
+    "is_official_shop": true
+   }
+  }
+ ]
+}

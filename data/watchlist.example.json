@@ -1,13 +1,13 @@
 {
-  "_ajuda": "Exemplo inicial. Na primeira execução o servidor copia isto; suas mudanças ficam em data/watchlist.json (que não vai para o git).",
+  "_ajuda": "Exemplo inicial. Na primeira execução o servidor copia isto; suas mudanças ficam em data/watchlist.json (que não vai para o git). Valores de dinheiro em centavos.",
   "items": [
     {
       "id": "cpu",
       "name": "AMD Ryzen 7 7800X3D",
       "query": "Ryzen 7 7800X3D",
       "target": null,
-      "minPrice": 1200,
-      "maxPrice": 5000,
+      "minPrice": 120000,
+      "maxPrice": 500000,
       "pins": {},
       "createdAt": 0
     },
@@ -16,8 +16,8 @@
       "name": "Memória DDR5 16GB (1x16) 5600MHz",
       "query": "memoria ddr5 16gb 5600",
       "target": null,
-      "minPrice": 150,
-      "maxPrice": 1500,
+      "minPrice": 15000,
+      "maxPrice": 150000,
       "pins": {},
       "createdAt": 0
     },
@@ -26,10 +26,11 @@
       "name": "SSD NVMe 1TB",
       "query": "ssd nvme 1tb",
       "target": null,
-      "minPrice": 250,
-      "maxPrice": 2000,
+      "minPrice": 25000,
+      "maxPrice": 200000,
       "pins": {},
       "createdAt": 0
     }
-  ]
+  ],
+  "schemaVersion": 2
 }
