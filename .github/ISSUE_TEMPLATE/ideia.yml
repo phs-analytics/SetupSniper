@@ -1,0 +1,11 @@
+name: 💡 Ideia
+description: Sugira uma melhoria ou uma loja nova
+labels: ["ideia"]
+body:
+  - type: textarea
+    id: ideia
+    attributes: { label: Qual é a ideia?, description: Que problema ela resolve? }
+    validations: { required: true }
+  - type: textarea
+    id: como
+    attributes: { label: Como você imagina que funcionaria? }

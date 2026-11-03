@@ -1,0 +1,10 @@
+services:
+  setupsniper:
+    build: .
+    restart: unless-stopped
+    user: "${UID:-1000}:${GID:-1000}"   # grava em ./data com o seu usuário
+    env_file: .env
+    ports:
+      - "127.0.0.1:3000:3000"   # só acessível pela própria máquina; use Tailscale para acesso remoto
+    volumes:
+      - ./data:/app/data

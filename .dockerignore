@@ -1,0 +1,12 @@
+.git
+.github
+node_modules
+logs
+.env
+data/settings.json
+data/watchlist.json
+data/history.json
+data/alerts.json
+docs
+tests
+*.tar.gz

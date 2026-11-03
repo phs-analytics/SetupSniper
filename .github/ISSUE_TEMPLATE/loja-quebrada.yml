@@ -1,0 +1,31 @@
+name: 🛒 Loja quebrada
+description: Uma loja parou de trazer preços ou traz preços errados
+labels: ["loja"]
+body:
+  - type: markdown
+    attributes:
+      value: "⚠️ Não cole aqui seu `.env`, token do Telegram, senhas ou IPs."
+  - type: dropdown
+    id: loja
+    attributes:
+      label: Qual loja?
+      options: [KaBuM!, Pichau, Terabyte, Amazon, Mercado Livre, Magazine Luiza, AliExpress, Shopee, Buscapé, Zoom, Outra]
+    validations: { required: true }
+  - type: input
+    id: busca
+    attributes: { label: O que você buscou?, placeholder: "ryzen 5 7600" }
+    validations: { required: true }
+  - type: dropdown
+    id: sintoma
+    attributes:
+      label: O que aparece?
+      options: ["bloqueado / HTTP 403", "Nenhum resultado", "Nenhum resultado compatível", "Preço errado", "Link errado", "Outro"]
+    validations: { required: true }
+  - type: textarea
+    id: detalhes
+    attributes: { label: Detalhes, description: "Mensagem de erro (passe o mouse sobre o aviso na interface) e o que você esperava." }
+  - type: dropdown
+    id: onde
+    attributes:
+      label: Onde está rodando?
+      options: [Celular (Termux), Windows, macOS, Linux, Docker]

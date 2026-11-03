@@ -1,0 +1,25 @@
+name: 🐞 Bug
+description: Algo não funciona como deveria
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: "⚠️ Não cole aqui seu `.env`, `data/settings.json`, token do Telegram, senhas ou IPs. Falhas de segurança: veja SECURITY.md."
+  - type: textarea
+    id: oque
+    attributes: { label: O que aconteceu?, description: Passo a passo para reproduzir. }
+    validations: { required: true }
+  - type: textarea
+    id: esperado
+    attributes: { label: O que você esperava? }
+  - type: textarea
+    id: log
+    attributes: { label: Log, description: "Trecho de logs/server.log (revise antes de colar).", render: text }
+  - type: input
+    id: versao
+    attributes: { label: Versão, description: "Aparece no /status do Telegram ou em /api/health", placeholder: "2.0.0 (abc1234)" }
+  - type: dropdown
+    id: onde
+    attributes:
+      label: Onde está rodando?
+      options: [Celular (Termux), Windows, macOS, Linux, Docker]

@@ -17,7 +17,7 @@ function* walk(node, depth = 0) {
   for (const v of Object.values(node)) {
     if (v && typeof v === 'object') yield* walk(v, depth + 1);
     // Alguns sites guardam JSON dentro de string (ex.: KaBuM pageProps.data)
-    else if (typeof v === 'string' && v.length > 200 && (v[0] === '{' || v[0] === '[')) {
+    else if (typeof v === 'string' && v.length > 40 && (v[0] === '{' || v[0] === '[')) {
       try { yield* walk(JSON.parse(v), depth + 1); } catch { /* não é JSON */ }
     }
   }
