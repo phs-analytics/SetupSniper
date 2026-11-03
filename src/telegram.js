@@ -33,17 +33,19 @@ export function startBot({ getSettings, saveChatId, handlers, log = console.log 
           const [cmd, ...rest] = msg.text.trim().split(/\s+/);
           const c = cmd.toLowerCase().replace(/@.*$/, '');
           if (c === '/start') {
-            if (!getSettings().telegram.chatId) { await saveChatId(from); await sendMessage(token, from, '✅ Pronto! Este chat vai receber os alertas do <b>SetupSniper</b>.\n\nComandos:\n/precos — melhores preços monitorados\n/buscar &lt;produto&gt; — busca rápida\n/status — situação do servidor\n/atualizar — baixa a versão nova do GitHub'); }
+            if (!getSettings().telegram.chatId) { await saveChatId(from); await sendMessage(token, from, '✅ Pronto! Este chat vai receber os alertas do <b>SetupSniper</b>.\n\nComandos:\n/fixados — produtos fixados e melhores preços\n/fixar &lt;produto&gt; [meta] — ex.: /fixar ryzen 5 7600 meta 1200\n/desafixar &lt;nº&gt; — remove um fixado\n/buscar &lt;produto&gt; — busca rápida\n/status — situação do servidor\n/atualizar — baixa a versão nova do GitHub'); }
             else if (from === String(getSettings().telegram.chatId)) await sendMessage(token, from, 'Este chat já está conectado. Use /precos ou /buscar &lt;produto&gt;.');
             else await sendMessage(token, from, 'Este bot já está conectado a outro chat.');
             continue;
           }
           if (from !== String(chatId)) continue; // só o dono usa os comandos
-          const reply = c === '/precos' ? await handlers.precos()
+          const reply = (c === '/precos' || c === '/fixados') ? await handlers.precos()
+            : c === '/fixar' ? (rest.length ? await handlers.fixar(rest.join(' ')).catch(e => '❌ ' + escHtml(e.message)) : 'Use: /fixar ryzen 5 7600 meta 1200  (a meta é opcional)')
+            : c === '/desafixar' ? await handlers.desafixar(rest[0])
             : c === '/status' ? await handlers.status()
             : c === '/atualizar' ? await handlers.atualizar()
             : c === '/buscar' ? (rest.length ? await handlers.buscar(rest.join(' ')) : 'Use: /buscar ryzen 7 7800x3d')
-            : 'Comandos: /precos · /buscar &lt;produto&gt; · /status · /atualizar';
+            : 'Comandos:\n/fixados — produtos fixados e melhores preços\n/fixar &lt;produto&gt; [meta] — fixa e passa a avisar\n/desafixar &lt;nº&gt; — remove\n/buscar &lt;produto&gt; — busca rápida\n/status · /atualizar';
           await sendMessage(token, from, reply);
         }
       } catch (e) {

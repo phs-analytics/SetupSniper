@@ -45,13 +45,14 @@
 
     <nav class="tabs" role="tablist">
       <a href="#busca" data-tab="busca">Busca</a>
-      <a href="#monitorados" data-tab="monitorados">Monitorados <span class="count" id="count-mon">0</span></a>
+      <a href="#fixados" data-tab="fixados">📌 Fixados <span class="count" id="count-mon">0</span></a>
       <a href="#lojas" data-tab="lojas">Lojas</a>
       <a href="#alertas" data-tab="alertas">Alertas <span class="dot" id="tg-dot" hidden></span></a>
     </nav>
 
     <!-- BUSCA -->
     <section id="tab-busca" class="tab">
+      <div id="pinned-strip" class="pinned" hidden></div>
       <div id="progress" class="progress" hidden></div>
       <div id="results-tools" class="controls" hidden>
         <div class="seg" id="sort">
@@ -73,16 +74,16 @@
       </div>
     </section>
 
-    <!-- MONITORADOS -->
-    <section id="tab-monitorados" class="tab" hidden>
+    <!-- FIXADOS -->
+    <section id="tab-fixados" class="tab" hidden>
       <div class="controls">
-        <p class="muted">O servidor confere estes produtos a cada <b id="interval-txt">15</b> min e avisa no Telegram quando o preço cai.</p>
+        <p class="muted">Produtos fixados são conferidos a cada <b id="interval-txt">15</b> min. Com o 🔔 ligado, você recebe alerta no Telegram quando o preço atinge a meta ou cai abaixo da média.</p>
         <div class="tools-right">
           <button type="button" class="btn" id="refresh">
             <svg viewBox="0 0 24 24" width="16" height="16"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
             Verificar todos
           </button>
-          <button type="button" class="btn primary" id="add-watch">+ Adicionar produto</button>
+          <button type="button" class="btn primary" id="add-watch">📌 Fixar produto</button>
         </div>
       </div>
       <div id="watch" class="products"></div>
@@ -113,7 +114,7 @@
             <li>Abra o seu bot no Telegram e envie <code>/start</code>. O chat conecta sozinho em alguns segundos.</li>
             <li><button type="button" class="btn" id="tg-test">Enviar mensagem de teste</button></li>
           </ol>
-          <p class="muted">No bot, use <code>/precos</code> para ver os melhores preços monitorados e <code>/buscar ryzen 5 7600</code> para uma busca rápida.</p>
+          <p class="muted">Comandos do bot: <code>/fixados</code> mostra os fixados e os melhores preços · <code>/fixar ryzen 5 7600 meta 1200</code> fixa pelo Telegram · <code>/desafixar 2</code> remove · <code>/buscar rtx 4060</code> busca rápida · <code>/status</code> e <code>/atualizar</code> cuidam do servidor.</p>
           <button type="button" class="btn ghost small" id="tg-remove" hidden>Desconectar bot</button>
         </div>
 
@@ -121,7 +122,7 @@
           <div class="panel-head"><h2>Quando avisar</h2></div>
           <div class="form-grid">
             <label class="switch"><input type="checkbox" id="al-enabled"><span class="sw" aria-hidden="true"></span><span>Alertas ligados</span></label>
-            <label>Quando o preço atingir a <b>meta</b> do produto <small class="muted-i">(defina em Monitorados)</small></label>
+            <label>Quando o preço atingir a <b>meta</b> do produto <small class="muted-i">(defina em Fixados)</small></label>
             <label class="field">Ou quando cair pelo menos
               <span class="with-unit"><input type="number" id="al-drop" min="1" max="80"> %</span> abaixo da média de 30 dias</label>
             <label class="field">Só de lojas com score mínimo
@@ -145,7 +146,7 @@
 
   <dialog id="watch-dlg">
     <form id="watch-form">
-      <h3 id="watch-title">Monitorar produto</h3>
+      <h3 id="watch-title">Fixar produto</h3>
       <label class="field">Nome<input id="w-name" required maxlength="120"></label>
       <label class="field">Termo de busca <small class="muted-i">o que o servidor procura nas lojas</small><input id="w-query" required maxlength="120"></label>
       <div class="two">
@@ -153,11 +154,12 @@
         <label class="field">Faixa válida (R$) <small class="muted-i">ignora fora dela</small>
           <span class="range2"><input id="w-min" type="number" min="0" placeholder="mín."><input id="w-max" type="number" min="0" placeholder="máx."></span></label>
       </div>
+      <label class="switch"><input type="checkbox" id="w-alerts" checked><span class="sw" aria-hidden="true"></span><span>🔔 Avisar no Telegram quando o preço cair</span></label>
       <p class="muted" id="w-pin-note" hidden></p>
       <div class="dlg-actions">
         <button type="button" class="btn ghost" id="w-cancel">Cancelar</button>
         <span style="flex:1"></span>
-        <button type="submit" class="btn primary">Salvar</button>
+        <button type="submit" class="btn primary" id="w-submit">📌 Fixar</button>
       </div>
     </form>
   </dialog>

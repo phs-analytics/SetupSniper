@@ -39,7 +39,7 @@ function sparkline(hist) {
 // ================= ABAS =================
 function showTab() {
   const tab = (location.hash.slice(1) || 'busca');
-  const valid = ['busca', 'monitorados', 'lojas', 'alertas'].includes(tab) ? tab : 'busca';
+  const valid = tab === 'monitorados' ? 'fixados' : ['busca', 'fixados', 'lojas', 'alertas'].includes(tab) ? tab : 'busca';
   $$('.tab').forEach(t => t.hidden = t.id !== 'tab-' + valid);
   $$('.tabs a').forEach(a => a.classList.toggle('on', a.dataset.tab === valid));
 }
@@ -144,7 +144,7 @@ function renderSearch() {
       <div class="rscore">${ring(sc)}</div>
       <div class="price"><div class="price">${brl(r.price)}</div>${diff}</div>
       <div class="actions">
-        <button type="button" class="btn small" data-watch="${i}">Monitorar</button>
+        ${pinnedItem(r) ? `<a class="btn small pinned-btn" href="#fixados" title="Já está nos fixados">✓ Fixado</a>` : `<button type="button" class="btn small" data-watch="${i}">📌 Fixar</button>`}
         ${r.url ? `<a class="icon-btn go" href="${esc(r.url)}" target="_blank" rel="noopener" aria-label="Abrir oferta na ${esc(s.name)}">↗</a>` : ''}
       </div></div>`;
   }).join('') + (list.length > ui.shown ? `<div class="more"><button type="button" class="btn" id="more">Mostrar mais ${list.length - ui.shown}</button></div>` : '');
@@ -171,7 +171,9 @@ $('#hide-sus').onchange = (e) => { ui.hideSus = e.target.checked; lset('hideSus'
 const dlg = $('#watch-dlg'); let editing = null;
 function openWatchDialog(v, item = null) {
   editing = { item, pin: v.pin, refPrice: v.refPrice };
-  $('#watch-title').textContent = item ? 'Editar produto monitorado' : 'Monitorar produto';
+  $('#watch-title').textContent = item ? 'Editar produto fixado' : 'Fixar produto';
+  $('#w-submit').textContent = item ? 'Salvar' : '📌 Fixar';
+  $('#w-alerts').checked = v.alerts !== false;
   $('#w-name').value = v.name ?? ''; $('#w-query').value = v.query ?? '';
   $('#w-target').value = v.target ?? (v.refPrice ? Math.floor(v.refPrice * 0.95) : '');
   $('#w-min').value = v.minPrice ?? (v.refPrice ? Math.round(v.refPrice * 0.5) : '');
@@ -183,11 +185,13 @@ function openWatchDialog(v, item = null) {
 $('#w-cancel').onclick = () => dlg.close();
 $('#watch-form').onsubmit = async (e) => {
   e.preventDefault();
-  const body = { name: $('#w-name').value, query: $('#w-query').value, target: $('#w-target').value, minPrice: $('#w-min').value, maxPrice: $('#w-max').value };
+  const body = { name: $('#w-name').value, query: $('#w-query').value, target: $('#w-target').value, minPrice: $('#w-min').value, maxPrice: $('#w-max').value, alerts: $('#w-alerts').checked };
   try {
     if (editing.item) await api(`/api/watch/${editing.item.id}`, { method: 'PATCH', body });
     else await api('/api/watch', { method: 'POST', body: { ...body, pin: editing.pin, refPrice: editing.refPrice } });
-    dlg.close(); toast(editing.item ? 'Produto atualizado' : 'Monitorando! Veja na aba Monitorados');
+    dlg.close();
+    const tgOk = S.settings.telegram.configured && S.settings.telegram.chatId;
+    toast(editing.item ? 'Produto atualizado' : !body.alerts ? '📌 Fixado (sem alertas)' : tgOk ? '📌 Fixado! Você recebe alerta no Telegram quando o preço cair' : '📌 Fixado! Configure o Telegram na aba Alertas para receber avisos');
   } catch (err) { toast(err.message); }
 };
 $('#add-watch').onclick = () => openWatchDialog({ query: search.q, name: search.q });
@@ -197,7 +201,7 @@ function renderWatch() {
   $('#count-mon').textContent = S.items.length;
   $('#interval-txt').textContent = S.demo ? 1 : S.settings.intervalMin;
   if (!S.items.length) {
-    $('#watch').innerHTML = `<div class="empty"><h2>Nada monitorado ainda</h2><p class="muted">Faça uma busca e toque em <b>Monitorar</b> numa oferta, ou adicione um produto pelo botão acima.</p></div>`;
+    $('#watch').innerHTML = `<div class="empty"><h2>Nenhum produto fixado</h2><p class="muted">Faça uma busca e toque em <b>📌 Fixar</b> numa oferta, use o botão acima ou envie <code>/fixar ryzen 5 7600 meta 1200</code> para o seu bot no Telegram.</p></div>`;
     return;
   }
   $('#watch').innerHTML = S.items.map(it => {
@@ -221,15 +225,16 @@ function renderWatch() {
         <div class="actions">${o.url ? `<a class="icon-btn go" href="${esc(o.url)}" target="_blank" rel="noopener" aria-label="Abrir na ${esc(s.name)}">↗</a>` : ''}</div>
       </div>`;
     }).join('');
-    return `<article class="product">
+    return `<article class="product ${it.alerts === false ? 'muted-card' : ''}">
       <div class="product-head">
         <div style="min-width:0"><h2>${esc(it.name)}</h2>
           <div class="watch-meta"><span>busca: <b>${esc(it.query)}</b></span>${it.target ? `<span>meta: <b>${brl(it.target)}</b></span>` : '<span>sem meta</span>'}${it.minPrice || it.maxPrice ? `<span>faixa: <b>${brl(it.minPrice)}–${brl(it.maxPrice)}</b></span>` : ''}</div></div>
         <div class="best">${best ? `<div class="p" style="${hit ? 'color:var(--good)' : ''}">${brl(best.price)}</div><div class="s">na ${esc(store(best.storeId).name)}${hit ? ' · <b style="color:var(--good)">meta atingida</b>' : ''}</div>` : `<div class="s">${it.checking ? 'Buscando…' : 'Sem oferta válida ainda'}</div>`}
           <div class="head-actions">
+            <button type="button" class="btn small bell ${it.alerts === false ? '' : 'on'}" data-bell="${it.id}" aria-pressed="${it.alerts !== false}" title="${it.alerts === false ? 'Alertas desligados para este produto' : 'Alertas ligados para este produto'}">${it.alerts === false ? '🔕 Alertas off' : '🔔 Alertas on'}</button>
             <button type="button" class="btn small" data-check="${it.id}" ${it.checking ? 'disabled' : ''}>${it.checking ? 'Verificando…' : 'Verificar'}</button>
             <button type="button" class="btn small" data-edit="${it.id}">Editar</button>
-            <button type="button" class="btn small danger" data-del="${it.id}">Remover</button>
+            <button type="button" class="btn small danger" data-del="${it.id}">Desafixar</button>
           </div></div>
       </div>
       <div class="rows">${rows}</div>
@@ -237,13 +242,14 @@ function renderWatch() {
   }).join('');
 }
 $('#watch').addEventListener('click', async (e) => {
-  const c = e.target.closest('[data-check]'), ed = e.target.closest('[data-edit]'), del = e.target.closest('[data-del]');
+  const c = e.target.closest('[data-check]'), ed = e.target.closest('[data-edit]'), del = e.target.closest('[data-del]'), bell = e.target.closest('[data-bell]');
   try {
+    if (bell) { const it = S.items.find(x => x.id === bell.dataset.bell); await api(`/api/watch/${it.id}`, { method: 'PATCH', body: { alerts: it.alerts === false } }); toast(it.alerts === false ? '🔔 Alertas ligados' : '🔕 Alertas desligados para este produto'); }
     if (c) await api(`/api/watch/${c.dataset.check}/check`, { method: 'POST' });
     if (ed) { const it = S.items.find(x => x.id === ed.dataset.edit); openWatchDialog(it, it); }
     if (del) {
-      if (!del.classList.contains('armed')) { del.classList.add('armed'); del.textContent = 'Confirmar'; setTimeout(() => { del.classList.remove('armed'); del.textContent = 'Remover'; }, 3500); return; }
-      await api(`/api/watch/${del.dataset.del}`, { method: 'DELETE' }); toast('Produto removido');
+      if (!del.classList.contains('armed')) { del.classList.add('armed'); del.textContent = 'Confirmar'; setTimeout(() => { del.classList.remove('armed'); del.textContent = 'Desafixar'; }, 3500); return; }
+      await api(`/api/watch/${del.dataset.del}`, { method: 'DELETE' }); toast('Produto desafixado');
     }
   } catch (err) { toast(err.message); }
 });
@@ -285,7 +291,7 @@ function renderAlerts() {
       <span class="sdot" style="background:${store(x.storeId).color}"></span>
       <div><b>${esc(x.item)}</b> · ${esc(x.store)}<div class="r">${esc(x.reasons.join(' · '))} · ${ago(x.t)} · ${x.sent ? 'enviado no Telegram' : x.error ? 'falha: ' + esc(x.error) : 'Telegram não configurado'}</div></div>
       <a class="p" href="${esc(x.url ?? '#')}" target="_blank" rel="noopener">${brl(x.price)}</a></div>`).join('')
-    : '<p class="muted">Nenhum alerta ainda. Quando um produto monitorado atingir a meta ou cair abaixo da média, ele aparece aqui.</p>';
+    : '<p class="muted">Nenhum alerta ainda. Quando um produto fixado atingir a meta ou cair abaixo da média, ele aparece aqui.</p>';
 }
 $('#mon-stores').addEventListener('click', (e) => { const b = e.target.closest('[data-mon]'); if (b) { b.classList.toggle('on'); b.setAttribute('aria-pressed', b.classList.contains('on')); } });
 $('#tg-save').onclick = async () => {
@@ -310,9 +316,27 @@ function renderStatus() {
   $('#demo-banner').hidden = !S.demo;
 }
 let first = true;
+function bestOf(it) {
+  return it.offers.filter(o => o.price != null && !o.error && !o.suspeito && (scoreOf(o.storeId) ?? 100) >= S.settings.alerts.minScore).sort((a, b) => a.price - b.price)[0];
+}
+function pinnedItem(r) {
+  return S.items.find(it => (r.url && Object.values(it.pins ?? {}).includes(r.url)));
+}
+function renderPinned() {
+  const el = $('#pinned-strip');
+  el.hidden = !S.items.length;
+  if (!S.items.length) return;
+  el.innerHTML = `<div class="pinned-head"><b>📌 Fixados</b><a href="#fixados">ver todos →</a></div><div class="pinned-row">` + S.items.map(it => {
+    const b = bestOf(it), hit = b && it.target && b.price <= it.target;
+    return `<a class="pcard ${hit ? 'hit' : ''}" href="#fixados" title="${esc(it.name)}">
+      <span class="pc-name">${it.alerts === false ? '🔕' : '🔔'} ${esc(it.name)}</span>
+      <span class="pc-price">${b ? brl(b.price) : it.checking ? 'buscando…' : '—'}</span>
+      <span class="pc-meta">${b ? esc(store(b.storeId).name) : ''}${it.target ? ` · meta ${brl(it.target)}` : ''}${hit ? ' · <b>atingida</b>' : ''}</span></a>`;
+  }).join('') + `</div>`;
+}
 function render() {
   if (!S) return;
-  renderStatus(); renderWatch(); renderStores(); renderAlerts();
+  renderStatus(); renderWatch(); renderPinned(); if (search.q && !search.running) renderSearch(); renderStores(); renderAlerts();
   if (first) { renderStoreFilter(); renderSearch(); first = false;
     const sugg = [...new Set([...S.items.map(i => i.query), 'RTX 4060', 'SSD 2TB NVMe', 'Ryzen 5 7600'])].slice(0, 6);
     $('#suggest').innerHTML = sugg.map(q => `<button type="button" class="fchip on" data-q="${esc(q)}">${esc(q)}</button>`).join('');

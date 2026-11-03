@@ -12,11 +12,11 @@ Não precisa instalar nenhuma dependência: basta ter o Node.js. Roda no PC ou n
 - **Lojas**: KaBuM!, Pichau, Terabyte, Amazon, Mercado Livre, Magazine Luiza, AliExpress e Shopee.
 - **Busca profunda**: consulta mais páginas, inclui os comparadores Buscapé e Zoom e, no PC, pode usar um navegador headless para lojas que bloqueiam robôs.
 - **Filtro de lixo**: descarta acessórios ("suporte para…", "adesivo…") e marca como **suspeito** preço muito abaixo da mediana, que pode ser golpe ou outro produto.
-- **Monitoramento**: salve um produto com uma **meta de preço**. O servidor confere a cada 15 min e guarda o histórico.
-- **Telegram**: avisa quando o produto atinge a meta ou cai X% abaixo da média de 30 dias. Comandos: `/precos`, `/buscar <produto>`, `/status` e `/atualizar`.
+- **📌 Fixar produtos**: fixe uma oferta direto da busca (ou pelo Telegram) com uma **meta de preço**. Os fixados aparecem no topo da busca. O servidor confere todos a cada 15 min e guarda o histórico.
+- **🔔 Alertas no Telegram**: avisa quando um fixado atinge a meta ou cai X% abaixo da média de 30 dias. Dá para ligar ou desligar os alertas de cada produto.
 - **Confiabilidade**: o score de cada loja combina Reclame Aqui (40%), avaliação da loja (25%), volume de vendas (20%) e reviews (15%).
 
-![Monitorados](docs/monitorados.png)
+![Fixados](docs/fixados.png)
 
 ## Começando
 
@@ -63,10 +63,19 @@ nano .env                          # defina SENHA
 2. Abra o site, vá na aba **Alertas**, cole o token e salve.
 3. Envie `/start` para o seu bot. O chat é conectado sozinho e só ele pode usar os comandos.
 
+| Comando | O que faz |
+|---|---|
+| `/fixados` | Lista os produtos fixados com o melhor preço atual |
+| `/fixar ryzen 5 7600 meta 1200` | Fixa um produto (a meta é opcional) |
+| `/desafixar 2` | Remove o fixado nº 2 da lista |
+| `/buscar rtx 4060` | Busca rápida nas lojas |
+| `/status` | Mostra versão, tempo ligado e memória do servidor |
+| `/atualizar` | Baixa a versão nova do GitHub e reinicia |
+
 ## Segurança e privacidade
 
-- **Seus dados ficam só na sua máquina.** O token, os produtos monitorados, o histórico e os alertas ficam em `data/settings.json`, `data/watchlist.json`, `data/history.json`, `data/alerts.json` e `.env`. Todos estão no `.gitignore` e **nunca** vão para o git.
-- **Defina `SENHA` no `.env`**: quem abre o site pode alterar os produtos monitorados e as configurações.
+- **Seus dados ficam só na sua máquina.** O token, os produtos fixados, o histórico e os alertas ficam em `data/settings.json`, `data/watchlist.json`, `data/history.json`, `data/alerts.json` e `.env`. Todos estão no `.gitignore` e **nunca** vão para o git.
+- **Defina `SENHA` no `.env`**: quem abre o site pode alterar os produtos fixados e as configurações.
 - **Não exponha a porta 3000 direto na internet.** Prefira o Tailscale, que é privado e criptografado.
 - **Links fixos são restritos às lojas suportadas**, então o servidor não busca endereços arbitrários.
 - **Se o token do bot vazar**, gere outro no @BotFather (`/revoke`).
@@ -80,7 +89,7 @@ nano .env                          # defina SENHA
 ## Estrutura
 
 ```
-server.js              servidor HTTP, busca em streaming, monitoramento e alertas
+server.js              servidor HTTP, busca em streaming, fixados e alertas
 src/stores.js          adaptadores de cada loja
 src/extract.js         extrator genérico (JSON embutido / HTML) e filtros
 src/reliability.js     cálculo do score de confiabilidade
