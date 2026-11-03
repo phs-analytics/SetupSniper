@@ -38,7 +38,9 @@ Cada loja tem um adaptador em `src/stores.js` que monta a URL de busca. A leitur
 | Volume de vendas | 20% | escala logarítmica: 10 milhões de vendas valem 100 |
 | Reviews/comentários | 15% | % de comentários positivos |
 
-Se faltar algum dado, o peso dele é redistribuído entre os outros. A classificação é: ≥85 Excelente, ≥70 Bom, ≥55 Regular e abaixo disso Atenção.
+Se faltar algum dado, o peso dele é redistribuído entre os outros. A classificação é: ≥85 Excelente, ≥70 Bom, ≥55 Regular e abaixo disso Cautela. No carimbo, as palavras são "confiável", "bom", "regular" e "cautela".
+
+> **A nota não é uma certificação.** Ela é calculada pelo SetupSniper e, enquanto usar os valores de `data/stores.json`, é uma **estimativa**: a interface mostra "(est.)" e um aviso na aba Lojas. Não use as notas como se fossem dados oficiais do Reclame Aqui ou das lojas, por exemplo em posts e vídeos.
 
 Os valores ficam em `data/stores.json`. Eles são **estimativas iniciais** e devem ser conferidos. O servidor tenta atualizar os dados do Reclame Aqui uma vez por dia (melhor esforço).
 

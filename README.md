@@ -23,7 +23,7 @@ Roda no seu PC ou num **celular Android antigo** usado como servidor pessoal, qu
 |---|---|
 | 🔎 **Busca livre** | Digite qualquer produto e os resultados de cada loja aparecem conforme ela responde. |
 | 🛒 **8 lojas + 2 comparadores** | KaBuM!, Pichau, Terabyte, Amazon, Mercado Livre, Magalu, AliExpress e Shopee. Na **busca profunda**, também Buscapé e Zoom. |
-| 🛡️ **Score de confiabilidade** | De 0 a 100 por loja, combinando Reclame Aqui, avaliação, volume de vendas e reviews. |
+| 🛡️ **Nota de confiança** | De 0 a 100 por loja, combinando Reclame Aqui, avaliação, volume de vendas e reviews. É uma estimativa do projeto, não uma certificação. |
 | 🧹 **Filtro de lixo** | Descarta acessórios e marca como **suspeito** o preço bom demais para ser verdade. |
 | 📌 **Fixar produtos** | Fixe uma oferta com **meta de preço**. O servidor confere de tempos em tempos e guarda o histórico. |
 | 🔔 **Alertas no Telegram** | Avisa quando o preço atinge a meta ou cai abaixo da média. Também dá para fixar produtos pelo próprio bot. |
@@ -72,7 +72,9 @@ Lojas mudam de layout o tempo todo, então correções de adaptadores são muito
 ## ⚠️ Avisos
 
 - **Os preços são lidos de páginas públicas.** Se uma loja mudar o layout ou bloquear o acesso, só aquela loja é afetada.
-- **Os indicadores de confiabilidade em `data/stores.json` são estimativas iniciais.** Ajuste conforme a sua pesquisa.
+- **As notas de confiança são estimativas do SetupSniper, não certificações nem dados oficiais.** Os indicadores em `data/stores.json` são valores iniciais aproximados: ajuste conforme a sua pesquisa. A interface marca como "estimativa" toda nota que não veio do Reclame Aqui ao vivo.
+- **Uso pessoal.** O SetupSniper foi feito para uso pessoal e não comercial. Respeite os termos de uso de cada loja, mantenha intervalos conservadores entre as consultas e use a busca profunda com navegador só quando precisar.
+- **Nomes e marcas** das lojas pertencem aos seus donos e aparecem só para identificar a origem de cada oferta, sem logotipos.
 - **Projeto pessoal, sem vínculo com as lojas citadas.** Confira sempre preço, vendedor e frete na loja antes de comprar.
 
 ## 📄 Licença

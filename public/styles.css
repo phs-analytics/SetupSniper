@@ -346,3 +346,5 @@ dialog .btn.ghost { color: var(--ink); border-color: var(--ink); }
   .product-head, .row { padding-left: 16px; padding-right: 16px; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+.disclaimer { margin: 0; font-size: 13px; color: var(--fg2); background: var(--bg2); border: 1.5px dashed rgba(243, 236, 223, .25); border-radius: 8px; padding: 10px 14px; max-width: 900px; }
+.disclaimer b { color: var(--yellow); }

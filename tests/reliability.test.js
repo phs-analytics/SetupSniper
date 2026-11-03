@@ -6,7 +6,7 @@ import { readFileSync } from 'node:fs';
 test('score fica entre 0 e 100 e tem classificação', () => {
   const r = computeReliability({ reclameAqui: { nota: 8, solucao: 90, voltaria: 75, respondidas: 99 }, rating: { media: 4.6, avaliacoes: 500000 }, vendas: 1e7, reviewsPositivas: 82 });
   assert.ok(r.score >= 0 && r.score <= 100);
-  assert.ok(['Excelente', 'Bom', 'Regular', 'Atenção'].includes(r.tier));
+  assert.ok(['Excelente', 'Bom', 'Regular', 'Cautela'].includes(r.tier));
 });
 
 test('poucas avaliações puxam a nota para o meio', () => {
