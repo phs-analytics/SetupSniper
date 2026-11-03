@@ -26,6 +26,8 @@ No computador, instale o dufs pelo [site do projeto](https://github.com/sigoden/
 
 ## Acessar
 
+> Na primeira vez, a página mostra **"Empty folder"** (pasta vazia). Está certo: use o botão de **enviar (↑)** no topo para mandar o primeiro arquivo. Se os botões de enviar e de nova pasta não aparecerem, o login não foi aplicado: confira a `NUVEM_SENHA` e ligue a nuvem de novo.
+
 - **Navegador:** `http://IP-tailscale:8090`
 - **Windows:** [RaiDrive](https://www.raidrive.com), com WebDAV, `http`, porta 8090 e o seu usuário e senha. O "Mapear unidade de rede" nativo do Windows exige HTTPS para WebDAV com senha.
 - **Android:** Solid Explorer, CX File Explorer ou Material Files, adicionando um armazenamento WebDAV.
