@@ -1,0 +1,35 @@
+{
+  "_ajuda": "Séries simuladas para os indicadores do histórico (tests/price-history.test.js). 'agora' é o relógio injetado; cada ponto tem diasAtras (pode ser fracionário) e pix em centavos. Produto e loja ilustrativos.",
+  "agora": "2026-11-04T15:00:00Z",
+  "titulo": "Processador AMD Ryzen 7 7800X3D",
+  "series": {
+    "inflado": {
+      "_explica": "R$ 1.000 por semanas, sobe 20% 12 dias atrás e cai para R$ 990 ontem: a 'promoção' só devolve o preço de antes.",
+      "pontos": [
+        { "diasAtras": 40, "pix": 100000 }, { "diasAtras": 30, "pix": 100000 }, { "diasAtras": 20, "pix": 100000 },
+        { "diasAtras": 15, "pix": 101000 }, { "diasAtras": 12, "pix": 120000 }, { "diasAtras": 6, "pix": 120000 },
+        { "diasAtras": 3, "pix": 120000 }, { "diasAtras": 1, "pix": 99000 }
+      ]
+    },
+    "quedaReal": {
+      "_explica": "Mesma alta, mas a queda leva o preço 15% abaixo do menor dos 30 dias: promoção de verdade.",
+      "pontos": [
+        { "diasAtras": 40, "pix": 100000 }, { "diasAtras": 20, "pix": 100000 }, { "diasAtras": 12, "pix": 120000 },
+        { "diasAtras": 3, "pix": 120000 }, { "diasAtras": 1, "pix": 85000 }
+      ]
+    },
+    "estavel": {
+      "_explica": "Sem promoção: mínimo e mediana conhecidos em 30 e 90 dias.",
+      "pontos": [
+        { "diasAtras": 80, "pix": 90000 }, { "diasAtras": 60, "pix": 95000 }, { "diasAtras": 25, "pix": 99000 },
+        { "diasAtras": 20, "pix": 98000 }, { "diasAtras": 10, "pix": 97000 }, { "diasAtras": 5, "pix": 99000 },
+        { "diasAtras": 0.5, "pix": 98000 }
+      ],
+      "esperado": { "min30": 97000, "mediana30": 98000, "min90": 90000, "mediana90": 98000, "atual": 98000, "menor90": false }
+    },
+    "comecando": {
+      "_explica": "Só dois pontos no mesmo dia: histórico começando.",
+      "pontos": [ { "diasAtras": 0.3, "pix": 100000 }, { "diasAtras": 0.1, "pix": 99000 } ]
+    }
+  }
+}
