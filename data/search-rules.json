@@ -1,0 +1,13 @@
+{
+  "_ajuda": "Regras do modo 'Por loja' da busca (src/por-loja.js). minScore: nota mínima do filtro 'só vendedor bom' (70 = classe 'Bom' de data/seller-score.json). resultsPerStore: produtos (cards) por loja. maxPages: páginas por loja e por busca quando faltarem produtos com vendedor bom. minRelevance: nota de relevância mínima (0–100: todos os termos 40, modelo exato 30, variante certa 30; src/extract.js relevanceScore). minConfidence: abaixo desta confiança nos dados do vendedor, e sem sinal de risco, a oferta vai para 'Sem dados do vendedor' em vez de sumir (40 = trava 'confiancaBaixa' de data/seller-score.json). filterOn: filtro ligado por padrão. sort: ordem padrão ('melhor' = Melhor escolha, 'preco' = menor preço, 'nota' = maior nota). A preferência do usuário fica em data/settings.json (porLoja) e vale por cima destes valores.",
+  "versao": 1,
+  "atualizadoEm": "2026-11-04",
+  "fonte": "docs/plano-3.0.md (Etapa 3b: nota mínima 70, até 10 produtos por loja, até 3 páginas) e data/seller-score.json (classes: Bom = 70; travas.confiancaBaixa.confianca = 40)",
+  "minScore": 70,
+  "resultsPerStore": 10,
+  "maxPages": 3,
+  "minRelevance": 80,
+  "minConfidence": 40,
+  "filterOn": true,
+  "sort": "melhor"
+}

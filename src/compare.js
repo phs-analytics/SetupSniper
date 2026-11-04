@@ -1,16 +1,18 @@
 // Comparativo entre lojas e vendedores: agrupa ofertas do MESMO produto (títulos escritos de jeitos
 // diferentes em cada loja) e ordena cada grupo pelo menor preço dos vendedores mais confiáveis.
 // Funções puras, testadas em tests/compare.test.js.
-import { normalize } from './extract.js';
+import { normalize, VARIANT_WORDS } from './extract.js';
 import { rankOffers } from './ranking.js';
 
 // Palavras que não identificam o produto (categoria, marketing, estado, cor...).
 const GENERIC = new Set(('placa de da do das dos para com sem e a o video grafica processador memoria ram ssd hd nvme m2 m 2 interno interna externo ' +
-  'gamer gaming nvidia geforce amd radeon intel core ryzen novo nova original lacrado lacrada envio imediato garantia oficial loja promocao oferta ' +
+  'gamer gaming nvidia geforce rtx gtx rx amd radeon intel core ryzen novo nova original lacrado lacrada envio imediato garantia oficial loja promocao oferta ' +
   'preto preta black branco branca white edition edicao oc overclock pcie pci express gddr6 gddr6x gddr7 ddr4 ddr5 dlss rgb led box cooler ' +
   'max turbo ghz mhz core cores nucleo nucleos threads cache socket am4 am5 lga1700 lga1851 desktop pc computador kit unidade un pronta entrega').split(' '));
 // "Ti", "Super", "XT" e "GRE" mudam o produto: entram na assinatura mesmo sem dígito.
-const VARIANT = new Set(['ti', 'super', 'xt', 'xtx', 'gre']);
+const VARIANT = VARIANT_WORDS;
+// Marcas com dígito no nome: são palavras distintivas, não código de modelo ("Inno3D RTX 4060 Twin X2" ≠ "Zotac RTX 4060 Twin Edge").
+const DIGIT_WORDS = new Set(['inno3d']);
 
 // Junta números quebrados: "8 GB" → "8gb", "2 X" → "2x", "4060 ti" fica separado (variante)
 const prep = (title) => normalize(title).replace(/\b(\d+)\s+(gb|tb|mb|x|w|mhz|hz)\b/g, '$1$2');
@@ -20,7 +22,7 @@ export function productSignature(title) {
   const toks = prep(title).split(' ').filter(Boolean);
   const codes = new Set(), words = new Set();
   for (const t of toks) {
-    if (/\d/.test(t)) {
+    if (/\d/.test(t) && !DIGIT_WORDS.has(t)) {
       // velocidade/frequência e o "8 core" variam entre lojas; capacidade e modelo ficam
       if (/^\d+(\.\d+)?(ghz|mhz)$/.test(t) || /^\d+-?core$/.test(t)) continue;
       codes.add(t);

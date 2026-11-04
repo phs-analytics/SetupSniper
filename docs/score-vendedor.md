@@ -336,6 +336,18 @@ linhas, sem copiar código e sem adicionar dependência.
 }
 ```
 
+### Filtro "só vendedor bom" (modo Por loja, 3.0)
+
+`src/por-loja.js` usa a nota final de cada oferta (`offer.trust`) para separar três grupos, com as regras de `data/search-rules.json`:
+
+- **Aparece:** nota ≥ 70 (classe "Bom"), sem preço suspeito.
+- **Sem dados do vendedor:** confiança < 40 (a trava T4 da tabela acima) **e** nenhuma trava de risco (T1, T2, T3). A oferta não some: fica num grupo próprio.
+- **Oculto, com o motivo:** nota abaixo de 70, travas de risco ou preço suspeito. O motivo é a nota, a palavra do carimbo e o principal sinal, por exemplo "nota 35: alto risco — loja aberta há 18 dias". Pontos positivos ("48.000 vendas") não servem de motivo.
+
+`vendedorAprovado(offer, minScore)` usa a mesma regra para Fixados, alertas e Ofertas. Falta de dado não aprova.
+
+**Limitação conhecida:** sem o número de avaliações, um vendedor grande do Mercado Livre (termômetro verde, dezenas de milhares de vendas) fica com confiança 30 e cai em "Sem dados do vendedor". Os dados que faltam (avaliações e % positivas) só chegam pela API oficial ou pela extensão. [não verificado ao vivo]
+
 ---
 
 ## 9. Fontes (acesso em 03/11/2026)

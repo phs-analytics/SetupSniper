@@ -403,6 +403,21 @@ export function offerRisk(offer = {}, ctx = {}) {
 
 // ---------- Nota final (3 camadas + travas) ----------
 
+// Oferta normalizada (src/offer.js) → dados neutros do vendedor para sellerScore/finalScore.
+// Mesma regra do server.js (sellerData): lojas de estoque próprio sem vendedor parceiro = "vendido pela loja";
+// o que o adaptador leu (offer.sellerInfo: idade, vendas, avaliações, reputação) entra por cima.
+export const FIRST_PARTY_STORES = ['kabum', 'pichau', 'terabyte'];
+export function sellerDataOf(o = {}, { firstParty = FIRST_PARTY_STORES } = {}) {
+  const s = o.seller ?? {};
+  const store = o.store ?? o.storeId ?? null;
+  return {
+    store, name: s.name ?? null, official: s.official ?? null,
+    soldByStore: firstParty.includes(store) && !s.id ? true : null,
+    foreign: o.shipping?.origin === 'INTL' ? true : null,
+    ...(o.sellerInfo ?? {}),
+  };
+}
+
 const isResult = o => o && typeof o.score === 'number' && Array.isArray(o.reasons);
 
 // input: { platformScore (0–100, de computeReliability), seller (dados neutros ou resultado de sellerScore),
