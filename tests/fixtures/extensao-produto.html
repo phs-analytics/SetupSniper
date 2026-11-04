@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Placa de Vídeo RTX 4060 8GB | KaBuM! (página de teste)</title>
+  <meta property="og:title" content="Placa de Vídeo RTX 4060 8GB">
+</head>
+<body>
+  <!-- Página fictícia de produto, usada só em tests/extensao-chromium.test.js. -->
+  <h1>Placa de Vídeo RTX 4060 8GB</h1>
+  <p class="preco">R$ 2.099,00 no Pix</p>
+  <form id="cupom-form" onsubmit="return false">
+    <label>Cupom de desconto <input name="coupon" id="coupon" type="text" autocomplete="off"></label>
+    <button id="aplicar" type="button">Aplicar</button>
+  </form>
+  <script>
+    // Tudo que mexer no campo de cupom, no botão ou no corpo da página fica registrado aqui.
+    window.__toques = [];
+    const campo = document.getElementById('coupon');
+    for (const ev of ['focus', 'input', 'change', 'keydown', 'paste']) campo.addEventListener(ev, () => window.__toques.push('campo:' + ev));
+    document.getElementById('aplicar').addEventListener('click', () => window.__toques.push('aplicar:click'));
+    document.addEventListener('submit', () => window.__toques.push('submit'), true);
+    // observa o DOM depois que o próprio parser termina (o fim do arquivo ainda chega depois deste script)
+    document.addEventListener('DOMContentLoaded', () => {
+      new MutationObserver((ms) => { for (const m of ms) window.__toques.push('mudanca:' + m.type + ':' + m.target.nodeName); })
+        .observe(document.documentElement, { subtree: true, childList: true, attributes: true, characterData: true });
+    });
+  </script>
+</body>
+</html>

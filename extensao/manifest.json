@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "SetupSniper: enviar preços",
-  "version": "1.0.0",
-  "description": "Envia para o SEU servidor do SetupSniper os preços das páginas de produto e de busca que você abre nas lojas.",
+  "version": "1.1.0",
+  "description": "Envia ao SEU SetupSniper os preços das lojas que você abre e mostra os cupons e o histórico da loja aberta.",
   "permissions": ["storage"],
   "optional_host_permissions": ["http://*/*", "https://*/*"],
   "host_permissions": [
@@ -14,10 +14,10 @@
       "https://*.kabum.com.br/*", "https://*.pichau.com.br/*", "https://*.terabyteshop.com.br/*", "https://*.amazon.com.br/*",
       "https://*.mercadolivre.com.br/*", "https://*.magazineluiza.com.br/*", "https://*.aliexpress.com/*", "https://*.shopee.com.br/*"
     ],
-    "js": ["content.js"],
+    "js": ["loja.js", "content.js"],
     "run_at": "document_idle"
   }],
-  "background": { "service_worker": "background.js", "scripts": ["background.js"] },
+  "background": { "service_worker": "background.js", "scripts": ["loja.js", "background.js"] },
   "action": { "default_title": "SetupSniper", "default_popup": "popup.html" },
   "browser_specific_settings": { "gecko": { "id": "setupsniper@phs-analytics", "strict_min_version": "121.0" }, "gecko_android": { "strict_min_version": "121.0" } }
 }

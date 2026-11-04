@@ -5,24 +5,46 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SetupSniper</title>
   <style>
-    :root { color-scheme: light dark; --bg: #f3ecdf; --fg: #1b1b1b; --muted: #555; --acc: #ff6b1a; }
+    :root { color-scheme: light dark; --bg: #f3ecdf; --fg: #1b1b1b; --muted: #555; --acc: #ff6b1a; --ok: #3a7d0a; --warn: #b8860b; }
     @media (prefers-color-scheme: dark) { :root { --bg: #1b1b1b; --fg: #f3ecdf; --muted: #aaa; } }
-    body { margin: 0; padding: 14px; width: min(340px, 100vw); box-sizing: border-box; background: var(--bg); color: var(--fg); font: 14px/1.4 system-ui, sans-serif; }
-    h1 { font-size: 16px; margin: 0 0 8px; } label { display: grid; gap: 4px; margin: 10px 0; font-weight: 600; }
+    body { margin: 0; padding: 14px; width: min(360px, 100vw); box-sizing: border-box; background: var(--bg); color: var(--fg); font: 14px/1.4 system-ui, sans-serif; }
+    h1 { font-size: 16px; margin: 0 0 8px; } h2 { font-size: 15px; margin: 0 0 6px; }
+    label { display: grid; gap: 4px; margin: 10px 0; font-weight: 600; }
     input[type=url], input[type=password] { padding: 8px; border: 2px solid var(--fg); border-radius: 6px; background: transparent; color: inherit; font: inherit; min-width: 0; }
     button { padding: 8px 12px; border: 2px solid var(--fg); border-radius: 6px; background: var(--acc); color: #111; font-weight: 700; cursor: pointer; }
-    small, .st { color: var(--muted); } .st { margin-top: 10px; overflow-wrap: anywhere; } .row { display: flex; gap: 8px; flex-wrap: wrap; }
+    small, .st, .r { color: var(--muted); } .st { margin-top: 10px; overflow-wrap: anywhere; } .row { display: flex; gap: 8px; flex-wrap: wrap; }
     .check { display: flex; align-items: center; gap: 8px; font-weight: 400; }
+    #loja { border: 2px solid var(--fg); border-radius: 8px; padding: 10px; margin: 0 0 12px; }
+    #cupons { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; }
+    .cupom { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; align-items: start; padding-top: 8px; border-top: 1px dashed var(--muted); }
+    .cupom code { font: 700 15px/1.2 ui-monospace, monospace; overflow-wrap: anywhere; }
+    .cupom .r { grid-column: 1 / -1; font-size: 12px; overflow-wrap: anywhere; }
+    .cupom button { padding: 4px 10px; }
+    .tag { display: inline-block; font-size: 11px; font-weight: 700; padding: 0 6px; border-radius: 4px; border: 1px solid currentColor; margin-left: 4px; }
+    .tag.oficial { color: var(--ok); } .tag.divulgado { color: var(--warn); }
+    #hist { margin: 0 0 6px; } #hist .tag { margin: 2px 4px 0 0; }
+    details > summary { cursor: pointer; font-weight: 700; }
   </style>
 </head>
 <body>
   <h1>SetupSniper</h1>
-  <small>Envia ao <b>seu</b> servidor os preços das páginas de produto e de busca que você abre nas 8 lojas. Carrinho, pagamento e conta nunca são enviados.</small>
-  <label>Endereço do seu SetupSniper<input id="server" type="url" placeholder="http://100.x.x.x:3000" autocomplete="off"></label>
-  <label>Senha do site (se tiver)<input id="senha" type="password" autocomplete="off"></label>
-  <label class="check"><input id="enabled" type="checkbox" checked> Enviar automaticamente</label>
-  <div class="row"><button id="save" type="button">Salvar e testar</button></div>
+  <section id="loja" hidden aria-live="polite">
+    <h2 id="lojaTitulo">Cupons</h2>
+    <div id="hist" hidden></div>
+    <div id="lojaSt" class="r"></div>
+    <ul id="cupons"></ul>
+    <p class="r" id="avisoCupom">A extensão só mostra os cupons. Ela não preenche o campo de cupom nem clica em nada na loja: copie e cole você mesmo.</p>
+  </section>
+  <details id="cfg" open>
+    <summary>Configuração</summary>
+    <small>Envia ao <b>seu</b> servidor os preços das páginas de produto e de busca que você abre nas 8 lojas. Carrinho, pagamento e conta nunca são enviados.</small>
+    <label>Endereço do seu SetupSniper<input id="server" type="url" placeholder="http://100.x.x.x:3000" autocomplete="off"></label>
+    <label>Senha do site (se tiver)<input id="senha" type="password" autocomplete="off"></label>
+    <label class="check"><input id="enabled" type="checkbox" checked> Enviar automaticamente</label>
+    <div class="row"><button id="save" type="button">Salvar e testar</button></div>
+  </details>
   <div id="st" class="st"></div>
+  <script src="loja.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

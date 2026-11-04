@@ -21,7 +21,7 @@ import { parseChannelPage, channelUrl, validChannel, channelConfigs, planChannel
 import { normalizeGroups } from './src/telegram-groups.js';
 import { createPriceHistory, keepaConfigured, fetchKeepa } from './src/price-history.js';
 import { dailyMin } from './public/historico.js';
-import { createCouponFeed, mergeCoupons } from './src/coupon-feed.js';
+import { createCouponFeed, mergeCoupons, regraTexto, couponLabel } from './src/coupon-feed.js';
 import { normalizeRules, buscarAteCompletar, produtosBons, motivoSemAlerta } from './src/por-loja.js';
 import { fromPost, fromCoupon, fromCapture, createOffersStore, techCategories } from './src/offers.js';
 import { filtrosDe } from './public/ofertas.js';
@@ -1115,6 +1115,38 @@ const server = http.createServer(async (req, res) => {
       if (!['ok', 'no'].includes(b.voto)) return json(res, 400, { error: 'Voto inválido' });
       try { const o = offersDb.feedback(decodeURIComponent(om[1]), b.voto); await offersDb.flush(); offersRev++; broadcast(); return json(res, 200, o ?? { ok: true }); }
       catch (e) { return json(res, 404, { error: e.message }); }
+    }
+    // ---- extensão: cupons ativos e histórico da loja aberta na aba (nada pessoal na resposta) ----
+    if (pathname === '/api/extensao/loja' && req.method === 'GET') {
+      const pageUrl = String(url.searchParams.get('url') ?? '');
+      if (!/^https:\/\//i.test(pageUrl) || pageUrl.length > 2000) return json(res, 400, { error: 'Endereço da loja inválido' });
+      const atualizadoEm = new Date().toISOString();
+      const sid = storeFromUrl(pageUrl);
+      if (!sid || !activeIds().includes(sid)) return json(res, 200, { loja: null, cupons: [], historico: null, atualizadoEm });
+      const canon = canonicalUrlOf(pageUrl);
+      const cupons = allCoupons()
+        .filter(c => c.store === sid && isCouponActive(c) && (!c.productUrl || canonicalUrlOf(c.productUrl) === canon))
+        .slice(0, 50)
+        .map(c => ({
+          id: c.id, origem: c.origem === 'oficial' ? 'oficial' : 'divulgado', rede: c.rede ?? null, kind: c.kind ?? 'cupom', codes: c.codes ?? [], title: c.title ?? null,
+          regra: regraTexto(c), rotulo: couponLabel(c, { now: Date.now() }), startsAt: c.startsAt ?? null, expiresAt: c.expiresAt ?? null,
+          divulgadoEm: c.divulgadoEm ?? c.seenAt ?? null, seenAt: c.seenAt ?? null, sourceName: c.sourceName ?? null,
+          verificado: !!c.verificado || c.status === 'confirmed_by_user', status: c.status ?? null, produto: !!c.productUrl,
+        }));
+      let titulo = String(url.searchParams.get('titulo') ?? '').slice(0, 200).trim();
+      if (!titulo) titulo = captures.get(canon)?.title ?? '';
+      const pix = Number(url.searchParams.get('pix'));
+      let historico = null;
+      if (titulo) {
+        await priceHist.flush();
+        const pts = await priceHist.series({ title: titulo, days: 90 });
+        if (pts.length) {
+          const ind = await priceHist.indicators(pts, { atual: Number.isInteger(pix) && pix > 0 ? pix : undefined });
+          historico = { estado: ind.estado, texto: ind.texto, pontos: ind.pontos, dias: ind.dias, atual: ind.atual, min90: ind.min90, menor90: ind.menor90,
+            inflado: ind.inflado ? { ativo: ind.inflado.ativo, de: ind.inflado.de, base: ind.inflado.base, atual: ind.inflado.atual, altaPct: ind.inflado.altaPct, janelaDias: ind.inflado.janelaDias } : null };
+        }
+      }
+      return json(res, 200, { loja: { id: sid, nome: storeName(sid) }, cupons, historico, atualizadoEm });
     }
     if (pathname === '/api/coupons/feed' && req.method === 'GET') return json(res, 200, couponFeed.state());
     if (pathname === '/api/coupons/feed/refresh' && req.method === 'POST') {

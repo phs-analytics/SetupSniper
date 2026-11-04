@@ -1,0 +1,40 @@
+{
+  "_sobre": "Resposta de exemplo de GET /api/extensao/loja para a página de um produto da KaBuM! (dados fictícios, sem dados pessoais). Usada em tests/extensao-loja.test.js e tests/extensao-chromium.test.js.",
+  "loja": { "id": "kabum", "nome": "KaBuM!" },
+  "cupons": [
+    { "id": "awin-111", "origem": "oficial", "rede": "Awin", "kind": "cupom", "codes": ["KABUM10"], "title": "10% OFF em placas de vídeo",
+      "regra": "10% até R$ 50, mínimo R$ 300", "rotulo": "Oficial — enviado pela loja via Awin, válido até 10/11",
+      "startsAt": "2026-11-01T03:00:00.000Z", "expiresAt": "2026-11-11T02:59:59.000Z", "divulgadoEm": "2026-11-01T12:00:00.000Z",
+      "sourceName": "Awin", "verificado": false, "status": "unverified", "produto": false },
+    { "id": "d-222", "origem": "divulgado", "kind": "cupom", "codes": ["pix5"], "title": null,
+      "regra": "5% · só no Pix", "rotulo": "Divulgado por @canalhardware em 03/11",
+      "startsAt": null, "expiresAt": "2026-11-06T02:59:59.000Z", "divulgadoEm": "2026-11-03T18:00:00.000Z",
+      "sourceName": "@canalhardware", "verificado": false, "status": "unverified", "produto": false },
+    { "id": "d-333", "origem": "divulgado", "kind": "cupom", "codes": ["FRETEKBM"], "title": null,
+      "regra": "frete grátis, mínimo R$ 199", "rotulo": "Divulgado por @promosbr em 02/11 · ✅ funcionou para você",
+      "startsAt": null, "expiresAt": null, "divulgadoEm": "2026-11-02T10:00:00.000Z",
+      "sourceName": "@promosbr", "verificado": true, "status": "confirmed_by_user", "produto": true },
+    { "id": "d-444", "origem": "divulgado", "kind": "cupom", "codes": ["VELHO20"], "title": null,
+      "regra": "20%", "rotulo": "Divulgado por @canalhardware em 20/10, não verificado",
+      "startsAt": null, "expiresAt": "2026-10-31T02:59:59.000Z", "divulgadoEm": "2026-10-20T10:00:00.000Z",
+      "sourceName": "@canalhardware", "verificado": false, "status": "unverified", "produto": false },
+    { "id": "d-555", "origem": "divulgado", "kind": "cupom", "codes": ["KABUM10"], "title": null,
+      "regra": "10%", "rotulo": "Divulgado por @outro em 04/11, não verificado",
+      "startsAt": null, "expiresAt": null, "divulgadoEm": "2026-11-04T10:00:00.000Z",
+      "sourceName": "@outro", "verificado": false, "status": "unverified", "produto": false },
+    { "id": "awin-666", "origem": "oficial", "rede": "Awin", "kind": "promocao", "codes": [], "title": "Semana do hardware",
+      "regra": "regra não informada (leia as condições)", "rotulo": "Oficial — enviado pela loja via Awin, válido até 09/11",
+      "startsAt": "2026-11-01T03:00:00.000Z", "expiresAt": "2026-11-10T02:59:59.000Z", "divulgadoEm": "2026-11-01T12:00:00.000Z",
+      "sourceName": "Awin", "verificado": false, "status": "unverified", "produto": false },
+    { "id": "awin-777", "origem": "oficial", "rede": "Awin", "kind": "cupom", "codes": ["BLACK50"], "title": "R$ 50 OFF",
+      "regra": "R$ 50 OFF, mínimo R$ 500", "rotulo": "Oficial — enviado pela loja via Awin, começa em 20/11, válido até 30/11",
+      "startsAt": "2026-11-20T03:00:00.000Z", "expiresAt": "2026-12-01T02:59:59.000Z", "divulgadoEm": "2026-11-03T12:00:00.000Z",
+      "sourceName": "Awin", "verificado": false, "status": "unverified", "produto": false }
+  ],
+  "historico": {
+    "estado": "ok", "texto": "menor em 90 dias: R$ 1.899,90", "pontos": 14, "dias": 62,
+    "atual": 209900, "min90": 189990, "menor90": false,
+    "inflado": { "ativo": true, "de": 249900, "base": 199990, "atual": 209900, "altaPct": 25, "janelaDias": 30 }
+  },
+  "atualizadoEm": "2026-11-04T15:00:00.000Z"
+}
