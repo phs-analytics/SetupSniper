@@ -45,7 +45,14 @@ Também dá para colar o post na aba **🎟️ Cupons** do site. O comando `/cup
 
 ### Canais públicos (opcional)
 
-Na aba Cupons, liste canais públicos (um por linha). O servidor lê a prévia pública `https://t.me/s/<canal>` a cada 6 h, no máximo 5 posts por canal, e salva os cupons das lojas do escopo. Nada é lido se a lista estiver vazia.
+Abra a aba **📣 Promoções** e toque em **Ativar os canais sugeridos**. A lista dos 26 canais fica em `data/telegram-channels.json` e pode ser editada na aba 🎟️ Cupons (até 40, um por linha).
+
+- **Como lê:** pela prévia pública `https://t.me/s/<canal>`, sem login e sem conta do Telegram. Um canal de cada vez, com pausa entre eles, a cada 30 min (`channelIntervalMin`, mínimo 15).
+- **O que guarda:** todo post com link de uma loja do escopo entra no feed da aba Promoções, com scroll infinito, filtro por loja e por produto. Com um produto no filtro, os mais baratos vêm primeiro.
+- **Cupons:** posts com cupom também passam pelo mesmo fluxo dos posts encaminhados (abre o link, lê o preço na loja e salva o cupom), no máximo 3 por canal a cada leitura.
+- **Aviso no Telegram:** se uma promoção bater com um produto fixado e ficar dentro da meta, o bot avisa. O aviso diz "divulgado por @canal, não verificado".
+- **Grupos não funcionam assim.** A prévia `t.me/s` só existe para **canais** públicos. Grupos e canais com a prévia desativada aparecem como "sem prévia pública" em "Situação de cada canal". Para eles, encaminhe os posts ao seu bot.
+- **Nada é lido** enquanto a lista estiver vazia.
 
 ## Segurança
 

@@ -9,7 +9,7 @@ import { parseBRL } from './offer.js';
 
 const NAME_KEYS = ['name', 'title', 'displayTitle', 'productName', 'displayName', 'item_name', 'nome'];
 // Pix / à vista / boleto
-const PIX_KEYS = ['priceWithDiscount', 'pixPrice', 'priceWithPix', 'pricePix', 'pix', 'cashPrice', 'avista', 'aVista', 'bestPrice', 'boletoPrice', 'precoAVista', 'preco_avista'];
+const PIX_KEYS = ['priceWithDiscount', 'price_with_discount', 'pixPrice', 'priceWithPix', 'pricePix', 'pix', 'cashPrice', 'avista', 'aVista', 'bestPrice', 'boletoPrice', 'precoAVista', 'preco_avista'];
 // crédito / preço "cheio" atual
 const CARD_KEYS = ['salePrice', 'finalPrice', 'final_price', 'specialPrice', 'promotionalPrice', 'sellPrice', 'currentPrice', 'price', 'lowPrice', 'minPrice', 'preco', 'valor', 'value', 'amount'];
 // preço "de" (riscado) e afins: nunca é o preço a pagar
@@ -200,6 +200,16 @@ export function normalize(s) {
 // Palavras que indicam acessório/peça — descartadas se não estiverem na busca
 const ACCESSORY = ['adesivo', 'suporte', 'cooler', 'dissipador', 'heatsink', 'capa', 'pelicula', 'cabo', 'adaptador', 'bracket',
   'pasta termica', 'caixa vazia', 'compativel com', 'protetor', 'gabinete', 'placa mae', 'kit upgrade', 'combo'];
+// Estas indicam pacote/acessório em qualquer posição do título.
+const ANYWHERE = new Set(['compativel com', 'caixa vazia', 'kit upgrade', 'combo']);
+// Um título é de acessório quando a palavra abre o título ("Cooler para Ryzen...") ou vem seguida de "para"
+// ("suporte para placa de vídeo"). Só mencionar não basta: "Ryzen 5 7600 com Cooler Wraith" é o processador.
+export function isAccessory(title, banned = ACCESSORY) {
+  const words = normalize(title).split(' ');
+  const t = ' ' + words.join(' ') + ' ', head = ' ' + words.slice(0, 2).join(' ') + ' ';
+  return banned.some(w => ANYWHERE.has(w) ? t.includes(' ' + w + ' ')
+    : head.includes(' ' + w + ' ') || t.startsWith(' ' + w + ' ') || new RegExp(` ${w} (para|p|pra|compativel) `).test(t));
+}
 const STOP = new Set(['de', 'da', 'do', 'para', 'com', 'e', 'o', 'a', 'em', 'kit', 'novo', 'original']);
 
 export function queryTokens(q) {
@@ -227,7 +237,7 @@ export function cleanResults(items, query, { minRel } = {}) {
     .filter(r => r.title)
     .map(r => ({ ...r, rel: relevance(r.title, tokens) }))
     .filter(r => r.rel >= need)
-    .filter(r => { const t = ' ' + normalize(r.title) + ' '; return !banned.some(w => t.includes(' ' + w + ' ')); })
+    .filter(r => !isAccessory(r.title, banned))
     .filter(r => {
       const k = (r.canonicalUrl ?? '') + '|' + normalize(r.title) + '|' + (r.price?.pix ?? '') + '|' + (r.price?.card ?? '');
       if (seen.has(k)) return false; seen.add(k); return true;

@@ -1,6 +1,6 @@
 # SetupSniper: contexto para a próxima sessão do Claude Code
 
-> Situação em 04/11/2026: versão **2.7.0** na branch `main`, com 113 testes passando.
+> Situação em 04/11/2026: versão **2.8.0** na branch `main`, com 125 testes passando.
 > Este arquivo trata **só do SetupSniper**. Leia inteiro antes de mexer no projeto.
 
 ---
@@ -10,17 +10,19 @@
 O **SetupSniper** é um caçador de preços de hardware para quem monta PC no Brasil. É um projeto pessoal, sem fins comerciais, feito em **Node.js puro, sem nenhuma dependência** (não tem `npm install`).
 
 O que ele faz:
-- **Busca:** digite um produto e os resultados de cada loja aparecem conforme ela responde (streaming via SSE). A busca profunda lê mais páginas e pode usar um navegador headless no PC.
+- **Busca:** digite um produto e os resultados de cada loja aparecem conforme ela responde (streaming via SSE). Tem **scroll infinito**: pede as próximas páginas de cada loja ao chegar no fim. A busca profunda lê mais páginas e pode usar um navegador headless no PC.
+- **Ordem padrão "Melhor escolha":** os links mais baratos dos vendedores mais confiáveis primeiro (pedido do dono: vale em todo lugar).
 - **Lojas:** KaBuM!, Pichau, Terabyte, Amazon, Mercado Livre, Magalu, Shopee e AliExpress.
 - **Total Pix e Total Crédito:** cada oferta mostra os dois totais finais, com cupom, frete e, nos importados, imposto de importação e ICMS da UF do usuário.
-- **Cupons:** o usuário encaminha ao bot do Telegram um post de promoção. O bot resolve o link, lê o preço na loja, salva o cupom e recalcula os totais. Também lê canais públicos do Telegram, se o usuário ativar.
+- **Cupons:** o usuário encaminha ao bot do Telegram um post de promoção. O bot resolve o link, lê o preço na loja, salva o cupom e recalcula os totais.
+- **Canais de promoção:** lê 26 canais públicos do Telegram sugeridos pelo dono (aba 📣 Promoções), pela prévia `t.me/s`, a cada 30 min.
 - **Nota de confiança por oferta:** junta a loja, os sinais de risco do vendedor e a própria oferta, com motivos e nível de confiança.
 - **Filtro de lixo:** descarta acessórios e marca como "suspeito" o preço bom demais para ser verdade.
 - **Fixados:** produtos acompanhados com meta de preço. Guarda histórico, mostra um estado explícito por loja e avisa no Telegram.
 - **Servidor no celular:** scripts para Android/Termux, com vigia que religa tudo, boot automático e acesso por Tailscale.
 - **Nuvem de arquivos:** opcional, pelo navegador ou WebDAV.
 
-Interface web em `public/`, com estilo zine/colagem e as abas Busca, Fixados, Alertas, Lojas e Cupons.
+Interface web em `public/`, com estilo zine/colagem e as abas Busca, Fixados, Promoções, Cupons, Lojas e Alertas. Testada sem cortes de 320 a 768 px.
 
 ## 2. Onde está
 
@@ -71,7 +73,9 @@ Variáveis úteis:
 | `server.js` | servidor HTTP e SSE, busca, monitor dos Fixados, alertas, API, bot e migração dos dados |
 | `src/scope.js` | `activeStoreIds()`: lojas ativas pelo `enabled` do `stores.json` ou pelo `settings.enabledStores` |
 | `src/offer.js` | **schema único de oferta** (`normalizeOffer`), `parseBRL`, `toCents`, `formatBRL`, `canonicalUrl` |
-| `src/stores.js` | adaptadores de busca por loja (`ADAPTERS`) |
+| `src/stores.js` | adaptadores de busca por loja (`ADAPTERS`); `searchStore(id, q, { page, deep, browserFallback })`; `isChallenge()` reconhece captcha; `kabumItems()` lê o catálogo JSON da KaBuM |
+| `src/ranking.js` | ordem padrão: menor preço ajustado à confiança; alto risco/suspeito depois; sem preço por último |
+| `src/promo-feed.js` | feed de promoções dos canais: `promoFromPost`, `addPromos`, `queryPromos`, `watchMatches`, `channelStatus` |
 | `src/extract.js` | classifica preços pelo nome do campo e pelo texto (Pix, cartão, parcela, preço "de"); `cleanResults`; `flagOutliers` |
 | `src/scraper.js` | leitura da página de produto (link fixado) |
 | `src/browser.js`, `src/http.js` | navegador headless opcional e cliente HTTP |
@@ -97,6 +101,7 @@ Variáveis úteis:
 - `cep-uf.json`
 - `coupon-rules.json`
 - `seller-score.json`
+- `telegram-channels.json`: os 26 canais sugeridos.
 - `coupons.example.json`
 - `watchlist.example.json`
 
@@ -108,6 +113,7 @@ Variáveis úteis:
 - `data/alerts.json`
 - `data/coupons.json`
 - `data/channels-state.json`
+- `data/promos.json`
 - `logs/`
 
 **Documentação em `docs/`:**
@@ -215,6 +221,19 @@ Comparava três produtos fixos e calculava um score de confiabilidade.
 - `reliability.js` passou a aceitar lojas sem dados (`null`).
 - README, `docs/telegram.md` e `docs/como-funciona.md` atualizados.
 
+### 2.8.0: scroll infinito, ordem por preço + confiança, canais do Telegram, celular
+- **Scroll infinito:** `/api/search?page=N` e paginação por loja na interface, sem repetir ofertas.
+- **Filtro de acessórios:** só descarta o título que *é* de acessório; antes descartava "Ryzen 5 7600 com Cooler Wraith" e similares, o que causava "Nenhum resultado".
+- **"Parecidos":** se nenhum título tem todos os termos, mostra os parecidos (60% dos termos), marcados.
+- **Ordem "Melhor escolha"** (`src/ranking.js`) na busca, nos Fixados, no bot e nos alertas.
+- **Bloqueios:**
+  - página de captcha vira "bloqueado";
+  - quando a loja recusa e o Playwright existe, abre a mesma página no navegador (`browserFallback`);
+  - motivo por loja: "bloqueado", "nada parecido" ou "sem resultados";
+  - catálogo JSON da KaBuM como 1ª tentativa.
+- **Canais do Telegram:** aba 📣 Promoções, 26 canais sugeridos, leitura a cada 30 min, aviso de promoção que bate com produto fixado.
+- **Celular:** Fixados sem cortes, carimbo sem sobrepor o preço, cabeçalho compacto.
+
 ## 6. Decisões já tomadas (não reabrir)
 
 - **Referência de preço:** Pix.
@@ -227,12 +246,16 @@ Comparava três produtos fixos e calculava um score de confiabilidade.
   - Fora do programa: 60%.
 - **Pesquisa de cupons no Reclame Aqui (REA):** só se for preciso; ainda não rodou.
 - **TikTok Shop:** continua desligada até ser testada com a rede liberada.
+- **Ordem:** "Melhor escolha" é o padrão em todo lugar; Alto risco e suspeitos nunca ficam na frente de ofertas confiáveis.
+- **Sem disfarce de navegador:** imitar cabeçalhos de navegador (Sec-Fetch etc.) para passar por anti-bot foi recusado pelo sistema de permissões e fica fora, junto com a regra de não burlar proteções.
+- **Grupos do Telegram:** sem prévia pública, só por encaminhamento ao bot. Nada de login com conta pessoal (userbot).
 
 ## 7. Pendências (próximos passos)
 
 1. **Conferir ao vivo as 8 lojas.** A rede da sessão anterior bloqueava os sites, então tudo foi testado com fixtures.
    - Rode `npm start`, busque "rtx 4060" e confira loja a loja.
    - Onde aparecer "Preço não encontrado nesta página": salve o HTML em `tests/fixtures/`, escreva o teste e ajuste o adaptador.
+   - Confirmar também o catálogo JSON da KaBuM (`servicespub.prod.api.aws.grupokabum.com.br`) e a leitura dos 26 canais `t.me/s` (quais são grupos sem prévia).
 2. **Ler mais dados do vendedor** (idade da loja, vendas, avaliações) e preencher `offer.sellerInfo`. Hoje a maioria das ofertas de marketplace fica limitada a "Regular" por falta de dado.
 3. **`data/taxes.json`:** confirmar a regra `prc_pf_50_3000` e o ICMS das UFs com `"verificar": true`.
 4. **`data/stores.json`:** conferir as notas do Reclame Aqui, que são estimativas.

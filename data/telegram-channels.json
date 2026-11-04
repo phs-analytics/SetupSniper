@@ -1,0 +1,111 @@
+{
+  "_sobre": "Canais públicos do Telegram sugeridos para promoções e cupons de hardware. Lidos pela prévia pública https://t.me/s/<canal>, sem login, só se o usuário ativar. Grupos (não canais) e canais com prévia desativada não podem ser lidos assim: encaminhe os posts ao bot.",
+  "atualizadoEm": "2026-11-04",
+  "fonte": "lista enviada pelo dono do projeto em 04/11/2026; não conferida ao vivo (t.me bloqueado no ambiente de desenvolvimento)",
+  "canais": [
+    {
+      "canal": "LaPromotion",
+      "tipo": "promocoes"
+    },
+    {
+      "canal": "urubupromo",
+      "tipo": "promocoes"
+    },
+    {
+      "canal": "sucumbapromo",
+      "tipo": "promocoes"
+    },
+    {
+      "canal": "TJGOFERTASs",
+      "tipo": "promocoes"
+    },
+    {
+      "canal": "pcdofafapromo",
+      "tipo": "promocoes"
+    },
+    {
+      "canal": "cupombr",
+      "tipo": "cupons"
+    },
+    {
+      "canal": "cupom_aliexpress",
+      "tipo": "cupons"
+    },
+    {
+      "canal": "CuponsCupomBR",
+      "tipo": "cupons"
+    },
+    {
+      "canal": "cupomdashopee",
+      "tipo": "cupons"
+    },
+    {
+      "canal": "cuponsdasho",
+      "tipo": "cupons"
+    },
+    {
+      "canal": "CupomKabum",
+      "tipo": "cupons"
+    },
+    {
+      "canal": "cupommagalu",
+      "tipo": "cupons"
+    },
+    {
+      "canal": "cupomonline",
+      "tipo": "cupons"
+    },
+    {
+      "canal": "smarteletrobarato",
+      "tipo": "promocoes"
+    },
+    {
+      "canal": "setupgamerbr",
+      "tipo": "promocoes"
+    },
+    {
+      "canal": "SetupHumilde",
+      "tipo": "promocoes"
+    },
+    {
+      "canal": "upandosetup",
+      "tipo": "promocoes"
+    },
+    {
+      "canal": "pobregram",
+      "tipo": "promocoes"
+    },
+    {
+      "canal": "xetdaspromocoes",
+      "tipo": "promocoes"
+    },
+    {
+      "canal": "promotop",
+      "tipo": "promocoes"
+    },
+    {
+      "canal": "promocoes5",
+      "tipo": "promocoes"
+    },
+    {
+      "canal": "emipefpscupons",
+      "tipo": "cupons"
+    },
+    {
+      "canal": "emipefps",
+      "tipo": "promocoes"
+    },
+    {
+      "canal": "emipepromoskkl",
+      "tipo": "promocoes"
+    },
+    {
+      "canal": "terabyteshopoficial",
+      "tipo": "loja"
+    },
+    {
+      "canal": "pichauofertas",
+      "tipo": "loja"
+    }
+  ]
+}

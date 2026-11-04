@@ -1,5 +1,31 @@
 # Changelog
 
+## 2.8.0 — 2026-11-04
+
+**Mais produtos por loja e scroll infinito**
+- `/api/search?page=N`: cada loja tem várias páginas. A interface pede a próxima sozinha ao chegar perto do fim da lista, sem repetir ofertas.
+- **Correção:** o filtro de acessórios descartava produtos que só *mencionavam* "cooler", "cabo", "gabinete" etc. no título (ex.: "Ryzen 5 7600 com Cooler Wraith"). Agora só sai o título que é de acessório.
+- Sem nenhum título com todos os termos, aparecem os "Parecidos", marcados.
+
+**Ordem: menor preço dos vendedores mais confiáveis primeiro**
+- Nova ordem padrão "Melhor escolha" (`src/ranking.js`): preço ajustado à nota de confiança. Alto risco e suspeitos vão para depois; sem preço e indisponíveis, para o fim. Vale na busca, nos Fixados, no bot e nos alertas.
+
+**"Bloqueado" e "Nenhum resultado"**
+- Página de verificação (captcha) é reconhecida como **bloqueado**, não como "nenhum resultado". Nada é burlado.
+- Quando a loja recusa e o Playwright está instalado, a página pública é aberta no navegador (`browserFallback`).
+- Cada loja diz o motivo: "bloqueado", "nada parecido" ou "sem resultados".
+- KaBuM!: catálogo público em JSON como 1ª tentativa (não verificado ao vivo).
+
+**Canais de promoção do Telegram**
+- 26 canais sugeridos em `data/telegram-channels.json`, ativados com um toque.
+- Nova aba **📣 Promoções**: feed com scroll infinito, filtro por loja e produto e situação de cada canal.
+- Leitura a cada 30 min (era 6 h), até 40 canais, um de cada vez. Grupos sem prévia pública são identificados.
+- Aviso no Telegram quando uma promoção bate com um produto fixado dentro da meta ("divulgado, não verificado").
+
+**Celular**
+- Fixados sem cortes, nota de confiança sem sobrepor o preço, cabeçalho compacto e totais legíveis de 320 a 768 px.
+
+
 ## 2.7.0 — 2026-11-04
 
 **TikTok Shop (Fase 5)**

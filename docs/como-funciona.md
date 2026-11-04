@@ -105,7 +105,7 @@ TOTAL               R$ 547,20          R$ 629,10    10x R$ 62,91 sem juros
 
 - **Fontes, em ordem:**
   - posts **encaminhados ao bot** ou colados na aba Cupons;
-  - **canais públicos** do Telegram (opt-in, lidos pela prévia `t.me/s/<canal>` a cada 6 h);
+  - **canais públicos** do Telegram (opt-in, lidos pela prévia `t.me/s/<canal>` a cada 30 min; as promoções aparecem na aba 📣 Promoções, veja `docs/telegram.md`);
   - **cadastro manual**.
 - **Como cada fonte foi escolhida:** a pesquisa de fontes está em [cupons.md](cupons.md).
 - **O parser lê:**
@@ -143,7 +143,13 @@ Se faltar algum dado, o peso dele é redistribuído entre os outros. A classific
 
 Os valores ficam em `data/stores.json`. Eles são **estimativas iniciais** e devem ser conferidos. O servidor tenta atualizar os dados do Reclame Aqui uma vez por dia (melhor esforço).
 
-**"Custo × confiança"** ordena pelo preço ajustado ao risco: `preço × (1 + (100 − nota final) / 400)`. Com nota 100 não há penalidade, e com nota 0 o preço sobe 25%.
+**Ordem padrão: "Melhor escolha".** Os links com o menor preço e dos vendedores mais confiáveis vêm primeiro, na busca, nos Fixados, no bot e nos alertas (`src/ranking.js`):
+
+1. ofertas com preço, disponíveis, sem "suspeito" e com nota ≥ 40, pelo preço ajustado à confiança: `preço × (1 + (100 − nota final) / 400)`. Com nota 100 não há penalidade, e com nota 0 o preço sobe 25%;
+2. depois, as de **Alto risco** (nota < 40) e as de preço suspeito;
+3. por último, as sem preço legível ou indisponíveis.
+
+Os botões "Menor preço" e "Mais confiável" mudam a ordem dentro de cada grupo, mas o grupo 2 e o 3 continuam no fim.
 
 ### Nota final por oferta: plataforma, vendedor e oferta (`src/seller-score.js`)
 
@@ -164,7 +170,7 @@ nota bruta = 0,25 × Plataforma + 0,55 × Vendedor + 0,20 × Oferta   →  trava
 - **Nível de confiança:** mostra quanto dado havia sobre o vendedor, separado da nota. Dado ausente entra abaixo do neutro, nunca como "bom".
 - **Motivos em português:** cada nota vem com os motivos, que aparecem no carimbo ao passar o mouse e na resposta do bot. O texto fala em "sinais de risco" e nunca acusa ninguém de fraude.
 
-A nota final é a que vale no carimbo, na ordenação "Score" e "Custo × confiança", no score mínimo dos alertas e no bot. Os pesos, as travas e os limites ficam em `data/seller-score.json`, e o estudo completo está em `docs/score-vendedor.md`.
+A nota final é a que vale no carimbo, na ordem "Melhor escolha" e "Mais confiável", no score mínimo dos alertas e no bot. Os pesos, as travas e os limites ficam em `data/seller-score.json`, e o estudo completo está em `docs/score-vendedor.md`.
 
 Hoje os adaptadores leem poucos dados do vendedor (nome, loja oficial, origem do envio). Por isso a maioria das ofertas de marketplace sai com confiança baixa e nota limitada a "Regular", e é para ser assim. Quando um adaptador conseguir ler mais (idade da loja, vendas, avaliações), basta preencher `sellerInfo` na oferta.
 
@@ -190,7 +196,25 @@ A cada `INTERVAL_MIN` minutos, o servidor:
 | `POST /api/promo` | processa um post de promoção (link, página, cupom e totais) |
 | `POST /api/coupons` · `PATCH/DELETE /api/coupons/:id` | cadastro manual e "Funcionou" / "Não funcionou" |
 
-## O que ainda não foi conferido com as lojas de verdade
+## Mais produtos por loja e scroll infinito
+
+- A busca traz a 1ª página de cada loja. Ao chegar perto do fim da lista, a interface pede a página seguinte só das lojas que ainda têm mais (`/api/search?page=2`), sem repetir ofertas.
+- O filtro de acessórios só descarta o título que **é** de acessório ("Cooler para Ryzen…", "Suporte para placa de vídeo"). Antes, um título que só mencionava a palavra ("Ryzen 5 7600 com Cooler Wraith", "Fonte com cabos modulares") era descartado, e a loja ficava com poucos resultados ou nenhum.
+- Se nenhum título tiver **todos** os termos da busca, aparecem os parecidos (60% dos termos), com a etiqueta "Parecido".
+
+## "Bloqueado" e "Nenhum resultado"
+
+Cada loja mostra por que ficou sem ofertas:
+
+| Na tela | O que quer dizer | O que fazer |
+|---|---|---|
+| **bloqueado** | a loja recusou o acesso automático (HTTP 403/429/503) ou mostrou uma página de verificação (captcha) | O SetupSniper **não tenta burlar** a proteção. Rode o servidor em casa (internet residencial é bloqueada bem menos que servidor na nuvem). No PC, instale o Playwright: com ele, quando a loja recusa, a mesma página pública é aberta num navegador de verdade (`browserFallback`, ligado por padrão). Ou fixe o link do produto. |
+| **nada parecido** | a loja mostrou produtos, mas nenhum parece ser o buscado | refaça a busca com menos termos (marca + modelo) |
+| **sem resultados** | a loja não mostrou nenhum produto | toque no chip para abrir a busca na loja e conferir |
+
+A KaBuM! é lida primeiro pelo catálogo público em JSON que a própria página de busca usa e, se ele recusar, pelo HTML.
+
+
 
 O SetupSniper foi desenvolvido num ambiente cuja rede bloqueava os sites das lojas, do Telegram, do Banco Central, do gov.br e do Reclame Aqui. Por isso:
 
