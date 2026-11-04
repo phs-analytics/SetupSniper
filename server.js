@@ -23,6 +23,8 @@ import { createPriceHistory, keepaConfigured, fetchKeepa } from './src/price-his
 import { dailyMin } from './public/historico.js';
 import { createCouponFeed, mergeCoupons } from './src/coupon-feed.js';
 import { normalizeRules, buscarAteCompletar, produtosBons, motivoSemAlerta } from './src/por-loja.js';
+import { fromPost, fromCoupon, fromCapture, createOffersStore, techCategories } from './src/offers.js';
+import { filtrosDe } from './public/ofertas.js';
 import { channelStatus, promoFromPost, addPromos, queryPromos, watchMatches } from './src/promo-feed.js';
 import { fetchPtax } from './src/ptax.js';
 import { parseProductPage } from './src/scraper.js';
@@ -82,6 +84,10 @@ const couponsDb = await readJson('coupons.json', { coupons: [] });
 const couponFeed = createCouponFeed({ file: DATA('coupons-feed.json') });
 await couponFeed.load().catch(e => console.error('[cupons] ' + e.message));
 const allCoupons = () => mergeCoupons(couponFeed.active(), couponsDb.coupons);
+// Aba Ofertas: posts, cupons oficiais e capturas viram ofertas de tecnologia (data/offers.json, fora do git, 7 dias).
+const offersDb = createOffersStore({ file: DATA('offers.json') });
+await offersDb.load().catch(e => console.error('[ofertas] ' + e.message));
+let offersRev = 0, offersNew = [];
 const channelsState = await readJson('channels-state.json', { seen: {} });
 channelsState.status ??= {};                                    // canal -> { ok, at, posts, error, noPreview }
 channelsState.alerted ??= [];                                   // posts que já geraram aviso de produto fixado
@@ -185,6 +191,7 @@ function state() {
     ml: mlStatus(),
     channels: { suggested: suggestedChannels, status: channelsState.status, reading: readingChannels, promos: promosDb.promos.length },
     coupons: mergeCoupons(couponFeed.active(), couponsDb.coupons.filter(c => isCouponActive(c) || Date.now() - Date.parse(c.seenAt ?? 0) < 7 * 864e5)).slice(0, 250),
+    ofertas: { rev: offersRev, novas: offersNew, total: offersDb.size() },
     couponFeed: (({ atualizadoEm, proximaEm, intervaloHoras, redes, historico }) => ({ atualizadoEm, proximaEm, intervaloHoras, redes, historico: (historico ?? []).slice(0, 50) }))(couponFeed.state()),
     taxes: { importTaxStores: taxesCfg.importTaxStores, atualizadoEm: taxesCfg.atualizadoEm },
     items: watch.items.map(it => ({
@@ -652,6 +659,7 @@ async function readChannels({ only } = {}) {
         let comCupom = 0;
         for (const post of postsAfterCursor(posts, cursor).filter(x => !seen.has(x.id))) {
           seen.add(post.id);
+          await offersFromPost(post.text, { source: 'telegram_channel', sourceName: '@' + nome, sourceUrl: post.url, at: post.date });
           const p = parsePromo(post.text);
           const promo = promoFromPost(post, nome, p, { activeStores: activeIds() });
           if (!promo) continue;
@@ -677,6 +685,21 @@ async function readChannels({ only } = {}) {
   }
 }
 
+// ---------- aba Ofertas ----------
+const offerDeps = () => ({
+  // Links encurtados não são abertos aqui: ficam "a resolver" (sem acesso automático extra às lojas).
+  cupons: allCoupons(), activeStores: activeIds(), profile: settings.profile,
+  finalCtx: { taxes: taxesCfg, cep: settings.cep, cepUf, fx: settings.fx?.usdBrl },
+});
+async function ingestOffers(lista) {
+  if (!lista?.length) return;
+  const { novas } = offersDb.add(lista);
+  await offersDb.flush();
+  if (novas?.length) { offersRev++; offersNew = novas.filter(o => o.tech).map(o => o.id); broadcast(); }
+}
+const offersFromPost = (text, meta) => fromPost(text, meta, offerDeps()).then(ingestOffers).catch(e => log('[ofertas] ' + e.message));
+const offersFromCoupons = () => ingestOffers(couponFeed.active().flatMap(c => fromCoupon(c))).catch(e => log('[ofertas] ' + e.message));
+
 // Saída única de todo post novo (canal, grupo, canal com o bot admin): feed, aviso de Fixado e página aberta (SSE).
 async function newPromos(novos) {
   if (!novos.length) return;
@@ -693,6 +716,7 @@ async function ingestBotPost(text, meta) {
   const nome = meta.sourceName ?? meta.chatTitle ?? 'grupo';
   const post = { id: `${meta.source}:${Date.now()}`, url: meta.sourceUrl ?? null, date: new Date().toISOString(), text };
   tgLastPost = { at: post.date, source: meta.source, sourceName: nome };
+  await offersFromPost(text, { source: meta.source, sourceName: nome, sourceUrl: meta.sourceUrl ?? null, at: post.date });
   const p = parsePromo(text);
   const promo = promoFromPost(post, nome, p, { activeStores: activeIds() });
   if (!promo) return;
@@ -765,6 +789,7 @@ const botHandlers = {
   post: async (text, meta = {}) => {
     if (meta.source === 'telegram_group' || meta.source === 'telegram_bot_channel') return ingestBotPost(text, meta);
     tgLastPost = { at: new Date().toISOString(), source: 'telegram_forward', sourceName: meta.sourceName ?? null };
+    offersFromPost(text, { source: 'telegram_forward', sourceName: meta.sourceName ?? 'post encaminhado ao bot', sourceUrl: meta.sourceUrl ?? null, at: tgLastPost.at });
     return processPromo(text, { source: 'telegram_forward', ...(meta.sourceName ? { sourceName: meta.sourceName, sourceUrl: meta.sourceUrl ?? null } : {}) });
   },
   async callback(data) {
@@ -908,6 +933,7 @@ const server = http.createServer(async (req, res) => {
       if (!r.items.length) return json(res, 422, { store: r.store, kind: r.kind, items: [], error: r.error ?? 'nenhum preço encontrado' });
       const items = flagOutliers(r.items.map(x => withTotals({ ...normalizeOffer(x, r.store), storeId: r.store, captured: true, capturedAt: Date.now() })), refOf).map(withTrust);
       rememberCaptures(items);
+      ingestOffers(items.flatMap(o => fromCapture(o, { activeStores: activeIds(), exigirDesconto: true }))).catch(e => log('[ofertas] ' + e.message));
       priceHist.recordMany(items.filter(x => x.price?.pix && x.title).map(x => ({ title: x.title, store: r.store, seller: x.seller?.name ?? null, pix: x.price.pix, origem: 'extensao' }))).catch(() => {});
       // Produto fixado com este link: atualiza o preço agora, como se a verificação tivesse rodado
       let atualizados = 0;
@@ -1071,6 +1097,25 @@ const server = http.createServer(async (req, res) => {
       await saveCoupons(); broadcast();
       return json(res, 201, c);
     }
+    if (pathname === '/api/offers' && req.method === 'GET') {
+      const f = filtrosDe(url.searchParams);
+      // indicadores do histórico por produto (menor em 90 dias, selo de preço inflado), calculados antes da lista
+      const sigs = [...new Set(offersDb.list({ ordem: f.ordem }).map(o => o.sig).filter(Boolean))].slice(0, 150);
+      const ind = new Map();
+      for (const sig of sigs) { try { const pts = await priceHist.series({ sig, days: 90 }); if (pts.length) ind.set(sig, await priceHist.indicators(pts)); } catch { /* sem histórico */ } }
+      const items = offersDb.list({ ordem: f.ordem, deps: {
+        historico: (sig) => ind.get(sig) ?? null,
+        confianca: (o) => ({ score: o.trust?.score ?? scoreOf(o.loja) ?? null }),
+      } });
+      return json(res, 200, { items, categorias: techCategories(), lojas: activeIds().map(id => ({ id, nome: storeName(id) })), resumo: offersDb.resumo(), rev: offersRev });
+    }
+    const om = pathname.match(/^\/api\/offers\/([\w:.-]+)$/);
+    if (om && req.method === 'PATCH') {
+      const b = await body(req);
+      if (!['ok', 'no'].includes(b.voto)) return json(res, 400, { error: 'Voto inválido' });
+      try { const o = offersDb.feedback(decodeURIComponent(om[1]), b.voto); await offersDb.flush(); offersRev++; broadcast(); return json(res, 200, o ?? { ok: true }); }
+      catch (e) { return json(res, 404, { error: e.message }); }
+    }
     if (pathname === '/api/coupons/feed' && req.method === 'GET') return json(res, 200, couponFeed.state());
     if (pathname === '/api/coupons/feed/refresh' && req.method === 'POST') {
       const r = await couponFeed.refresh({ force: true }); broadcast();
@@ -1131,7 +1176,8 @@ server.listen(PORT, HOST, () => {
   schedule();
   setInterval(refreshReclameAqui, 24 * 3600e3);
   // cupons oficiais (confere a cada 10 min se já passaram 6 h desde a última leitura)
-  if (!DEMO) couponFeed.start({ onUpdate: () => broadcast(), onError: (e) => log(`[cupons] ${e.message}`) });
+  if (!DEMO) couponFeed.start({ onUpdate: () => { broadcast(); offersFromCoupons(); }, onError: (e) => log(`[cupons] ${e.message}`) });
+  offersFromCoupons();
   // histórico: pontos com mais de 180 dias viram 1 por dia (o menor)
   const compactHist = () => priceHist.compact().catch(e => log('[histórico] ' + e.message));
   setTimeout(compactHist, 10 * 60e3); setInterval(compactHist, 24 * 3600e3);

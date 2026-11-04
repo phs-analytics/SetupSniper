@@ -12,7 +12,7 @@ for (const f of sh('git ls-files "*.js"').split('\n').filter(Boolean)) {
 }
 
 // 2) arquivos pessoais nunca podem estar versionados
-const PRIVATE = ['.env', 'data/settings.json', 'data/watchlist.json', 'data/history.json', 'data/alerts.json', 'data/coupons.json', 'data/channels-state.json', 'data/promos.json', 'data/ml-auth.json', 'data/telegram-groups.json', 'data/coupons-feed.json'];
+const PRIVATE = ['.env', 'data/settings.json', 'data/watchlist.json', 'data/history.json', 'data/alerts.json', 'data/coupons.json', 'data/channels-state.json', 'data/promos.json', 'data/ml-auth.json', 'data/telegram-groups.json', 'data/coupons-feed.json', 'data/offers.json'];
 const tracked = new Set(sh('git ls-files').split('\n'));
 for (const f of PRIVATE) if (tracked.has(f)) bad(`${f} está no git — remova com: git rm --cached ${f}`);
 if ([...tracked].some(f => f.startsWith('logs/'))) bad('a pasta logs/ está no git');

@@ -31,3 +31,5 @@ data/telegram-groups.json
 data/history/
 # cupons oficiais lidos das redes de afiliados
 data/coupons-feed.json
+# ofertas montadas a partir dos posts, cupons e capturas (7 dias)
+data/offers.json

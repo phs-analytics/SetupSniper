@@ -1,0 +1,62 @@
+/* Aba Ofertas: cards de papel no estilo zine/colagem (mesmas variáveis de styles.css).
+   Sem cortes de 320 a 768 px: tudo com min-width: 0 e quebra de palavra. */
+.ofertas { display: grid; gap: 12px; min-width: 0; }
+.of-filtros { display: flex; flex-wrap: wrap; gap: 8px; }
+.of-filtros select, .of-filtros input { flex: 1 1 160px; min-width: 0; font: inherit; padding: 8px 10px; border-radius: 6px;
+  background: var(--bg2); color: var(--fg); border: 1.5px solid rgba(243, 236, 223, .25); }
+.of-legenda { margin: 0; color: var(--fg2); font-size: 12px; }
+.of-aviso-novas { position: sticky; top: 76px; z-index: 5; display: flex; justify-content: center; pointer-events: none; }
+.of-aviso-novas:empty { display: none; }
+.of-novas { pointer-events: auto; font: 700 13px var(--mono); padding: 7px 14px; border-radius: 999px; border: 2px solid var(--ink);
+  background: var(--yellow); color: var(--ink); box-shadow: var(--shadow-sm); transform: rotate(-1deg); }
+.of-lista { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 14px; }
+.of-vazio { padding: 18px; border: 2px dashed rgba(243, 236, 223, .25); border-radius: 8px; color: var(--fg2); text-align: center; }
+
+.of-card { background: var(--paper); color: var(--ink); border: 2px solid var(--ink); border-radius: 8px; padding: 12px;
+  box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 8px; min-width: 0; overflow-wrap: anywhere; }
+.of-card:nth-child(3n+1) { transform: rotate(-.3deg); }
+.of-card:nth-child(3n+2) { transform: rotate(.25deg); }
+.of-card.of-acabou { opacity: .72; background: var(--paper2); }
+.of-card.of-risco { border-style: dashed; }
+.of-top { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; font: 12px var(--mono); color: var(--ink2); }
+.of-loja { font-weight: 700; color: var(--ink); padding-left: 10px; position: relative; }
+.of-loja::before { content: ''; position: absolute; left: 0; top: 50%; width: 6px; height: 6px; margin-top: -3px; border-radius: 50%; background: var(--of-cor, var(--orange)); }
+.of-cat { background: var(--lime); color: var(--ink); padding: 0 6px; border-radius: 3px; border: 1px solid var(--ink); }
+.of-quando { margin-left: auto; }
+.of-nome { margin: 0; font: 700 15px/1.3 var(--body); }
+.of-precos { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 130px), 1fr)); gap: 8px; }
+.of-precos > div { display: flex; flex-direction: column; min-width: 0; padding: 6px 8px; border: 1.5px solid var(--rule); border-radius: 6px; }
+.of-precos small { font-size: 11px; color: var(--ink2); }
+.of-precos b { font: 400 20px/1.15 var(--display); }
+.of-precos s { color: var(--ink2); font-size: 13px; }
+.of-final { background: rgba(198, 240, 74, .35); border-color: var(--ink) !important; }
+.of-final.of-sem-est { background: transparent; }
+.of-final.of-sem-est b { font: 700 14px var(--body); }
+.of-est, .of-parc { font-style: italic; }
+.of-cupom { font-size: 13px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
+.of-cupom code { background: var(--yellow); color: var(--ink); border: 1px dashed var(--ink); }
+.of-regra { color: var(--ink2); }
+.of-rotulo { font: 700 10px var(--mono); text-transform: uppercase; letter-spacing: .03em; padding: 1px 6px; border-radius: 3px; border: 1.5px solid currentColor; }
+.of-rotulo.oficial { color: var(--good); }
+.of-rotulo.divulgado { color: #8a6400; }
+.of-selos { display: flex; flex-wrap: wrap; gap: 4px; }
+.of-selo { font: 700 10px var(--mono); padding: 2px 6px; border-radius: 3px; border: 1.5px solid var(--ink2); color: var(--ink2); }
+.of-selo.bom { color: var(--good); border-color: var(--good); }
+.of-selo.ruim { color: var(--bad); border-color: var(--bad); }
+.of-aviso { margin: 0; font-size: 13px; font-weight: 700; color: #8a4b00; }
+.of-acoes { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; }
+.of-acoes .btn.ghost { color: var(--ink); border-color: rgba(21, 21, 21, .45); }
+.of-mostrar-outros { justify-self: center; }
+
+@media (max-width: 560px) {
+  .of-aviso-novas { top: 56px; }
+  .of-card, .of-card:nth-child(n) { transform: none; }
+  .of-precos b { font-size: 18px; }
+  .of-acoes .btn { flex: 1 1 auto; }
+}
+@media (max-width: 360px) {
+  .of-card { padding: 10px; }
+  .of-quando { margin-left: 0; }
+  .of-precos { grid-template-columns: 1fr; }
+}
+.of-detalhe { flex-basis: 100%; color: var(--ink2); font-size: 11px; }

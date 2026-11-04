@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=Bungee&family=Permanent+Marker&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/ofertas.css">
   <link rel="manifest" href="/manifest.webmanifest">
   <meta name="theme-color" content="#1b1b1b">
   <link rel="icon" href="/icon.svg" type="image/svg+xml">
@@ -51,6 +52,7 @@
     <nav class="tabs" role="tablist">
       <a href="#busca" data-tab="busca">Busca</a>
       <a href="#fixados" data-tab="fixados">📌 Fixados <span class="count" id="count-mon">0</span></a>
+      <a href="#ofertas" data-tab="ofertas">🛒 Ofertas <span class="count" id="count-of">0</span></a>
       <a href="#promos" data-tab="promos">📣 Promoções <span class="count" id="count-promo">0</span></a>
       <a href="#cupons" data-tab="cupons">🎟️ Cupons <span class="count" id="count-cup">0</span></a>
       <a href="#lojas" data-tab="lojas">Lojas</a>
@@ -105,6 +107,12 @@
     <!-- LOJAS -->
     <!-- CUPONS E TOTAIS (Fases 2 e 3) -->
     <!-- PROMOÇÕES DOS CANAIS DO TELEGRAM -->
+    <section id="tab-ofertas" class="tab" hidden>
+      <div class="panel-head"><h2>Ofertas de tecnologia</h2>
+        <p class="muted">Uma linha por oferta, vinda dos canais e grupos do Telegram, dos cupons oficiais e das páginas que você enviou. O preço final com cupom é uma <b>estimativa</b>; nada é aplicado na loja.</p></div>
+      <div id="ofertas-root"></div>
+    </section>
+
     <section id="tab-promos" class="tab" hidden>
       <div class="panel">
         <div class="panel-head"><h2>Promoções dos canais do Telegram</h2>

@@ -3,6 +3,7 @@ import { sparklineSvg, historyBadges } from '/historico.js';
 import { porLoja } from '/lib/por-loja.js';
 import { renderPorLoja } from '/por-loja.js';
 import { couponCard } from '/cupons-oficiais.js';
+import { renderOfertas, novasPendentes, avisoNovas, filtrosDe } from '/ofertas.js';
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 // Dinheiro chega do servidor em CENTAVOS inteiros; só é formatado aqui.
@@ -70,6 +71,8 @@ const lset = (k, v) => { try { localStorage.setItem('radar.' + k, JSON.stringify
 
 let S = null;                                   // estado do servidor (SSE)
 const ui = { view: lget('view', 'compare'), sort: lget('ordem', 'balance'), min: lget('min', 0), hideSus: lget('hideSus', true), deep: lget('deep', false), stores: lget('stores', null), shown: 40 };
+// estado da aba Ofertas (a lista só muda quando a pessoa toca no aviso de novas)
+const of = { items: [], pendentes: [], categorias: [], lojas: [], filtros: filtrosDe({}), rev: -1, loading: false };
 const search = { q: '', es: null, status: {}, results: [], running: false, more: [], loadingMore: false };
 
 const store = (id) => S?.stores.find(s => s.id === id) ?? { id, name: id, color: '#666' };
@@ -119,10 +122,11 @@ function sparkline(hist) {
 // ================= ABAS =================
 function showTab() {
   const tab = (location.hash.slice(1) || 'busca');
-  const valid = tab === 'monitorados' ? 'fixados' : ['busca', 'fixados', 'promos', 'cupons', 'lojas', 'alertas'].includes(tab) ? tab : 'busca';
+  const valid = tab === 'monitorados' ? 'fixados' : ['busca', 'fixados', 'ofertas', 'promos', 'cupons', 'lojas', 'alertas'].includes(tab) ? tab : 'busca';
   $$('.tab').forEach(t => t.hidden = t.id !== 'tab-' + valid);
   $$('.tabs a').forEach(a => a.classList.toggle('on', a.dataset.tab === valid));
   if (valid === 'promos' && !promo.loaded) loadPromos(true);
+  if (valid === 'ofertas') loadOfertas({ aplicar: true });
 }
 addEventListener('hashchange', showTab);
 
@@ -554,6 +558,7 @@ function render() {
   if (!S) return;
   $('#aff-on').checked = !!S.settings?.affiliateLinks;
   if (!document.activeElement?.closest('#pl-panel')) { const pl = S.settings?.porLoja ?? {}; $('#pl-nota').value = pl.notaMinima ?? 70; $('#pl-n').value = pl.produtosPorLoja ?? 10; $('#pl-alerta').checked = pl.alertasSoVendedorBom !== false; }
+  ofertasMudaram();
   renderStatus(); renderWatch(); renderPinned(); renderCoupons(); if (search.q && !search.running) renderSearch(); renderStores(); renderAlerts(); renderPromos(); renderMl();
   // Promoções novas chegaram e a pessoa está no topo da aba: atualiza a lista sozinha
   const nPromo = S.channels?.promos ?? 0;
@@ -751,6 +756,50 @@ for (const b of $$('#view button')) {
   b.classList.toggle('on', b.dataset.view === ui.view);
   b.onclick = () => { ui.view = b.dataset.view; lset('view', ui.view); $$('#view button').forEach(x => x.classList.toggle('on', x === b)); ui.shown = 40; renderSearch(); };
 }
+// ================= OFERTAS =================
+// A lista só muda quando a pessoa toca no aviso "N novas ofertas": a rolagem não pula.
+async function loadOfertas({ aplicar = false } = {}) {
+  if (of.loading) return; of.loading = true;
+  try {
+    const r = await api('/api/offers');
+    of.categorias = r.categorias ?? []; of.lojas = r.lojas ?? []; of.rev = r.rev;
+    if (aplicar || !of.items.length) { of.items = r.items; of.pendentes = []; }
+    else of.pendentes = novasPendentes(of.items, r.items);
+    renderOfertasTab();
+  } catch (e) { toast(e.message); } finally { of.loading = false; }
+}
+function renderOfertasTab() {
+  const nomes = new Set((S?.items ?? []).map(it => it.name.toLowerCase()));
+  const fixados = new Set(of.items.filter(o => o.titulo && nomes.has(o.titulo.slice(0, 80).toLowerCase())).map(o => o.id));
+  $('#ofertas-root').innerHTML = renderOfertas(of.items, { brl, now: Date.now(), filtros: of.filtros, ordem: of.filtros.ordem, categorias: of.categorias, lojas: of.lojas,
+    lojaNome: (id) => store(id).name, lojaCor: (id) => store(id).color, fixados, novas: of.pendentes.length });
+}
+function ofertasMudaram() {
+  $('#count-of').textContent = S.ofertas?.total ?? 0;
+  if (!of.comEstado) { of.comEstado = true; if (of.items.length) renderOfertasTab(); }   // nomes e cores das lojas chegam com o estado
+  if (S.ofertas?.rev == null || S.ofertas.rev === of.rev) return;
+  if (location.hash === '#ofertas') loadOfertas(); else of.rev = -1;
+}
+$('#ofertas-root').addEventListener('change', (e) => {
+  const form = e.target.closest('[data-ofiltros]'); if (!form) return;
+  of.filtros = { ...filtrosDe(Object.fromEntries(new FormData(form))), outros: of.filtros.outros }; renderOfertasTab();
+});
+$('#ofertas-root').addEventListener('submit', (e) => { if (e.target.closest('[data-ofiltros]')) e.preventDefault(); });
+$('#ofertas-root').addEventListener('click', async (e) => {
+  const t = (s) => e.target.closest(s);
+  if (t('[data-onovas]')) { await loadOfertas({ aplicar: true }); $('#tab-ofertas').scrollIntoView({ behavior: 'smooth' }); return; }
+  if (t('[data-omostrar-outros]')) { of.filtros = { ...of.filtros, outros: true }; return renderOfertasTab(); }
+  const cp = t('[data-ocopiar]');
+  if (cp) { try { await navigator.clipboard.writeText(cp.dataset.ocopiar); toast(`Cupom ${cp.dataset.ocopiar} copiado: cole no carrinho da loja`); } catch { prompt('Copie o cupom:', cp.dataset.ocopiar); } return; }
+  const fx = t('[data-ofixar]');
+  if (fx) { const o = of.items.find(x => x.id === fx.dataset.ofixar); if (o) openWatchDialog({ name: o.titulo.slice(0, 80), query: o.titulo.split(/\s+/).slice(0, 6).join(' '), refPrice: o.preco ?? null, pin: o.url && o.loja ? { storeId: o.loja, url: o.url } : null }); return; }
+  const v = t('[data-ook]') ?? t('[data-ono]');
+  if (v) {
+    const id = v.dataset.ook ?? v.dataset.ono, voto = v.dataset.ook ? 'ok' : 'no';
+    try { await api(`/api/offers/${encodeURIComponent(id)}`, { method: 'PATCH', body: { voto } }); toast(voto === 'ok' ? 'Anotado: funcionou' : 'Anotado: não funcionou'); await loadOfertas({ aplicar: true }); } catch (err) { toast(err.message); }
+  }
+});
+
 // ================= POR LOJA =================
 // Uma seção por loja com até N produtos de vendedores bem avaliados; ocultos e "sem dados" ficam visíveis à parte.
 // A mesma regra do servidor (src/por-loja.js, em /lib/por-loja.js): trocar a ordem ou o filtro não refaz a busca.

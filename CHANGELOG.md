@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.17.0 — 2026-11-04
+
+**Aba Ofertas, só de tecnologia**
+- Nova aba **🛒 Ofertas**: uma linha por oferta, com produto, preço anunciado, loja, cupom e o **preço final estimado** com o cupom (um cupom por pedido; nada é aplicado na loja).
+- As ofertas chegam sozinhas dos canais e grupos do Telegram, dos posts encaminhados, dos cupons oficiais e das páginas com desconto enviadas pela extensão.
+- Post com vários produtos vira várias ofertas. Emojis no lugar de números, "de/por", Pix, à vista e parcelado são entendidos.
+- **Filtro de tecnologia** (hardware, periféricos, monitores, notebooks, celulares, rede, áudio, consoles e jogos), com regras em `data/tech-categories.json`. O resto fica escondido em "fora de tecnologia".
+- A mesma oferta em vários canais vira um card só ("visto em 3 canais"). Depois de 24 h, o card ganha "pode ter acabado"; as ofertas ficam 7 dias em `data/offers.json` (fora do git).
+- Ordem "Melhor escolha" (desconto em relação ao histórico × confiança), filtros por cupom, categoria, loja e preço máximo, e o aviso "N novas ofertas" que não faz a lista pular.
+- Botões Fixar, Ver na loja (link limpo), Copiar cupom, ✅ Funcionou e ❌ Não funcionou. A aba 📣 Promoções continua como o feed bruto dos canais.
+
 ## 2.16.0 — 2026-11-04
 
 **Vários produtos por loja, só de vendedores bem avaliados**
