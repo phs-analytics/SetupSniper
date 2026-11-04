@@ -8,8 +8,8 @@ import { startDemoServer } from './helpers/server.js';
 
 test('post de promoção → cupom salvo (10% inferido) e totais', async (t) => {
   const dir = mkdtempSync(path.join(tmpdir(), 'setupsniper-promo-'));
-  t.after(() => rmSync(dir, { recursive: true, force: true }));
   const { base } = await startDemoServer(t, dir);
+  t.after(() => rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }));
 
   const post = '🔥 Monitor Gamer 27" Acer Nitro KG273\nPreço: R$ 547\n🎟️ Cupom: VOLTESEMPRE OU SEMPREPROMO\nhttps://meli.la/2p6DeB7';
   const r = await (await fetch(`${base}/api/promo`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: post }) })).json();

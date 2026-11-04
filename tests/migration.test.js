@@ -10,7 +10,7 @@ const subir = (dataDir, t) => startDemoServer(t, dataDir);
 
 test('dados antigos em reais viram centavos uma única vez', async (t) => {
   const dir = mkdtempSync(path.join(tmpdir(), 'setupsniper-mig-'));
-  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  t.after(() => rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }));
   writeFileSync(path.join(dir, 'watchlist.json'), JSON.stringify({ items: [{ id: 'a1', name: 'Ryzen', query: 'ryzen 7 7800x3d', target: 1700, minPrice: 1200, maxPrice: 5000, pins: {} }] }));
   writeFileSync(path.join(dir, 'history.json'), JSON.stringify({ 'a1:kabum': [{ t: 1, price: 1849.99 }] }));
   writeFileSync(path.join(dir, 'alerts.json'), JSON.stringify({ last: { 'a1:kabum': { price: 1849.99, t: 1 } }, log: [{ t: 1, item: 'Ryzen', price: 1683 }] }));
@@ -30,7 +30,7 @@ test('dados antigos em reais viram centavos uma única vez', async (t) => {
 
 test('dados já em centavos (schemaVersion 2) não são convertidos de novo', async (t) => {
   const dir = mkdtempSync(path.join(tmpdir(), 'setupsniper-mig2-'));
-  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  t.after(() => rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }));
   writeFileSync(path.join(dir, 'watchlist.json'), JSON.stringify({ schemaVersion: 2, items: [{ id: 'b1', name: 'SSD', query: 'ssd nvme 1tb', target: 45000, pins: {} }] }));
   const { base } = await subir(dir, t);
   const st = await (await fetch(`${base}/api/state`)).json();

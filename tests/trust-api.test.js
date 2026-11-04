@@ -8,8 +8,8 @@ import { startDemoServer } from './helpers/server.js';
 
 test('a busca devolve trust com nota, nível, motivos e confiança', async (t) => {
   const dataDir = mkdtempSync(path.join(tmpdir(), 'setupsniper-'));
-  t.after(() => rmSync(dataDir, { recursive: true, force: true }));
   const { base } = await startDemoServer(t, dataDir);
+  t.after(() => rmSync(dataDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }));
   const body = await (await fetch(`${base}/api/search?q=rtx%204060`)).text();
   const items = body.split('\n').filter((l) => l.startsWith('data: ')).map((l) => JSON.parse(l.slice(6)))
     .filter((m) => m.type === 'store').flatMap((m) => m.items ?? []);

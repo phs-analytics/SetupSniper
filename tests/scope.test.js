@@ -43,8 +43,8 @@ test('importTaxStores começa com Amazon, AliExpress e Shopee', () => {
 // e confere quais lojas o /api/search realmente consulta.
 test('o servidor só consulta as lojas do escopo, inclusive na busca profunda', async (t) => {
   const dataDir = mkdtempSync(path.join(tmpdir(), 'setupsniper-'));
-  t.after(() => rmSync(dataDir, { recursive: true, force: true }));
   const { base } = await startDemoServer(t, dataDir);
+  t.after(() => rmSync(dataDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }));
 
   const lojasConsultadas = async (qs) => {
     const body = await (await fetch(`${base}/api/search?${qs}`)).text();

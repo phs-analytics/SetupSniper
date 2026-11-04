@@ -1,4 +1,8 @@
 import { groupOffers, sellerLabel } from '/lib/compare.js';
+import { sparklineSvg, historyBadges } from '/historico.js';
+import { porLoja } from '/lib/por-loja.js';
+import { renderPorLoja } from '/por-loja.js';
+import { couponCard } from '/cupons-oficiais.js';
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 // Dinheiro chega do servidor em CENTAVOS inteiros; só é formatado aqui.
@@ -154,7 +158,7 @@ function startSearch(q) {
   for (const id of ids) search.status[id] = { state: 'loading' };
   if (location.hash !== '#busca') location.hash = 'busca';
   renderSearch();
-  const es = new EventSource(`/api/search?q=${encodeURIComponent(q)}&deep=${ui.deep ? 1 : 0}&stores=${ids.join(',')}`);
+  const es = new EventSource(`/api/search?q=${encodeURIComponent(q)}&deep=${ui.deep ? 1 : 0}&stores=${ids.join(',')}${ui.view === 'porloja' ? '&modo=porloja' : ''}`);
   search.es = es;
   es.onmessage = (ev) => {
     const m = JSON.parse(ev.data);
@@ -260,6 +264,7 @@ function renderSearch() {
 
   search.view = list;
   if (ui.view === 'compare') { renderCompare(list, best); return; }
+  if (ui.view === 'porloja') { renderPorLojaView(); return; }
   search.localMore = list.length > ui.shown;
   $('#results').innerHTML = list.slice(0, ui.shown).map((r, i) => {
     const s = store(r.storeId), sc = trustOf(r), below = sc != null && sc < ui.min;
@@ -438,6 +443,7 @@ function renderWatch() {
             <button type="button" class="btn small danger" data-del="${it.id}">Desafixar</button>
           </div></div>
       </div>
+      <div class="hist-row">${it.hist ? `${it.hist.points?.length > 1 ? sparklineSvg(it.hist.points, { label: 'Menor preço por dia, todas as lojas' }) : ''} ${historyBadges(it.hist.ind, { fonte: it.hist.fonte })}` : '<span class="hist-vazio">histórico começando</span>'}</div>
       <div class="rows">${rows}</div>
     </article>`;
   }).join('');
@@ -537,6 +543,9 @@ function renderPinned() {
       <span class="pc-meta">${b ? esc(store(b.storeId).name) : ''}${it.target ? ` · meta ${brl(it.target)}` : ''}${hit ? ' · <b>atingida</b>' : ''}</span></a>`;
   }).join('') + `</div>`;
 }
+$('#pl-nota').onchange = (e) => savePorLoja({ notaMinima: Number(e.target.value) });
+$('#pl-n').onchange = (e) => savePorLoja({ produtosPorLoja: Number(e.target.value) });
+$('#pl-alerta').onchange = (e) => savePorLoja({ alertasSoVendedorBom: e.target.checked });
 $('#aff-on').onchange = async (e) => {
   try { await api('/api/settings', { method: 'POST', body: { affiliateLinks: e.target.checked } }); toast(e.target.checked ? 'Ver na loja vai usar o link de afiliado, com aviso' : 'Ver na loja volta a abrir a página limpa'); }
   catch (err) { toast(err.message); e.target.checked = !e.target.checked; }
@@ -544,6 +553,7 @@ $('#aff-on').onchange = async (e) => {
 function render() {
   if (!S) return;
   $('#aff-on').checked = !!S.settings?.affiliateLinks;
+  if (!document.activeElement?.closest('#pl-panel')) { const pl = S.settings?.porLoja ?? {}; $('#pl-nota').value = pl.notaMinima ?? 70; $('#pl-n').value = pl.produtosPorLoja ?? 10; $('#pl-alerta').checked = pl.alertasSoVendedorBom !== false; }
   renderStatus(); renderWatch(); renderPinned(); renderCoupons(); if (search.q && !search.running) renderSearch(); renderStores(); renderAlerts(); renderPromos(); renderMl();
   // Promoções novas chegaram e a pessoa está no topo da aba: atualiza a lista sozinha
   const nPromo = S.channels?.promos ?? 0;
@@ -577,18 +587,11 @@ function renderCoupons() {
   const ativos = list.filter(c => c.status !== 'expired' && (!c.expiresAt || Date.parse(c.expiresAt) > Date.now()));
   $('#count-cup').textContent = ativos.length;
   const regra = (c) => c.type === 'percent' ? `${c.value}% OFF` : c.type === 'fixed' ? `${brl(c.value)} OFF` : c.type === 'shipping' ? 'frete grátis' : 'regra não informada';
-  $('#coupon-list').innerHTML = list.length ? list.map(c => {
-    const exp = c.status === 'expired' || (c.expiresAt && Date.parse(c.expiresAt) <= Date.now());
-    return `<div class="alog ${exp ? 'dim' : ''}">
-      <span class="sdot" style="background:${store(c.store).color}"></span>
-      <div><b>${c.codes.map(esc).join(' ou ')}</b> · ${esc(store(c.store).name)} · ${esc(regra(c))}${c.minOrder ? ` acima de ${brl(c.minOrder)}` : ''}${c.maxDiscount ? ` (até ${brl(c.maxDiscount)})` : ''}${c.appliesTo ? ` · só no ${c.appliesTo.includes('pix') ? 'Pix' : 'cartão'}` : ''}${c.inferred ? ' · inferida' : ''}
-        <div class="r">${c.status === 'confirmed_by_user' ? '✅ funcionou para você' : exp ? 'expirado' : `divulgado por ${esc(c.sourceName ?? '—')} em ${c.seenAt ? new Date(c.seenAt).toLocaleString('pt-BR') : '—'}, não verificado`}${c.expiresAt ? ` · válido até ${new Date(c.expiresAt).toLocaleString('pt-BR')}` : ''}${c.productUrl ? ` · <a href="${esc(c.productUrl)}" target="_blank" rel="noopener noreferrer">produto</a>` : ' · loja toda'}</div></div>
-      <div class="actions">
-        <button type="button" class="btn small" data-cok="${c.id}">✅ Funcionou</button>
-        <button type="button" class="btn small" data-cno="${c.id}">❌ Não funcionou</button>
-        <button type="button" class="btn small danger" data-cdel="${c.id}" aria-label="Apagar cupom">🗑</button>
-      </div></div>`;
-  }).join('') : '<p class="muted">Nenhum cupom ainda. Cole um post acima ou encaminhe um para o bot do Telegram.</p>';
+  const feed = S.couponFeed;
+  $('#coupon-feed-status').innerHTML = feed ? `Cupons oficiais das redes de afiliados: ${feed.atualizadoEm ? `última leitura ${ago(Date.parse(feed.atualizadoEm))}` : 'ainda não lidos'} · ${Object.entries(feed.redes ?? {}).map(([k, r]) => `${esc(k)}: ${r.ok ? `${r.n ?? 0} cupom(ns)` : r.pulada ? 'desligada' : esc(r.erro ?? r.motivo ?? 'sem credencial')}`).join(' · ') || 'nenhuma rede configurada (veja docs/credenciais.md)'}` : '';
+  $('#coupon-list').innerHTML = list.length ? list.map(c => couponCard(c, { now: Date.now(), lojaNome: store(c.store).name, cor: store(c.store).color })).join('') +
+    (feed?.historico?.length ? `<details class="pmore"><summary>Histórico de cupons oficiais (${feed.historico.length})</summary>${feed.historico.map(c => couponCard(c, { now: Date.now(), lojaNome: store(c.store).name, cor: store(c.store).color })).join('')}</details>` : '')
+    : '<p class="muted">Nenhum cupom ainda. Cole um post acima, encaminhe um para o bot do Telegram ou configure a Awin/Lomadee para receber cupons oficiais.</p>';
   if (!$('#c-store').options.length) $('#c-store').innerHTML = S.stores.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
   if (!cfgFilled || !document.activeElement?.closest('#tab-cupons')) {
     const st = S.settings;
@@ -631,6 +634,8 @@ $('#promo-go').onclick = async () => {
   } catch (e) { out.innerHTML = `<span class="tag err">${esc(e.message)}</span>`; }
 };
 $('#coupon-list').addEventListener('click', async (e) => {
+  const cp = e.target.closest('[data-ccopy]');
+  if (cp) { try { await navigator.clipboard.writeText(cp.dataset.ccopy); toast(`Cupom ${cp.dataset.ccopy} copiado: cole no carrinho da loja`); } catch { prompt('Copie o cupom:', cp.dataset.ccopy); } return; }
   const ok = e.target.closest('[data-cok]'), no = e.target.closest('[data-cno]'), del = e.target.closest('[data-cdel]');
   try {
     if (ok) { await api(`/api/coupons/${ok.dataset.cok}`, { method: 'PATCH', body: { status: 'confirmed_by_user' } }); toast('Anotado: o cupom funcionou'); }
@@ -747,6 +752,36 @@ for (const b of $$('#view button')) {
   b.classList.toggle('on', b.dataset.view === ui.view);
   b.onclick = () => { ui.view = b.dataset.view; lset('view', ui.view); $$('#view button').forEach(x => x.classList.toggle('on', x === b)); ui.shown = 40; renderSearch(); };
 }
+// ================= POR LOJA (Etapa 3b) =================
+// Uma seção por loja com até N produtos de vendedores bem avaliados; ocultos e "sem dados" ficam visíveis à parte.
+// A mesma regra do servidor (src/por-loja.js, em /lib/por-loja.js): trocar a ordem ou o filtro não refaz a busca.
+const plAbertas = new Set();
+function renderPorLojaView() {
+  const pl = S.settings?.porLoja ?? {};
+  const opts = { refOf, sort: pl.ordem ?? 'melhor', filterOn: pl.soVendedorBom !== false, minScore: pl.notaMinima ?? 70, resultsPerStore: pl.produtosPorLoja ?? 10,
+    storeOrder: Object.keys(search.status) };
+  const view = porLoja(search.results, search.q, opts);
+  if (!plAbertas.size) for (const l of view) plAbertas.add(l.storeId);
+  search.cmpIndex = [];
+  $('#results').innerHTML = renderPorLoja(view, { esc, brl, refOf, sellerLabel: (o) => sellerLabel({ storeId: o.storeId, seller: o.seller }), storeName: (id) => store(id).name, storeColor: (id) => store(id).color,
+    storeLink: (o) => storeLink(linkOf(o), store(o.storeId), search.status[o.storeId]?.url), indexOf: (o) => search.cmpIndex.push(o) - 1,
+    status: (id) => search.status[id], sort: opts.sort, filterOn: opts.filterOn, minScore: opts.minScore, abertas: plAbertas });
+}
+const savePorLoja = async (patch) => {
+  S.settings.porLoja = { ...(S.settings.porLoja ?? {}), ...patch }; renderSearch();
+  try { await api('/api/settings', { method: 'POST', body: { porLoja: patch } }); } catch (err) { toast(err.message); }
+};
+$('#results').addEventListener('click', (e) => {
+  const ps = e.target.closest('[data-psort]'); if (ps) return savePorLoja({ ordem: ps.dataset.psort });
+  const pw = e.target.closest('[data-pwatch]');
+  if (pw) { const r = search.cmpIndex[Number(pw.dataset.pwatch)]; openWatchDialog({ name: r.title.slice(0, 80), query: search.q, refPrice: refOf(r), pin: r.url && !store(r.storeId).agregador ? { storeId: r.storeId, url: r.url } : null }); }
+});
+$('#results').addEventListener('change', (e) => { if (e.target.matches('[data-pfiltro]')) savePorLoja({ soVendedorBom: e.target.checked }); });
+$('#results').addEventListener('toggle', (e) => {
+  const sec = e.target.closest?.('.ploja'); if (!sec || e.target.parentElement !== sec) return;
+  if (e.target.open) plAbertas.add(sec.dataset.store); else plAbertas.delete(sec.dataset.store);
+}, true);
+
 function renderCompare(list, best) {
   const visiveis = list.filter(r => (trustOf(r) ?? 100) >= ui.min || r.suspeito);
   const groups = groupOffers(visiveis, { refOf, scoreOf: trustOf });
@@ -794,6 +829,7 @@ function diagText(d) {
     `APIs oficiais: ML ${d.apisOficiais.mercadolivre ? 'sim' : 'não'} · Shopee ${d.apisOficiais.shopee ? 'sim' : 'não'} · AliExpress ${d.apisOficiais.aliexpress ? 'sim' : 'não'}`,
     `busca de teste: "${d.busca}" · ${d.quando}`,
     ...(d.fontesOficiais ?? []).map(f => `fonte oficial ${store(f.loja).name} (${f.nome}): ${f.configurada ? 'configurada' : 'falta ' + f.faltam.join(', ')}`),
+    ...(d.telegram ? [`Telegram: ${d.telegram.canais.ok} de ${d.telegram.canais.total} canais lidos sem erro${d.telegram.canais.failing ? ` (${d.telegram.canais.failing} em recuo)` : ''} · ${d.telegram.grupos} grupo(s)/canal(is) com o bot · privacy mode ${d.telegram.privacyMode} · último post ${d.telegram.ultimoPost ? new Date(d.telegram.ultimoPost).toLocaleString('pt-BR') : 'nenhum'}`] : []),
     ...Object.entries(d.pausas ?? {}).map(([id, p]) => `pausa após bloqueio: ${store(id).name} até ${new Date(p.until).toLocaleString('pt-BR')}`), ''];
   for (const l of d.lojas) {
     L.push(`${l.ok ? '✓' : l.bloqueado ? '⛔' : '✕'} ${l.nome}: ${l.ok ? `${l.itens} itens via ${l.fonte}` : l.erro ?? 'nenhum item'} (${l.ms} ms)`);
@@ -812,6 +848,7 @@ $('#diag-go').onclick = async () => {
         <span>${l.ok ? `${l.itens} itens via ${esc(l.fonte)}` : l.bloqueado ? 'bloqueado' : 'falhou'} · ${l.ms} ms</span>
         ${(l.tentativas ?? []).map(t => `<small>${t.ok ? '✓' : '✕'} ${esc(t.via)}: ${t.ok ? t.n + ' itens' : esc(t.error)}</small>`).join('')}</div>`).join('')}</div>
       ${(d.fontesOficiais ?? []).length ? `<ul class="howto">${d.fontesOficiais.map(f => `<li><b>${esc(store(f.loja).name)}</b> · ${esc(f.nome)}: ${f.configurada ? '✓ configurada' : `falta no .env: <code>${f.faltam.map(esc).join('</code>, <code>')}</code>`}</li>`).join('')}</ul>` : ''}
+      ${d.telegram ? `<p class="muted"><b>Telegram:</b> ${d.telegram.canais.ok} de ${d.telegram.canais.total} canais lidos sem erro${d.telegram.canais.failing ? ` (${d.telegram.canais.failing} em recuo)` : ''} · ${d.telegram.grupos} grupo(s)/canal(is) com o bot · privacy mode <b>${esc(d.telegram.privacyMode)}</b> · último post ${d.telegram.ultimoPost ? ago(Date.parse(d.telegram.ultimoPost)) : 'nenhum'}</p>` : ''}
       <p class="muted">Navegador headless neste aparelho: <b>${d.navegador ? 'sim' : 'não'}</b> · APIs oficiais configuradas: ${Object.entries(d.apisOficiais).filter(([, v]) => v).map(([k]) => store(k).name).join(', ') || 'nenhuma'}</p>`;
     $('#diag-copy').hidden = false;
   } catch { toast('O diagnóstico falhou'); }

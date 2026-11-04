@@ -22,3 +22,15 @@ preços são ilustrativos; nenhuma credencial real.
 - `awin-ofertas.json`: Offers API (`/publisher/{id}/promotions`), com um cupom e uma promoção.
 - `lomadee-produtos.json`: busca de produtos da Lomadee (`/affiliate/products`), preços em centavos, com um item de outra loja da rede.
 - `amazon-creators-busca.json`: `searchItems` da Amazon Creators API, com uma listagem usada (ignorada) e um item sem oferta.
+
+## Cupons oficiais (Etapa 2), histórico (Etapa 3), busca por loja (Etapa 3b) e Telegram (Etapa 4)
+
+Todas sintéticas, no formato da documentação de cada fonte (04/11/2026). Nenhum dado real.
+
+- `awin-cupons-ativos.json` e `awin-cupons-futuros.json`: Offers API da Awin com `status` active e upcoming.
+- `lomadee-cupons.json`: campanhas da Lomadee (`/affiliate/campaigns`), com cupom genérico, pessoal, de outra loja e sem código.
+- `historico-series.json`: séries de preços simuladas (queda real, preço inflado antes da promoção, pouco dado).
+- `historico-legado.json`: `data/history.json` no formato antigo, para a migração.
+- `keepa-produto.json`: resposta do Keepa (`/product`) com o csv de preços da Amazon.
+- `por-loja-busca.json`: busca "rtx 4060" com 20 resultados por loja (produto certo, variantes, acessórios, vendedores bons, ruins e sem dados).
+- `telegram-updates.json`: atualizações do Bot API (`message` de grupo, `channel_post`, encaminhados), com ids fictícios.

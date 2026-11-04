@@ -27,3 +27,9 @@ data/ml-auth.json
 
 # cópias de trabalho temporárias dos subagentes do Claude Code
 .claude/worktrees/
+# grupos e canais do Telegram conectados ao bot (lista de permissão)
+data/telegram-groups.json
+# histórico próprio de preços (um arquivo por mês)
+data/history/
+# cupons oficiais lidos das redes de afiliados
+data/coupons-feed.json

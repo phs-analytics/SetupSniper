@@ -1,5 +1,46 @@
 # Changelog
 
+## 2.16.0 — 2026-11-04
+
+**Etapa 3b do plano 3.0: vários produtos por loja, só de vendedores bem avaliados**
+- **Modo "Por loja"** na busca, ao lado de Comparativo e Lista: uma seção recolhível por loja, com até 10 produtos relevantes (todos os termos, modelo exato, variante certa), na ordem "Melhor escolha", menor preço ou maior nota.
+- O mesmo produto de vários vendedores da loja vira um card, com o melhor em cima e "Outros N vendedores".
+- **Só vendedor bom** (nota 70+), ligado por padrão: os outros ficam em "Mostrar ocultos (N)", com o motivo; ofertas sem dados do vendedor ficam em "Sem dados do vendedor", sem sumir. Alto risco e suspeitos nunca ficam na frente.
+- Quando a 1ª página não tem produtos suficientes de vendedor bom, a busca pede a próxima (até 3 páginas), respeitando a pausa após bloqueio.
+- Mais dados do vendedor: parceiro da KaBuM! e selo Mall/Indicado da Shopee (não verificados ao vivo).
+- **Alertas dos Fixados** só disparam para vendedor acima da nota mínima (dá para desligar na aba Lojas).
+- Regras em `data/search-rules.json`, com fonte e data; preferências na aba Lojas.
+- Correção no Comparativo: modelos diferentes da mesma linha (Eagle × Windforce, Inno3D Twin X2) não se juntam mais.
+
+## 2.15.0 — 2026-11-04
+
+**Etapa 2 do plano 3.0: cupons oficiais das redes de afiliados**
+- `src/coupon-feed.js` lê a cada 6 h os cupons da **Awin** (Offers API: ativos e futuros) e da **Lomadee** (campanhas), só das lojas em que você foi aprovado. Shopee e AliExpress ficam de fora até as APIs oferecerem cupons (motivo em `data/coupon-sources.json`).
+- Os cupons viram as mesmas regras de desconto (percentual com teto, valor fixo com mínimo, frete, Pix, primeira compra, assinantes), em centavos.
+- **Rótulos:** "Oficial — enviado pela loja via Awin, válido até 10/11" e "Divulgado por @canal em 04/11, não verificado". O mesmo código nas duas origens fica com o rótulo oficial.
+- Cupom vencido sai da lista e vai para o histórico. Cupom futuro ou de "itens selecionados" não entra sozinho no total.
+- Botão **Copiar** em cada cupom. O SetupSniper continua sem testar, gerar ou aplicar cupons, e o total usa um cupom por pedido.
+- Dados em `data/coupons-feed.json` (fora do git). A chave da Lomadee precisa do escopo `campaigns:read`.
+
+## 2.14.0 — 2026-11-04
+
+**Etapa 4 do plano 3.0: Telegram quase em tempo real**
+- **Canais mais rápidos:** cada canal tem o seu intervalo (5 min nos de promoção, 30 min nos parados), recua sozinho quando a prévia falha e só trata os posts depois do último visto. Valores em `data/telegram-channels.json`, com fonte e data.
+- **Grupos e canais com o bot:** o bot lê `message` de grupos e `channel_post` de canais em que está, só de uma lista de permissão (`data/telegram-groups.json`, fora do git). O dono conecta com `/grupo_add` dentro do grupo e desconecta com `/grupo_remover`. Passo a passo do BotFather (`/setprivacy`) em `docs/telegram.md`.
+- **Privacidade:** mensagens que não parecem oferta são ignoradas, e nunca se guarda nome ou id de quem postou, só o nome do grupo.
+- **Saída única:** todo post novo, de canal, grupo ou encaminhado, entra no mesmo fluxo: feed de Promoções, aviso na página aberta e alerta de Fixado.
+- **Diagnóstico:** linha "Telegram" com canais lidos, grupos conectados, privacy mode e o último post.
+- Sem userbot (decisão mantida).
+
+## 2.13.0 — 2026-11-04
+
+**Etapa 3 do plano 3.0: histórico próprio de preços**
+- Todo preço visto (busca, Fixados, extensão, APIs e Telegram) vira um ponto em `data/history/AAAA-MM.jsonl` (fora do git), no máximo um por hora por produto, loja e vendedor, a menos que o preço mude.
+- **Fixados:** minigráfico do menor preço por dia em todas as lojas, "menor em 90 dias: R$ X" e os selos **menor preço em 90 dias** e **preço inflado antes da promoção**. Sem dados, mostra "histórico começando". Limites em `data/history-rules.json`, com fonte e data.
+- O `data/history.json` antigo é copiado uma vez para o formato novo, sem perder pontos. Pontos com mais de 180 dias viram um por dia.
+- **Keepa opcional:** com `KEEPA_API_KEY`, os Fixados da Amazon puxam o histórico de lá (1x por dia), marcado "fonte: Keepa". Não verificado ao vivo.
+- Guia: `docs/historico.md`.
+
 ## 2.12.0 — 2026-11-04
 
 **Etapa 1 do plano 3.0: fontes oficiais no lugar das páginas bloqueadas**
