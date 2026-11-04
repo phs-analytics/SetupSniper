@@ -586,7 +586,6 @@ function renderCoupons() {
   const list = S.coupons ?? [];
   const ativos = list.filter(c => c.status !== 'expired' && (!c.expiresAt || Date.parse(c.expiresAt) > Date.now()));
   $('#count-cup').textContent = ativos.length;
-  const regra = (c) => c.type === 'percent' ? `${c.value}% OFF` : c.type === 'fixed' ? `${brl(c.value)} OFF` : c.type === 'shipping' ? 'frete grátis' : 'regra não informada';
   const feed = S.couponFeed;
   $('#coupon-feed-status').innerHTML = feed ? `Cupons oficiais das redes de afiliados: ${feed.atualizadoEm ? `última leitura ${ago(Date.parse(feed.atualizadoEm))}` : 'ainda não lidos'} · ${Object.entries(feed.redes ?? {}).map(([k, r]) => `${esc(k)}: ${r.ok ? `${r.n ?? 0} cupom(ns)` : r.pulada ? 'desligada' : esc(r.erro ?? r.motivo ?? 'sem credencial')}`).join(' · ') || 'nenhuma rede configurada (veja docs/credenciais.md)'}` : '';
   $('#coupon-list').innerHTML = list.length ? list.map(c => couponCard(c, { now: Date.now(), lojaNome: store(c.store).name, cor: store(c.store).color })).join('') +

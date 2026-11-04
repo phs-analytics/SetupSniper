@@ -60,7 +60,7 @@ export function historyBadges(ind, { fonte } = {}) {
   if (f?.ativo) {
     const dica = `Estimativa pelo histórico visto aqui: antes da queda o preço subiu ${String(f.altaPct).replace('.', ',')}% ` +
       `(de ${brl(f.base)}, o menor dos ${f.janelaDias ?? 30} dias anteriores, para ${brl(f.de)}) e agora está em ${brl(f.atual)}. Critério próprio, não é acusação.`;
-    out.push(`<span class="hist-badge hist-inflado" title="${esc(dica)}">preço inflado antes da promoção</span>`);
+    out.push(`<span class="hist-badge hist-inflado" title="${esc(dica)}">provável preço inflado antes da promoção (estimativa)</span>`);
   }
   return out.join(' ') + fonteTxt;
 }

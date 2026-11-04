@@ -13,6 +13,7 @@ import {
   porLoja, porLojaUma, avaliarVendedor, vendedorAprovado, motivoNota, normalizeRules, DEFAULT_RULES,
   buscarAteCompletar, produtosBons, resumoLoja,
 } from '../src/por-loja.js';
+import { motivoSemAlerta } from '../src/por-loja.js';
 import { renderPorLoja } from '../public/por-loja.js';
 
 const fx = JSON.parse(readFileSync(new URL('./fixtures/por-loja-busca.json', import.meta.url), 'utf8'));
@@ -313,4 +314,18 @@ test('renderPorLoja: seção por loja com resumo, cards, "Outros N vendedores", 
 test('resumoLoja: singular e plural', () => {
   assert.equal(resumoLoja({ produtos: 1, ocultosNota: 1, semDados: 0, ocultosRelevancia: 0 }), '1 produto · 1 oculto pela nota');
   assert.equal(resumoLoja({ produtos: 0, ocultosNota: 0, semDados: 2, ocultosRelevancia: 0 }), '0 produtos · 2 sem dados do vendedor');
+});
+
+
+test('alerta de Fixado: ligado (padrão) segura vendedor sem nota mínima; desligado não filtra', () => {
+  const bom = { storeId: 'kabum', title: 'SSD', price: { pix: 30000 }, trust: { score: 88, confidence: 80, tier: 'confiável', reasons: [] } };
+  const ruim = { storeId: 'mercadolivre', title: 'SSD', price: { pix: 25000 }, trust: { score: 35, confidence: 80, tier: 'alto risco', reasons: ['loja aberta há 18 dias'] } };
+  const semDados = { storeId: 'shopee', title: 'SSD', price: { pix: 26000 }, trust: { score: 69, confidence: 0, tier: 'regular', reasons: [] } };
+  assert.equal(motivoSemAlerta(bom, {}), null);
+  assert.ok(motivoSemAlerta(ruim, {}));
+  assert.ok(motivoSemAlerta(semDados, {}));
+  assert.ok(motivoSemAlerta(ruim, { alertasSoVendedorBom: true }));
+  assert.equal(motivoSemAlerta(ruim, { alertasSoVendedorBom: false }), null);
+  assert.equal(motivoSemAlerta(semDados, { alertasSoVendedorBom: false }), null);
+  assert.equal(motivoSemAlerta(null, {}), null);
 });

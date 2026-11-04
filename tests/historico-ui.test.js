@@ -65,7 +65,7 @@ test('selos: menor em 90 dias, "menor preço em 90 dias" e "preço inflado antes
   const inf = plain(historyBadges(computeIndicators(pts('inflado'), { now: NOW })));
   assert.ok(inf.includes('menor em 90 dias: R$ 990,00'));
   assert.ok(inf.includes('class="hist-badge hist-menor">menor preço em 90 dias'));
-  assert.ok(inf.includes('preço inflado antes da promoção'));
+  assert.ok(inf.includes('provável preço inflado antes da promoção (estimativa)'));
   assert.ok(inf.includes('subiu 20%') && inf.includes('Estimativa') && inf.includes('não é acusação'));
 
   const real = historyBadges(computeIndicators(pts('quedaReal'), { now: NOW }));

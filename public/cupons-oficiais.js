@@ -21,12 +21,13 @@ export function dataCurta(iso) {
   return `${p.day}/${p.month}`;
 }
 
-// Centavos → "R$ 2.000" (sem centavos quando redondo) ou "R$ 49,90". Sem depender do ICU do aparelho.
+// Centavos → "R$ 2.000" (sem centavos quando redondo) ou "R$ 49,90", pelo formatador de moeda do JavaScript
+// (o mesmo de formatBRL em src/offer.js), sem montar a vírgula à mão.
+const BRL_INT = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0, maximumFractionDigits: 0 });
+const BRL_DEC = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 export function reaisCurto(cents) {
   if (!Number.isInteger(cents)) return '—';
-  const int = Math.trunc(Math.abs(cents) / 100).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-  const dec = Math.abs(cents) % 100;
-  return `${cents < 0 ? '-' : ''}R$ ${int}${dec ? ',' + String(dec).padStart(2, '0') : ''}`;
+  return (cents % 100 ? BRL_DEC : BRL_INT).format(cents / 100).replace(/\u00a0/g, ' ');
 }
 
 const COND = { first_purchase: 'primeira compra', new_account: 'conta nova', subscriber: 'só assinantes', app_only: 'só no app', selected_items: 'itens selecionados' };
