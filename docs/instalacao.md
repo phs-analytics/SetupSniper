@@ -59,7 +59,7 @@ Os seus dados ficam na pasta `data/`, montada como volume. Veja [`docker-compose
 
 ## Deixar ligado no computador
 
-- **Linux (systemd):** veja o exemplo em [celular-servidor.md](celular-servidor.md#outros-servidores).
+- **Linux (systemd):** veja o exemplo em [servidor-proprio.md](servidor-proprio.md#linux-mini-pc-ou-raspberry-pi).
 - **Windows:** use o Agendador de Tarefas com o gatilho "Ao fazer logon" executando `node server.js` na pasta do projeto.
 
-Para rodar 24h sem gastar energia do PC, um celular antigo é uma ótima opção: veja [celular-servidor.md](celular-servidor.md).
+Para rodar 24 h sem deixar o PC ligado, veja as outras opções de [servidor próprio](servidor-proprio.md): mini PC, Raspberry Pi, Docker, VPS ou um celular Android antigo. As credenciais vão no `.env`: [credenciais.md](credenciais.md).

@@ -24,3 +24,4 @@ node_modules/
 data/promos.json
 # login da conta do Mercado Livre (tokens)
 data/ml-auth.json
+
