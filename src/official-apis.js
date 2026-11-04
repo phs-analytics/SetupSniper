@@ -29,7 +29,13 @@ async function getJson(fetchImpl, url, opts = {}) {
 // ---------------- Mercado Livre ----------------
 let mlToken = null;   // { token, exp }
 export function resetMlToken() { mlToken = null; }
+// Conta do usuário conectada pelo login oficial (src/ml-oauth.js): tem prioridade sobre o token do app.
+let userTokenProvider = null;
+export function setMlUserTokenProvider(fn) { userTokenProvider = fn; }
 async function mlAuth(fetchImpl) {
+  if (userTokenProvider) {
+    try { const t = await userTokenProvider(); if (t) return t; } catch { /* login vencido: tenta o token do app */ }
+  }
   if (mlToken && mlToken.exp > Date.now() + 60e3) return mlToken.token;
   const body = new URLSearchParams({ grant_type: 'client_credentials', client_id: env('ML_CLIENT_ID'), client_secret: env('ML_CLIENT_SECRET') });
   const j = await getJson(fetchImpl, 'https://api.mercadolibre.com/oauth/token', { method: 'POST', body, headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' } });

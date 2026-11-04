@@ -22,3 +22,5 @@ node_modules/
 
 # promoções lidas dos canais do Telegram
 data/promos.json
+# login da conta do Mercado Livre (tokens)
+data/ml-auth.json

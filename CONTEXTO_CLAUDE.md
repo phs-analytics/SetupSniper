@@ -1,6 +1,6 @@
 # SetupSniper: contexto para a próxima sessão do Claude Code
 
-> Situação em 04/11/2026: versão **2.9.0** na branch `main`, com 136 testes passando.
+> Situação em 04/11/2026: versão **2.10.0** na branch `main`, com 145 testes passando.
 > Este arquivo trata **só do SetupSniper**. Leia inteiro antes de mexer no projeto.
 
 ---
@@ -76,6 +76,8 @@ Variáveis úteis:
 | `src/stores.js` | adaptadores de busca por loja (`ADAPTERS`); `searchStore(id, q, { page, deep, browserFallback })`; `isChallenge()` reconhece captcha; `kabumItems()` lê o catálogo JSON da KaBuM |
 | `src/compare.js` | comparativo: `groupOffers` junta o mesmo produto de lojas/vendedores diferentes (`productSignature`, `sameProduct`), 1 linha por vendedor; `sellerLabel` |
 | `src/official-apis.js` | APIs oficiais com credenciais do usuário no `.env`: Mercado Livre (busca + catálogo multi-vendedor + reputação), Shopee Affiliate, AliExpress Affiliate |
+| `src/capture.js` | favorito "Enviar para o SetupSniper": lê o HTML que o usuário mandou da própria tela (`/api/capture`, `public/receber.html`) |
+| `src/ml-oauth.js` | login oficial (OAuth) na conta do Mercado Livre do usuário; token em `data/ml-auth.json` |
 | `src/ranking.js` | ordem padrão: menor preço ajustado à confiança; alto risco/suspeito depois; sem preço por último |
 | `src/promo-feed.js` | feed de promoções dos canais: `promoFromPost`, `addPromos`, `queryPromos`, `watchMatches`, `channelStatus` |
 | `src/extract.js` | classifica preços pelo nome do campo e pelo texto (Pix, cartão, parcela, preço "de"); `cleanResults`; `flagOutliers` |
@@ -242,6 +244,11 @@ Comparava três produtos fixos e calculava um score de confiabilidade.
 - **Diagnóstico** (aba Lojas e `/diagnostico`), com relatório sem dados pessoais e erros de rede explicados.
 - **O que o dono quer acima de tudo:** comparativo entre lojas e entre vendedores dos marketplaces. "Bloqueado" ainda acontece no servidor dele: **peça o relatório do diagnóstico** antes de mexer nos adaptadores.
 
+### 2.10.0: saídas legítimas para o bloqueio
+- **Favorito "Enviar para o SetupSniper":** o usuário abre a loja no próprio navegador e envia a tela para o servidor.
+- **Login oficial (OAuth) na conta do Mercado Livre.**
+- **Link compartilhado ao bot** fixa o produto mesmo quando a página não abre na hora.
+
 ## 6. Decisões já tomadas (não reabrir)
 
 - **Referência de preço:** Pix.
@@ -256,6 +263,7 @@ Comparava três produtos fixos e calculava um score de confiabilidade.
 - **TikTok Shop:** continua desligada até ser testada com a rede liberada.
 - **Ordem:** "Melhor escolha" é o padrão em todo lugar; Alto risco e suspeitos nunca ficam na frente de ofertas confiáveis.
 - **Sem disfarce de navegador:** imitar cabeçalhos de navegador (Sec-Fetch etc.) para passar por anti-bot foi recusado pelo sistema de permissões e fica fora, junto com a regra de não burlar proteções.
+- **Não burlar proteções, nem como último recurso** (o dono chegou a pedir; foi recusado): nada de resolver captcha, disfarçar o servidor de navegador, trocar de IP por proxy, nem reaproveitar cookies de sessão/login das lojas (inclusive "login com Google" para acessar as lojas por trás). As saídas são as oficiais e as feitas pelo próprio usuário (favorito, compartilhar link).
 - **Grupos do Telegram:** sem prévia pública, só por encaminhamento ao bot. Nada de login com conta pessoal (userbot).
 
 ## 7. Pendências (próximos passos)

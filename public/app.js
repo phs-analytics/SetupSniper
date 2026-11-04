@@ -532,7 +532,7 @@ function renderPinned() {
 }
 function render() {
   if (!S) return;
-  renderStatus(); renderWatch(); renderPinned(); renderCoupons(); if (search.q && !search.running) renderSearch(); renderStores(); renderAlerts(); renderPromos();
+  renderStatus(); renderWatch(); renderPinned(); renderCoupons(); if (search.q && !search.running) renderSearch(); renderStores(); renderAlerts(); renderPromos(); renderMl();
   // Promoções novas chegaram e a pessoa está no topo da aba: atualiza a lista sozinha
   const nPromo = S.channels?.promos ?? 0;
   if (nPromo !== ui.lastPromos) { const was = ui.lastPromos; ui.lastPromos = nPromo; if (was != null && promo.loaded && promo.offset <= 30 && !$('#tab-promos').hidden) loadPromos(true); }
@@ -805,3 +805,57 @@ $('#diag-copy').onclick = async () => {
   try { await navigator.clipboard.writeText(txt); toast('Relatório copiado'); }
   catch { const ta = Object.assign(document.createElement('textarea'), { value: txt, rows: 12 }); ta.className = 'diag-txt'; $('#diag-out').append(ta); ta.select(); toast('Selecione e copie o texto'); }
 };
+
+// ================= ENVIAR DA LOJA (favorito) =================
+// O favorito roda na aba da loja: abre /receber.html deste servidor e entrega o HTML da tela por postMessage
+// (só para a origem deste servidor). Funciona mesmo com o site em http, porque não faz requisição da página da loja.
+function bookmarkletCode() {
+  const O = location.origin;
+  return `javascript:(()=>{const O=${JSON.stringify(O)};const w=window.open(O+'/receber.html','setupsniper');if(!w){alert('Permita pop-ups para enviar ao SetupSniper');return}` +
+    `const d={type:'setupsniper-capture',url:location.href,title:document.title,html:document.documentElement.outerHTML};let n=0;` +
+    `const t=setInterval(()=>{try{w.postMessage(d,O)}catch(e){}if(++n>60)clearInterval(t)},500);` +
+    `addEventListener('message',e=>{if(e.origin===O&&e.data&&e.data.type==='setupsniper-ok')clearInterval(t)})})()`;
+}
+{
+  const a = $('#bm-link');
+  a.href = bookmarkletCode();
+  a.onclick = (e) => { e.preventDefault(); toast('Arraste este botão para a barra de favoritos (no celular, use "Copiar o código")'); };
+  $('#bm-copy').onclick = async () => {
+    try { await navigator.clipboard.writeText(bookmarkletCode()); toast('Código copiado: cole como endereço de um favorito'); }
+    catch { prompt('Copie o código do favorito:', bookmarkletCode()); }
+  };
+}
+
+// ================= CONTA DO MERCADO LIVRE =================
+function renderMl() {
+  const m = S?.ml; if (!m) return;
+  const box = $('#ml-box');
+  if (box.dataset.k === JSON.stringify(m) && box.innerHTML) return;   // não apaga o que a pessoa está digitando
+  box.dataset.k = JSON.stringify(m);
+  if (!m.app) {
+    box.innerHTML = `<p>Primeiro cadastre o app grátis do Mercado Livre e coloque <code>ML_CLIENT_ID</code> e <code>ML_CLIENT_SECRET</code> no <code>.env</code> do servidor. No app, use como endereço de retorno (redirect URI): <code>${esc(m.redirectUri)}</code>. Passo a passo em <code>docs/fontes-oficiais.md</code>.</p>`;
+    return;
+  }
+  if (m.connected) {
+    box.innerHTML = `<p>✅ Conectado${m.nickname ? ` como <b>${esc(m.nickname)}</b>` : ''}. ${m.renewable ? 'O acesso é renovado sozinho.' : 'Este app não renova o acesso sozinho: conecte de novo quando vencer (ative "offline_access" no app para renovar).'}</p>
+      <button type="button" class="btn" id="ml-off">Desconectar</button>`;
+    return;
+  }
+  box.innerHTML = `<ol class="howto">
+      <li><button type="button" class="btn primary" id="ml-go">Conectar minha conta do Mercado Livre</button></li>
+      <li>Autorize no site do Mercado Livre. Ele vai levar o navegador para <code>${esc(m.redirectUri)}</code> (a página pode nem abrir: tudo bem).</li>
+      <li>Copie o endereço inteiro da barra do navegador (tem <code>?code=…</code>) e cole aqui:
+        <div class="ml-paste"><input id="ml-code" placeholder="https://…?code=TG-…" autocomplete="off"><button type="button" class="btn" id="ml-done">Concluir</button></div></li>
+    </ol>`;
+}
+document.addEventListener('click', async (e) => {
+  if (e.target.id === 'ml-go') {
+    const r = await fetch('/api/ml/start', { method: 'POST' }); const j = await r.json();
+    if (!r.ok) return toast(j.error); window.open(j.url, '_blank', 'noopener');
+  }
+  if (e.target.id === 'ml-done') {
+    const r = await fetch('/api/ml/code', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ input: $('#ml-code').value }) });
+    const j = await r.json(); toast(r.ok ? 'Conta do Mercado Livre conectada' : j.error);
+  }
+  if (e.target.id === 'ml-off') { await fetch('/api/ml/disconnect', { method: 'POST' }); toast('Desconectado'); }
+});

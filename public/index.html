@@ -176,6 +176,24 @@
         <p class="muted">Reclame Aqui 40% · Avaliação da loja 25% · Volume de vendas 20% · Reviews 15%</p>
       </div>
       <p class="disclaimer">As notas são calculadas pelo SetupSniper a partir de indicadores públicos e, enquanto marcadas como <b>estimativa</b>, usam valores aproximados. Não são certificações nem dados oficiais do Reclame Aqui ou das lojas. Confira sempre na fonte antes de comprar.</p>
+      <div class="panel" id="send-panel">
+        <div class="panel-head"><h2>Enviar da loja para o SetupSniper</h2>
+          <p class="muted">Para as lojas que bloqueiam o servidor: abra a página do produto ou da busca <b>no seu navegador</b>, como sempre, e toque no favorito. Os preços que estão na sua tela vão para o seu servidor, entram no comparativo e atualizam os Fixados daquele link. Nada é acessado automaticamente.</p></div>
+        <p><a class="btn primary" id="bm-link" href="#" title="Arraste para a barra de favoritos">⇪ Enviar para o SetupSniper</a>
+          <button type="button" class="btn" id="bm-copy">Copiar o código do favorito</button></p>
+        <details><summary>Como instalar</summary>
+          <ul class="howto">
+            <li><b>No PC:</b> arraste o botão amarelo para a barra de favoritos. Na loja, clique nele.</li>
+            <li><b>No celular (Chrome):</b> toque em "Copiar o código do favorito". Salve qualquer página nos favoritos, edite o favorito, troque o nome para <code>SetupSniper</code> e cole o código no lugar do endereço. Na loja, digite <code>SetupSniper</code> na barra de endereço e toque no favorito que aparecer.</li>
+            <li>Se o navegador bloquear a janela, permita pop-ups para a loja.</li>
+            <li><b>Pelo app da loja:</b> toque em Compartilhar e mande o link para o seu bot do Telegram. Ele fixa o produto mesmo quando não consegue ler o preço na hora.</li>
+          </ul></details>
+      </div>
+      <div class="panel" id="ml-panel">
+        <div class="panel-head"><h2>Conta do Mercado Livre</h2>
+          <p class="muted">Login oficial (OAuth) na <b>sua</b> conta, só para leitura: a API passa a trazer todos os vendedores de cada produto. O SetupSniper não compra, não vê seus pedidos e não guarda a sua senha.</p></div>
+        <div id="ml-box"></div>
+      </div>
       <div class="panel diag">
         <div class="panel-head"><h2>Diagnóstico das lojas</h2>
           <p class="muted">Testa agora cada loja a partir do <b>seu servidor</b> e mostra o que cada tentativa devolveu (API oficial, API pública, página da loja, navegador). Se aparecer "bloqueado", toque em <b>Copiar relatório</b> e envie para quem estiver ajudando: o relatório não tem dados pessoais.</p></div>
