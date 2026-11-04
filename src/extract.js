@@ -225,6 +225,44 @@ export function relevance(title, tokens) {
   return hit / tokens.length;
 }
 
+// ---------- nota de relevância (modo "Por loja") ----------
+// "Ti", "Super", "XT", "XTX" e "GRE" mudam o produto (RTX 4060 ≠ RTX 4060 Ti). Também usado em src/compare.js.
+export const VARIANT_WORDS = new Set(['ti', 'super', 'xt', 'xtx', 'gre']);
+const VARIANT_LABEL = { ti: 'Ti', super: 'Super', xt: 'XT', xtx: 'XTX', gre: 'GRE' };
+// Separa o que as lojas escrevem junto: "RTX4060Ti" → "rtx 4060 ti", "RX7600XT" → "rx 7600 xt".
+const relToks = (s) => normalize(s)
+  .replace(/\b([a-z]{2,4})(\d{3,})/g, '$1 $2')
+  .replace(/(\d)(ti|super|xtx|xt|gre)\b/g, '$1 $2')
+  .split(' ').filter(Boolean);
+// Código de modelo: tem 3+ dígitos e não é capacidade, potência ou frequência ("4060", "7800x3d", "b650"; não "8gb").
+const isModelCode = (t) => /\d{3,}/.test(t) && !/^\d+(gb|tb|mb|w|hz|mhz|ghz|pol)$/.test(t);
+export const RELEVANCE_WEIGHTS = { termos: 40, modelo: 30, variante: 30 };
+
+// Nota de relevância 0–100 de um título para a busca, sobre o que cleanResults já filtra:
+//   termos (40): fração dos termos da busca no título;
+//   modelo (30): o código do modelo pesquisado aparece exato ("4060", não só "4060" dentro de "40600");
+//   variante (30): as variantes batem (busca "rtx 4060" e título "RTX 4060 Ti" = outra variante).
+// Sem código de modelo na busca, o critério "modelo" não penaliza.
+export function relevanceScore(title, query) {
+  const toks = new Set(relToks(title ?? ''));
+  const qt = relToks(query ?? '');
+  const qTokens = queryTokens(query ?? '');
+  // o título como a loja escreveu ou separado ("RTX4060Ti" → "rtx 4060 ti"): vale o que achar mais termos
+  const rel = Math.max(relevance(title ?? '', qTokens), relevance([...toks].join(' '), qTokens));
+  const codes = qt.filter(isModelCode);
+  const modelo = codes.length ? codes.every(c => toks.has(c)) : null;
+  const qv = qt.filter(t => VARIANT_WORDS.has(t)).sort().join(' ');
+  const tv = [...toks].filter(t => VARIANT_WORDS.has(t)).sort().join(' ');
+  const variante = qv === tv;
+  const w = RELEVANCE_WEIGHTS;
+  const score = Math.round(w.termos * rel + (modelo === false ? 0 : w.modelo) + (variante ? w.variante : 0));
+  const motivos = [];
+  if (rel < 1) motivos.push('não tem todos os termos da busca');
+  if (modelo === false) motivos.push('modelo diferente do pesquisado');
+  if (!variante) motivos.push(tv ? `outra variante (${tv.split(' ').map(v => VARIANT_LABEL[v] ?? v).join(' ')})` : 'sem a variante pesquisada');
+  return { score, termos: rel, modelo, variante, motivo: motivos.join('; ') || null };
+}
+
 // Recebe ofertas já normalizadas (src/offer.js). Ofertas sem preço legível NÃO são descartadas:
 // elas aparecem como "Preço não encontrado nesta página".
 export function cleanResults(items, query, { minRel } = {}) {
@@ -253,4 +291,51 @@ export function flagOutliers(items, ref = (o) => o.price?.pix ?? o.price?.card ?
   return items
     .filter(r => ref(r) == null || ref(r) >= med * 0.25)                    // quase certamente acessório/peça
     .map(r => ({ ...r, suspeito: ref(r) != null && ref(r) < med * 0.55 }));  // pode ser golpe ou produto diferente
+}
+
+// ---------- dados públicos do vendedor → offer.sellerInfo (formato neutro de src/seller-score.js) ----------
+// Só lê o que a fonte JÁ devolve na busca; nenhuma requisição a mais. Campos ausentes ficam de fora
+// (ausente ≠ ruim: a nota trata como "sem dado"). Retorna null quando não há nada aproveitável.
+const numOrNull = (v) => { if (v == null || v === '' || typeof v === 'boolean') return null; const n = Number(String(v).replace('%', '').replace(',', '.').trim()); return Number.isFinite(n) ? n : null; };
+const compact = (o) => Object.fromEntries(Object.entries(o).filter(([, v]) => v != null));
+const orNull = (o) => (Object.keys(o).length ? o : null);
+
+// storeId: loja; raw: o objeto do vendedor/anúncio como a fonte entrega.
+//   shopee: item_basic da busca (is_official_shop, shopee_verified, is_preferred_plus_seller)
+//           → selo Mall/Indicado. Sem selo, mas com os campos presentes → "sem selo".
+//   kabum: objeto "marketplace" do catálogo (seller_rating, seller_rating_count, seller_sales, seller_since)
+//           [não verificado: nomes dos campos de nota/vendas do parceiro não foram vistos ao vivo]
+//   amazon: merchantInfo (feedbackRating 0–5 e feedbackCount; a PA-API 5 usava FeedbackRating/FeedbackCount)
+//           [não verificado na Creators API]
+//   aliexpress e genérico: positiveRate ("95,2%"), ratingsCount, ratingAvg, sales, openedAt, ageDays
+//           [não verificado: a API de afiliados do AliExpress não traz a nota da loja]
+export function sellerInfoFrom(storeId, raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  if (storeId === 'shopee') {
+    const flags = ['is_official_shop', 'shopee_verified', 'is_preferred_plus_seller'].filter(k => k in raw);
+    if (!flags.length) return null;
+    const badge = raw.is_official_shop ? 'mall' : raw.shopee_verified || raw.is_preferred_plus_seller ? 'indicado' : null;
+    return { nativeReputation: { badge } };
+  }
+  if (storeId === 'kabum') {
+    return orNull(compact({
+      ratingAvg: numOrNull(raw.seller_rating ?? raw.rating),
+      ratingsCount: numOrNull(raw.seller_rating_count ?? raw.rating_count ?? raw.ratings_count),
+      sales: numOrNull(raw.seller_sales ?? raw.sales_count),
+      openedAt: raw.seller_since ?? raw.created_at ?? null,
+    }));
+  }
+  if (storeId === 'amazon') {
+    const rating = numOrNull(raw.feedbackRating ?? raw.FeedbackRating);
+    const n = numOrNull(raw.feedbackCount ?? raw.FeedbackCount);
+    return rating != null && n ? { nativeReputation: { rating, ratingsCount: n } } : null;
+  }
+  return orNull(compact({
+    percentPositive: numOrNull(raw.positiveRate ?? raw.percentPositive),
+    ratingsCount: numOrNull(raw.ratingsCount ?? raw.feedbackCount),
+    ratingAvg: numOrNull(raw.ratingAvg),
+    sales: numOrNull(raw.sales),
+    openedAt: raw.openedAt ?? null,
+    ageDays: numOrNull(raw.ageDays),
+  }));
 }

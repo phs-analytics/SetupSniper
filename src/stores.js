@@ -1,6 +1,6 @@
 // Adaptadores de busca por loja. Cada um monta a URL de busca e, se necessário, ajuda o extrator genérico.
 import { fetchText } from './http.js';
-import { collectJsonBlobs, extractFromJson, extractFromHtmlCards, pricesFromText, decode } from './extract.js';
+import { collectJsonBlobs, extractFromJson, extractFromHtmlCards, pricesFromText, decode, sellerInfoFrom } from './extract.js';
 import { parseBRL } from './scraper.js';
 import { browserAvailable, renderPage } from './browser.js';
 import { providerFor, storeSources } from './sources/index.js';
@@ -165,6 +165,7 @@ export function kabumItems(j) {
       available: x.available !== false && x.stock !== 0,
       // Vendido por parceiro do marketplace KaBuM: o vendedor não é a loja (muda a nota de confiança).
       seller: x.marketplace ? { id: x.marketplace.seller_id ?? x.marketplace.seller_name ?? 'marketplace', name: x.marketplace.seller_name ?? null, official: null } : null,
+      sellerInfo: x.marketplace ? sellerInfoFrom('kabum', x.marketplace) ?? undefined : undefined,   // nota/vendas do parceiro, se o catálogo trouxer [não verificado]
     };
   }).map(i => (i.installments && !(i.installments.n >= 2 && i.installments.value) ? { ...i, installments: null } : i));
 }
@@ -177,6 +178,7 @@ function shopeeItems(j) {
     image: b.image ? `https://down-br.img.susercontent.com/file/${b.image}` : null,
     available: b.stock !== 0,
     seller: { id: b.shopid ?? null, official: !!(b.is_official_shop || b.shopee_verified) },
+    sellerInfo: sellerInfoFrom('shopee', b) ?? undefined,   // selo Mall/Indicado da loja
     origin: b.shop_location ? (/china|exterior|overseas|hong kong|kor|taiwan|jap|estados unidos|usa/i.test(b.shop_location) ? 'INTL' : 'BR') : null,
     freeShipping: b.show_free_shipping === true,
   }));

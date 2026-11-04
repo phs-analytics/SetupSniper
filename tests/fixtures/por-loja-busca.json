@@ -1,0 +1,899 @@
+{
+ "_ajuda": "Busca \"rtx 4060\" com 20 resultados por loja, misturados: produto certo de vários vendedores, variantes (Ti), acessórios, outro modelo, preço suspeito e vendedores bons, ruins e sem dados. Formato de saída dos adaptadores (src/stores.js), antes de normalizeOffer. Preços e vendedores ilustrativos.",
+ "query": "rtx 4060",
+ "agora": "2026-11-04T12:00:00Z",
+ "plataforma": {
+  "mercadolivre": 75,
+  "kabum": 82,
+  "shopee": 68
+ },
+ "lojas": {
+  "mercadolivre": [
+   {
+    "title": "Placa de Vídeo MSI GeForce RTX 4060 Ventus 2X Black OC, 8GB GDDR6",
+    "pix": 1709.91,
+    "card": 1799.9,
+    "url": "https://example.com/mercadolivre/1",
+    "available": true,
+    "seller": {
+     "id": 11,
+     "name": "TECHSTORE"
+    },
+    "sellerInfo": {
+     "ageDays": 2900,
+     "sales": 48000,
+     "ratingAvg": 4.8,
+     "ratingsCount": 25000,
+     "nativeReputation": {
+      "level": "5_green",
+      "powerSeller": "platinum"
+     }
+    }
+   },
+   {
+    "title": "Placa De Vídeo Msi Rtx 4060 Ventus 2x Black 8gb Oc",
+    "pix": 1756.55,
+    "card": 1849,
+    "url": "https://example.com/mercadolivre/2",
+    "available": true,
+    "seller": {
+     "id": 12,
+     "name": "MEGA INFO"
+    },
+    "sellerInfo": {
+     "ageDays": 1300,
+     "sales": 6200,
+     "ratingAvg": 4.7,
+     "ratingsCount": 5000,
+     "nativeReputation": {
+      "level": "5_green",
+      "powerSeller": "gold"
+     }
+    }
+   },
+   {
+    "title": "Placa de Vídeo MSI RTX 4060 Ventus 2X Black OC 8 GB",
+    "pix": 1804.05,
+    "card": 1899,
+    "url": "https://example.com/mercadolivre/3",
+    "available": true,
+    "seller": {
+     "id": 13,
+     "name": "MSI",
+     "official": true
+    }
+   },
+   {
+    "title": "Placa Video MSI RTX 4060 Ventus 2X Black OC 8GB",
+    "pix": 1567.5,
+    "card": 1650,
+    "url": "https://example.com/mercadolivre/4",
+    "available": true,
+    "seller": {
+     "id": 15,
+     "name": "loja_nova_83"
+    },
+    "sellerInfo": {
+     "ageDays": 18,
+     "sales": 4,
+     "nativeReputation": {
+      "level": null
+     }
+    }
+   },
+   {
+    "title": "Placa de Vídeo MSI RTX 4060 Ventus 2X OC 8GB Black",
+    "pix": 1729,
+    "card": 1820,
+    "url": "https://example.com/mercadolivre/5",
+    "available": true,
+    "seller": {
+     "id": 14,
+     "name": "PC Express"
+    },
+    "sellerInfo": {
+     "ageDays": 700,
+     "sales": 900,
+     "nativeReputation": {
+      "level": "4_light_green"
+     }
+    }
+   },
+   {
+    "title": "Placa de Vídeo Gigabyte RTX 4060 Eagle OC 8GB",
+    "pix": 1662.5,
+    "card": 1750,
+    "url": "https://example.com/mercadolivre/6",
+    "available": true,
+    "seller": {
+     "id": 11,
+     "name": "TECHSTORE"
+    },
+    "sellerInfo": {
+     "ageDays": 2900,
+     "sales": 48000,
+     "ratingAvg": 4.8,
+     "ratingsCount": 25000,
+     "nativeReputation": {
+      "level": "5_green",
+      "powerSeller": "platinum"
+     }
+    }
+   },
+   {
+    "title": "Placa de Video Gigabyte GeForce RTX 4060 Eagle OC 8G",
+    "pix": 1615,
+    "card": 1700,
+    "url": "https://example.com/mercadolivre/7",
+    "available": true,
+    "seller": {
+     "id": 18,
+     "name": "vendedor_sem_dados"
+    }
+   },
+   {
+    "title": "Placa de Vídeo Gigabyte RTX 4060 Eagle OC 8GB GDDR6",
+    "pix": 1634,
+    "card": 1720,
+    "url": "https://example.com/mercadolivre/8",
+    "available": true,
+    "seller": {
+     "id": 17,
+     "name": "GAMER SHOP"
+    },
+    "sellerInfo": {
+     "ageDays": 400,
+     "sales": 300,
+     "ratingAvg": 4,
+     "ratingsCount": 120,
+     "nativeReputation": {
+      "level": "3_yellow"
+     }
+    }
+   },
+   {
+    "title": "Placa de Vídeo Asus Dual RTX 4060 OC 8GB",
+    "pix": 1786,
+    "card": 1880,
+    "url": "https://example.com/mercadolivre/9",
+    "available": true,
+    "seller": {
+     "id": 12,
+     "name": "MEGA INFO"
+    },
+    "sellerInfo": {
+     "ageDays": 1300,
+     "sales": 6200,
+     "ratingAvg": 4.7,
+     "ratingsCount": 5000,
+     "nativeReputation": {
+      "level": "5_green",
+      "powerSeller": "gold"
+     }
+    }
+   },
+   {
+    "title": "Placa de Video Asus Dual GeForce RTX 4060 OC Edition 8GB",
+    "pix": 1520,
+    "card": 1600,
+    "url": "https://example.com/mercadolivre/10",
+    "available": true,
+    "seller": {
+     "id": 16,
+     "name": "INFO RAPIDA"
+    },
+    "sellerInfo": {
+     "ageDays": 900,
+     "sales": 3000,
+     "ratingAvg": 3.9,
+     "ratingsCount": 800,
+     "nativeReputation": {
+      "level": "1_red"
+     }
+    }
+   },
+   {
+    "title": "Placa de Vídeo Galax GeForce RTX 4060 1-Click OC 8GB",
+    "pix": 1605.5,
+    "card": 1690,
+    "url": "https://example.com/mercadolivre/11",
+    "available": true,
+    "seller": {
+     "id": 11,
+     "name": "TECHSTORE"
+    },
+    "sellerInfo": {
+     "ageDays": 2900,
+     "sales": 48000,
+     "ratingAvg": 4.8,
+     "ratingsCount": 25000,
+     "nativeReputation": {
+      "level": "5_green",
+      "powerSeller": "platinum"
+     }
+    }
+   },
+   {
+    "title": "Placa de Vídeo PNY RTX 4060 Verto Dual Fan 8GB",
+    "pix": 1653,
+    "card": 1740,
+    "url": "https://example.com/mercadolivre/12",
+    "available": true,
+    "seller": {
+     "id": 12,
+     "name": "MEGA INFO"
+    },
+    "sellerInfo": {
+     "ageDays": 1300,
+     "sales": 6200,
+     "ratingAvg": 4.7,
+     "ratingsCount": 5000,
+     "nativeReputation": {
+      "level": "5_green",
+      "powerSeller": "gold"
+     }
+    }
+   },
+   {
+    "title": "Placa de Vídeo Zotac Gaming RTX 4060 Twin Edge 8GB",
+    "pix": 1672,
+    "card": 1760,
+    "url": "https://example.com/mercadolivre/13",
+    "available": true,
+    "seller": {
+     "id": 11,
+     "name": "TECHSTORE"
+    },
+    "sellerInfo": {
+     "ageDays": 2900,
+     "sales": 48000,
+     "ratingAvg": 4.8,
+     "ratingsCount": 25000,
+     "nativeReputation": {
+      "level": "5_green",
+      "powerSeller": "platinum"
+     }
+    }
+   },
+   {
+    "title": "Placa de Vídeo MSI RTX 4060 Ti Ventus 2X 8GB",
+    "pix": 2279.05,
+    "card": 2399,
+    "url": "https://example.com/mercadolivre/14",
+    "available": true,
+    "seller": {
+     "id": 11,
+     "name": "TECHSTORE"
+    },
+    "sellerInfo": {
+     "ageDays": 2900,
+     "sales": 48000,
+     "ratingAvg": 4.8,
+     "ratingsCount": 25000,
+     "nativeReputation": {
+      "level": "5_green",
+      "powerSeller": "platinum"
+     }
+    }
+   },
+   {
+    "title": "Placa de Vídeo Gigabyte RTX 4060 Ti Eagle 16GB",
+    "pix": 2659.05,
+    "card": 2799,
+    "url": "https://example.com/mercadolivre/15",
+    "available": true,
+    "seller": {
+     "id": 12,
+     "name": "MEGA INFO"
+    },
+    "sellerInfo": {
+     "ageDays": 1300,
+     "sales": 6200,
+     "ratingAvg": 4.7,
+     "ratingsCount": 5000,
+     "nativeReputation": {
+      "level": "5_green",
+      "powerSeller": "gold"
+     }
+    }
+   },
+   {
+    "title": "Suporte para Placa de Vídeo RTX 4060 Antiqueda",
+    "pix": 47.41,
+    "card": 49.9,
+    "url": "https://example.com/mercadolivre/16",
+    "available": true,
+    "seller": {
+     "id": 12,
+     "name": "MEGA INFO"
+    },
+    "sellerInfo": {
+     "ageDays": 1300,
+     "sales": 6200,
+     "ratingAvg": 4.7,
+     "ratingsCount": 5000,
+     "nativeReputation": {
+      "level": "5_green",
+      "powerSeller": "gold"
+     }
+    }
+   },
+   {
+    "title": "Cabo Adaptador 12VHPWR para RTX 4060",
+    "pix": 37.91,
+    "card": 39.9,
+    "url": "https://example.com/mercadolivre/17",
+    "available": true,
+    "seller": {
+     "id": 18,
+     "name": "vendedor_sem_dados"
+    }
+   },
+   {
+    "title": "Placa de Vídeo Gigabyte RTX 3060 12GB",
+    "pix": 1519.05,
+    "card": 1599,
+    "url": "https://example.com/mercadolivre/18",
+    "available": true,
+    "seller": {
+     "id": 11,
+     "name": "TECHSTORE"
+    },
+    "sellerInfo": {
+     "ageDays": 2900,
+     "sales": 48000,
+     "ratingAvg": 4.8,
+     "ratingsCount": 25000,
+     "nativeReputation": {
+      "level": "5_green",
+      "powerSeller": "platinum"
+     }
+    }
+   },
+   {
+    "title": "Placa de Video RTX 4060 8GB Oferta Relampago",
+    "pix": 655.5,
+    "card": 690,
+    "url": "https://example.com/mercadolivre/19",
+    "available": true,
+    "seller": {
+     "id": 19,
+     "name": null
+    }
+   },
+   {
+    "title": "Placa de Vídeo Palit RTX 4060 Dual 8GB",
+    "pix": 1643.5,
+    "card": 1730,
+    "url": "https://example.com/mercadolivre/20",
+    "available": true,
+    "seller": {
+     "id": 14,
+     "name": "PC Express"
+    },
+    "sellerInfo": {
+     "ageDays": 700,
+     "sales": 900,
+     "nativeReputation": {
+      "level": "4_light_green"
+     }
+    }
+   }
+  ],
+  "kabum": [
+   {
+    "title": "Placa de Vídeo MSI GeForce RTX 4060 Ventus 2X Black OC, 8GB GDDR6",
+    "pix": 1804.91,
+    "card": 1899.9,
+    "url": "https://example.com/kabum/21",
+    "available": true
+   },
+   {
+    "title": "Placa de Vídeo MSI RTX 4060 Gaming X Slim White 8GB",
+    "pix": 1994.91,
+    "card": 2099.9,
+    "url": "https://example.com/kabum/22",
+    "available": true
+   },
+   {
+    "title": "Placa de Vídeo Gigabyte RTX 4060 Eagle OC 8GB",
+    "pix": 1757.41,
+    "card": 1849.9,
+    "url": "https://example.com/kabum/23",
+    "available": true
+   },
+   {
+    "title": "Placa de Vídeo Gigabyte RTX 4060 Windforce OC 8GB",
+    "pix": 1709.91,
+    "card": 1799.9,
+    "url": "https://example.com/kabum/24",
+    "available": true
+   },
+   {
+    "title": "Placa de Vídeo Gigabyte RTX 4060 Aero OC 8GB White",
+    "pix": 1947.41,
+    "card": 2049.9,
+    "url": "https://example.com/kabum/25",
+    "available": true
+   },
+   {
+    "title": "Placa de Vídeo Asus Dual RTX 4060 OC 8GB",
+    "pix": 1833.41,
+    "card": 1929.9,
+    "url": "https://example.com/kabum/26",
+    "available": true
+   },
+   {
+    "title": "Placa de Vídeo Asus TUF Gaming RTX 4060 OC 8GB",
+    "pix": 2089.91,
+    "card": 2199.9,
+    "url": "https://example.com/kabum/27",
+    "available": true
+   },
+   {
+    "title": "Placa de Vídeo Asus ROG Strix RTX 4060 OC 8GB",
+    "pix": 2374.91,
+    "card": 2499.9,
+    "url": "https://example.com/kabum/28",
+    "available": true
+   },
+   {
+    "title": "Placa de Vídeo Galax RTX 4060 1-Click OC 8GB",
+    "pix": 1662.41,
+    "card": 1749.9,
+    "url": "https://example.com/kabum/29",
+    "available": true
+   },
+   {
+    "title": "Placa de Vídeo PNY RTX 4060 Verto Dual Fan 8GB",
+    "pix": 1690.91,
+    "card": 1779.9,
+    "url": "https://example.com/kabum/30",
+    "available": true
+   },
+   {
+    "title": "Placa de Vídeo Zotac RTX 4060 Twin Edge 8GB",
+    "pix": 1681.41,
+    "card": 1769.9,
+    "url": "https://example.com/kabum/31",
+    "available": true
+   },
+   {
+    "title": "Placa de Vídeo Inno3D RTX 4060 Twin X2 8GB",
+    "pix": 1671.91,
+    "card": 1759.9,
+    "url": "https://example.com/kabum/32",
+    "available": true
+   },
+   {
+    "title": "Placa de Vídeo Colorful RTX 4060 Battle AX Duo 8GB",
+    "pix": 1652.91,
+    "card": 1739.9,
+    "url": "https://example.com/kabum/33",
+    "available": true
+   },
+   {
+    "title": "Placa de Vídeo Gigabyte GeForce RTX 4060 Eagle OC 8G",
+    "pix": 1738.41,
+    "card": 1829.9,
+    "url": "https://example.com/kabum/34",
+    "available": true,
+    "seller": {
+     "id": "kp2",
+     "name": "Mega Parceiro"
+    },
+    "sellerInfo": {
+     "ratingAvg": 4.8,
+     "ratingsCount": 3200,
+     "sales": 15000,
+     "openedAt": "2019-01-01"
+    }
+   },
+   {
+    "title": "Placa de Vídeo Palit RTX 4060 Dual 8GB",
+    "pix": 1614.91,
+    "card": 1699.9,
+    "url": "https://example.com/kabum/35",
+    "available": true,
+    "seller": {
+     "id": "kp1",
+     "name": "Parceiro Info"
+    }
+   },
+   {
+    "title": "Placa de Vídeo MSI RTX 4060 Ti Ventus 2X 8GB",
+    "pix": 2374.91,
+    "card": 2499.9,
+    "url": "https://example.com/kabum/36",
+    "available": true
+   },
+   {
+    "title": "Placa de Vídeo Asus Dual RTX 4060 Ti OC 8GB",
+    "pix": 2469.91,
+    "card": 2599.9,
+    "url": "https://example.com/kabum/37",
+    "available": true
+   },
+   {
+    "title": "Suporte para Placa de Vídeo RTX 4060 Rise",
+    "pix": 56.91,
+    "card": 59.9,
+    "url": "https://example.com/kabum/38",
+    "available": true
+   },
+   {
+    "title": "Adaptador para RTX 4060 PCIe Riser",
+    "pix": 85.41,
+    "card": 89.9,
+    "url": "https://example.com/kabum/39",
+    "available": true
+   },
+   {
+    "title": "Placa de Vídeo Asus Dual RTX 3060 12GB",
+    "pix": 1614.91,
+    "card": 1699.9,
+    "url": "https://example.com/kabum/40",
+    "available": true
+   }
+  ],
+  "shopee": [
+   {
+    "title": "Placa de Vídeo MSI GeForce RTX 4060 Ventus 2X Black OC 8GB",
+    "price": 1849,
+    "samePrice": true,
+    "url": "https://example.com/shopee/41",
+    "available": true,
+    "seller": {
+     "id": 101,
+     "name": "Loja Oficial MSI",
+     "official": true
+    },
+    "sellerInfo": {
+     "nativeReputation": {
+      "badge": "mall"
+     }
+    }
+   },
+   {
+    "title": "Placa De Video Msi Rtx 4060 Ventus 2x Black Oc 8gb",
+    "price": 1799,
+    "samePrice": true,
+    "url": "https://example.com/shopee/42",
+    "available": true,
+    "seller": {
+     "id": 102,
+     "name": "PlacasBR"
+    },
+    "sellerInfo": {
+     "ageDays": 1500,
+     "sales": 30000,
+     "ratingAvg": 4.9,
+     "ratingsCount": 12000,
+     "nativeReputation": {
+      "badge": "indicado"
+     }
+    }
+   },
+   {
+    "title": "Placa de Vídeo MSI RTX 4060 Ventus 2X Black OC 8GB Lacrada",
+    "price": 1760,
+    "samePrice": true,
+    "url": "https://example.com/shopee/43",
+    "available": true,
+    "seller": {
+     "id": 103,
+     "name": "TopHard"
+    },
+    "sellerInfo": {
+     "nativeReputation": {
+      "badge": "indicado"
+     }
+    }
+   },
+   {
+    "title": "Placa de Vídeo Gigabyte RTX 4060 Eagle OC 8GB",
+    "price": 1780,
+    "samePrice": true,
+    "url": "https://example.com/shopee/44",
+    "available": true,
+    "seller": {
+     "id": 102,
+     "name": "PlacasBR"
+    },
+    "sellerInfo": {
+     "ageDays": 1500,
+     "sales": 30000,
+     "ratingAvg": 4.9,
+     "ratingsCount": 12000,
+     "nativeReputation": {
+      "badge": "indicado"
+     }
+    }
+   },
+   {
+    "title": "Placa de Video Gigabyte RTX 4060 Eagle OC 8GB Envio Imediato",
+    "price": 1710,
+    "samePrice": true,
+    "url": "https://example.com/shopee/45",
+    "available": true,
+    "seller": {
+     "id": 104,
+     "name": "loja.do.pc"
+    },
+    "sellerInfo": {
+     "nativeReputation": {
+      "badge": null
+     }
+    }
+   },
+   {
+    "title": "Placa de Vídeo Gigabyte RTX 4060 Windforce OC 8GB",
+    "price": 1790,
+    "samePrice": true,
+    "url": "https://example.com/shopee/46",
+    "available": true,
+    "seller": {
+     "id": 101,
+     "name": "Loja Oficial MSI",
+     "official": true
+    },
+    "sellerInfo": {
+     "nativeReputation": {
+      "badge": "mall"
+     }
+    }
+   },
+   {
+    "title": "Placa de Vídeo Asus Dual RTX 4060 OC 8GB",
+    "price": 1820,
+    "samePrice": true,
+    "url": "https://example.com/shopee/47",
+    "available": true,
+    "seller": {
+     "id": 105,
+     "name": "Hardware Mix"
+    },
+    "sellerInfo": {
+     "ageDays": 300,
+     "sales": 400,
+     "ratingAvg": 4.3,
+     "ratingsCount": 150,
+     "nativeReputation": {
+      "badge": null
+     }
+    }
+   },
+   {
+    "title": "Placa de Vídeo Galax RTX 4060 1-Click OC 8GB",
+    "price": 1590,
+    "samePrice": true,
+    "url": "https://example.com/shopee/48",
+    "available": true,
+    "seller": {
+     "id": 106,
+     "name": "superofertas2026"
+    },
+    "sellerInfo": {
+     "ageDays": 10,
+     "sales": 3,
+     "ratingDist": {
+      "5": 6
+     },
+     "nativeReputation": {
+      "badge": null
+     }
+    }
+   },
+   {
+    "title": "Placa de Vídeo PNY RTX 4060 Verto Dual Fan 8GB",
+    "price": 1770,
+    "samePrice": true,
+    "url": "https://example.com/shopee/49",
+    "available": true,
+    "seller": {
+     "id": 101,
+     "name": "Loja Oficial MSI",
+     "official": true
+    },
+    "sellerInfo": {
+     "nativeReputation": {
+      "badge": "mall"
+     }
+    }
+   },
+   {
+    "title": "Placa de Vídeo Zotac RTX 4060 Twin Edge 8GB",
+    "price": 1750,
+    "samePrice": true,
+    "url": "https://example.com/shopee/50",
+    "available": true,
+    "seller": {
+     "id": 102,
+     "name": "PlacasBR"
+    },
+    "sellerInfo": {
+     "ageDays": 1500,
+     "sales": 30000,
+     "ratingAvg": 4.9,
+     "ratingsCount": 12000,
+     "nativeReputation": {
+      "badge": "indicado"
+     }
+    }
+   },
+   {
+    "title": "Placa de Vídeo Palit RTX 4060 Dual 8GB",
+    "price": 1690,
+    "samePrice": true,
+    "url": "https://example.com/shopee/51",
+    "available": true,
+    "seller": {
+     "id": 104,
+     "name": "loja.do.pc"
+    },
+    "sellerInfo": {
+     "nativeReputation": {
+      "badge": null
+     }
+    }
+   },
+   {
+    "title": "Placa de Vídeo Colorful RTX 4060 Battle AX Duo 8GB",
+    "price": 1550,
+    "samePrice": true,
+    "url": "https://example.com/shopee/52",
+    "available": true,
+    "seller": {
+     "id": 106,
+     "name": "superofertas2026"
+    },
+    "sellerInfo": {
+     "ageDays": 10,
+     "sales": 3,
+     "ratingDist": {
+      "5": 6
+     },
+     "nativeReputation": {
+      "badge": null
+     }
+    }
+   },
+   {
+    "title": "Placa de Vídeo Inno3D RTX 4060 Twin X2 8GB",
+    "price": 1730,
+    "samePrice": true,
+    "url": "https://example.com/shopee/53",
+    "available": true,
+    "seller": {
+     "id": 105,
+     "name": "Hardware Mix"
+    },
+    "sellerInfo": {
+     "ageDays": 300,
+     "sales": 400,
+     "ratingAvg": 4.3,
+     "ratingsCount": 150,
+     "nativeReputation": {
+      "badge": null
+     }
+    }
+   },
+   {
+    "title": "Placa de Vídeo MSI RTX 4060 Ti Ventus 2X 8GB",
+    "price": 2450,
+    "samePrice": true,
+    "url": "https://example.com/shopee/54",
+    "available": true,
+    "seller": {
+     "id": 102,
+     "name": "PlacasBR"
+    },
+    "sellerInfo": {
+     "ageDays": 1500,
+     "sales": 30000,
+     "ratingAvg": 4.9,
+     "ratingsCount": 12000,
+     "nativeReputation": {
+      "badge": "indicado"
+     }
+    }
+   },
+   {
+    "title": "Placa de Vídeo Zotac RTX 4060 Ti Twin Edge 8GB",
+    "price": 2390,
+    "samePrice": true,
+    "url": "https://example.com/shopee/55",
+    "available": true,
+    "seller": {
+     "id": 105,
+     "name": "Hardware Mix"
+    },
+    "sellerInfo": {
+     "ageDays": 300,
+     "sales": 400,
+     "ratingAvg": 4.3,
+     "ratingsCount": 150,
+     "nativeReputation": {
+      "badge": null
+     }
+    }
+   },
+   {
+    "title": "Capa Adesivo para RTX 4060",
+    "price": 29.9,
+    "samePrice": true,
+    "url": "https://example.com/shopee/56",
+    "available": true,
+    "seller": {
+     "id": 104,
+     "name": "loja.do.pc"
+    },
+    "sellerInfo": {
+     "nativeReputation": {
+      "badge": null
+     }
+    }
+   },
+   {
+    "title": "Suporte para Placa de Vídeo RTX 4060",
+    "price": 39.9,
+    "samePrice": true,
+    "url": "https://example.com/shopee/57",
+    "available": true,
+    "seller": {
+     "id": 104,
+     "name": "loja.do.pc"
+    },
+    "sellerInfo": {
+     "nativeReputation": {
+      "badge": null
+     }
+    }
+   },
+   {
+    "title": "Cabo Adaptador para RTX 4060 8 pinos",
+    "price": 24.9,
+    "samePrice": true,
+    "url": "https://example.com/shopee/58",
+    "available": true,
+    "seller": {
+     "id": 104,
+     "name": "loja.do.pc"
+    },
+    "sellerInfo": {
+     "nativeReputation": {
+      "badge": null
+     }
+    }
+   },
+   {
+    "title": "Placa de Video RTX 4060 8GB Nova Promoção",
+    "price": 650,
+    "samePrice": true,
+    "url": "https://example.com/shopee/59",
+    "available": true,
+    "seller": {
+     "id": 101,
+     "name": "Loja Oficial MSI",
+     "official": true
+    },
+    "sellerInfo": {
+     "nativeReputation": {
+      "badge": "mall"
+     }
+    }
+   },
+   {
+    "title": "Placa de Video Gainward RTX 4060 Ghost 8GB",
+    "price": 1720,
+    "samePrice": true,
+    "url": "https://example.com/shopee/60",
+    "available": true,
+    "seller": {
+     "id": 107,
+     "name": null
+    }
+   }
+  ]
+ }
+}
