@@ -142,7 +142,30 @@ Se faltar algum dado, o peso dele é redistribuído entre os outros. A classific
 
 Os valores ficam em `data/stores.json`. Eles são **estimativas iniciais** e devem ser conferidos. O servidor tenta atualizar os dados do Reclame Aqui uma vez por dia (melhor esforço).
 
-**"Custo × confiança"** ordena pelo preço ajustado ao risco: `preço × (1 + (100 − score) / 400)`. Com score 100 não há penalidade, e com score 0 o preço sobe 25%.
+**"Custo × confiança"** ordena pelo preço ajustado ao risco: `preço × (1 + (100 − nota final) / 400)`. Com nota 100 não há penalidade, e com nota 0 o preço sobe 25%.
+
+### Nota final por oferta: plataforma, vendedor e oferta (`src/seller-score.js`)
+
+A nota da loja (acima) diz pouco sobre **quem vende** num marketplace. Por isso cada oferta recebe uma **nota final** (`offer.trust`), em três camadas:
+
+```
+nota bruta = 0,25 × Plataforma + 0,55 × Vendedor + 0,20 × Oferta   →  travas  →  classe
+```
+
+- **Plataforma:** a nota da loja, calculada como na seção acima.
+- **Vendedor:** sinais positivos (tempo de loja, vendas, avaliações, loja oficial) menos os **sinais de risco**: loja nova com muitas vendas, avaliações em rajada, textos de avaliação repetidos, CNPJ irregular, termômetro vermelho, entre outros. Quando a própria loja vende (KaBuM!, Pichau, Terabyte, "vendido e entregue pela Amazon") ou é loja oficial, o vendedor conta como a plataforma.
+- **Oferta:** entrega pela plataforma soma pontos. Preço muito abaixo da mediana tira pontos.
+- **Travas:** uma plataforma forte não "salva" um vendedor fraco.
+  - Com risco alto, ou CNPJ não ativo, a nota fica em no máximo 39 (**Alto risco**).
+  - Com risco moderado, fica em no máximo 54 (**Cautela**).
+  - Com pouco dado, fica em no máximo 69 (**Regular**).
+- **Classes:** Excelente ≥ 85, Bom ≥ 70, Regular ≥ 55, Cautela ≥ 40 e **Alto risco** abaixo de 40.
+- **Nível de confiança:** mostra quanto dado havia sobre o vendedor, separado da nota. Dado ausente entra abaixo do neutro, nunca como "bom".
+- **Motivos em português:** cada nota vem com os motivos, que aparecem no carimbo ao passar o mouse e na resposta do bot. O texto fala em "sinais de risco" e nunca acusa ninguém de fraude.
+
+A nota final é a que vale no carimbo, na ordenação "Score" e "Custo × confiança", no score mínimo dos alertas e no bot. Os pesos, as travas e os limites ficam em `data/seller-score.json`, e o estudo completo está em `docs/score-vendedor.md`.
+
+Hoje os adaptadores leem poucos dados do vendedor (nome, loja oficial, origem do envio). Por isso a maioria das ofertas de marketplace sai com confiança baixa e nota limitada a "Regular", e é para ser assim. Quando um adaptador conseguir ler mais (idade da loja, vendas, avaliações), basta preencher `sellerInfo` na oferta.
 
 ## Fixados e alertas
 

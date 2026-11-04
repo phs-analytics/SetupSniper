@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.6.0 — 2026-11-04
+
+**Nota por vendedor com sinais de risco (Fase 4)**
+- `src/seller-score.js`: nota final por oferta em três camadas (plataforma 25%, vendedor 55% e oferta 20%), com travas, classe "Alto risco" (< 40), nível de confiança e motivos em português. Usa média bayesiana, limite de Wilson, rajadas de avaliações e textos repetidos (Jaccard de trigramas).
+- `data/seller-score.json`: pesos, travas e limites configuráveis. O estudo está em `docs/score-vendedor.md`.
+- O caso real do vendedor suspeito sai como **Alto risco** no AliExpress, na Shopee e no Mercado Livre, e um vendedor estabelecido sai bem avaliado (fixtures em `tests/fixtures/seller-*.json`).
+- Cada oferta da busca, dos Fixados e do bot traz `trust` (nota, classe, motivos e confiança). O carimbo, a ordenação "Score" e "Custo × confiança", o score mínimo dos alertas e o bot usam essa nota.
+
 ## 2.5.0 — 2026-11-03
 
 **Cupons (Fase 2)**

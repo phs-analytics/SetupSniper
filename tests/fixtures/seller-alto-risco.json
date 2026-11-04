@@ -1,0 +1,56 @@
+{
+  "_ajuda": "Dados SINTÉTICOS no formato neutro de src/seller-score.js. Reproduzem o caso que motivou a Fase 4: loja aberta há ~23 dias, 5 vendas, 5 avaliações 5★ em idioma estrangeiro, publicadas em 2 dias. Data de referência: _now.",
+  "_now": "2026-11-03T12:00:00Z",
+  "aliexpress": {
+    "store": "aliexpress",
+    "name": "Loja Exemplo Alfa",
+    "official": false,
+    "soldByStore": false,
+    "openedAt": "2026-10-11",
+    "sales": 5,
+    "ratingsCount": 5,
+    "ratingAvg": 5,
+    "percentPositive": 100,
+    "nativeReputation": { "badge": null },
+    "reviews": [
+      { "text": "Very good product, fast delivery", "country": "US", "date": "2026-10-28T09:12:00Z", "stars": 5 },
+      { "text": "Good product, very fast delivery", "country": "GB", "date": "2026-10-28T11:40:00Z", "stars": 5 },
+      { "text": "Very good quality product", "country": "US", "date": "2026-10-28T15:03:00Z", "stars": 5 },
+      { "text": "Product is very good, recommend", "country": "CA", "date": "2026-10-29T08:21:00Z", "stars": 5 },
+      { "text": "Good product fast delivery", "country": "US", "date": "2026-10-29T10:55:00Z", "stars": 5 }
+    ]
+  },
+  "shopee": {
+    "store": "shopee",
+    "name": "Loja Exemplo Beta",
+    "ageDays": 23,
+    "sales": 5,
+    "ratingAvg": 5,
+    "ratingsCount": 5,
+    "ratingDist": { "1": 0, "2": 0, "3": 0, "4": 0, "5": 5 },
+    "nativeReputation": { "badge": null },
+    "reviews": [
+      { "text": "Very good product, fast delivery", "date": "2026-10-28", "stars": 5 },
+      { "text": "Good product, very fast delivery", "date": "2026-10-28", "stars": 5 },
+      { "text": "Very good quality product", "date": "2026-10-28", "stars": 5 },
+      { "text": "Product is very good, recommend", "date": "2026-10-29", "stars": 5 },
+      { "text": "Good product fast delivery", "date": "2026-10-29", "stars": 5 }
+    ]
+  },
+  "mercadolivre": {
+    "store": "mercadolivre",
+    "name": "Loja Exemplo Gama",
+    "openedAt": "2026-10-11T10:00:00Z",
+    "sales": 5,
+    "ratingAvg": 5.0,
+    "ratingsCount": 5,
+    "nativeReputation": { "level": null, "powerSeller": null },
+    "reviews": [
+      { "text": "Very good product, fast delivery", "lang": "en", "date": "2026-10-28T10:00:00Z", "stars": 5 },
+      { "text": "Good product, very fast delivery", "lang": "en", "date": "2026-10-28T13:00:00Z", "stars": 5 },
+      { "text": "Very good quality product", "lang": "en", "date": "2026-10-28T18:00:00Z", "stars": 5 },
+      { "text": "Product is very good, recommend", "lang": "en", "date": "2026-10-29T09:00:00Z", "stars": 5 },
+      { "text": "Good product fast delivery", "lang": "en", "date": "2026-10-29T16:00:00Z", "stars": 5 }
+    ]
+  }
+}

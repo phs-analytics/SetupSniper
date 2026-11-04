@@ -12,6 +12,7 @@ import { cleanResults, flagOutliers } from './src/extract.js';
 import { normalizeOffer, referencePrice, formatBRL, toCents, canonicalUrl as canonicalUrlOf } from './src/offer.js';
 import { storeState } from './src/monitor.js';
 import { finalTotals } from './src/final-price.js';
+import { finalScore } from './src/seller-score.js';
 import { parsePromo } from './src/promo-parser.js';
 import { resolveLink } from './src/link-resolver.js';
 import { inferCouponRule, defaultExpiry, isCouponActive, SOURCE_LABEL } from './src/discounts.js';
@@ -71,7 +72,22 @@ settings.profile ??= { boughtAt: [], subscriptions: [] };
 settings.channels ??= [];                                       // canais públicos do Telegram (opt-in)
 settings.channelIntervalH ??= 6;
 const totalsCtx = (store) => ({ taxes: taxesCfg, cepUf, cep: settings.cep, fx: settings.fx?.usdBrl, stacking: couponRules.stacking?.[store] ?? couponRules.stacking?.default ?? 1, now: Date.now() });
+// Fase 4: nota de confiança da OFERTA = plataforma + vendedor + risco da oferta (src/seller-score.js).
+const sellerScoreCfg = await readConfig('seller-score.json', undefined);
+const FIRST_PARTY = ['kabum', 'pichau', 'terabyte'];   // vendem o próprio estoque (sem sinal de marketplace na oferta)
+function sellerData(o) {
+  const s = o.seller ?? {};
+  return {
+    store: o.store, name: s.name ?? null, official: s.official ?? null,
+    soldByStore: FIRST_PARTY.includes(o.store) && !s.id ? true : null,
+    foreign: o.shipping?.origin === 'INTL' ? true : null,
+    ...(o.sellerInfo ?? {}),    // dados extras do vendedor, quando um adaptador conseguir ler (idade, vendas, avaliações...)
+  };
+}
+const trustOf = (o) => finalScore({ platformScore: scoreOf(o.store), seller: sellerData(o), offer: { suspeito: !!o.suspeito, title: o.title } }, sellerScoreCfg, { now: new Date() });
 const withTotals = (o) => ({ ...o, totals: finalTotals(o, couponsDb.coupons, settings.profile, totalsCtx(o.store)) });
+const withTrust = (o) => ({ ...o, trust: trustOf(o) });
+const trustScore = (o) => o?.trust?.score ?? scoreOf(o?.store ?? o?.storeId);
 const refKind = () => (settings.priceReference === 'card' ? 'card' : 'pix');
 // Referência para ordenar, comparar com a meta e alertar: o TOTAL FINAL (com cupom, frete e impostos) no Pix ou no cartão.
 const refOf = (o) => o?.totals?.[refKind()]?.total ?? referencePrice(o, refKind());
@@ -191,13 +207,14 @@ async function runSearch(q, { deep = false, stores, onStore } = {}) {
     const t0 = Date.now();
     try {
       const r = await searchOne(id, q, deep);
+      r.items = r.items.map(withTrust);
       all.push(...r.items);
       onStore?.({ storeId: id, status: 'ok', items: r.items, raw: r.raw, searchUrl: r.searchUrl, ms: Date.now() - t0 });
     } catch (e) {
       onStore?.({ storeId: id, status: 'error', error: e.message, items: [], searchUrl: ADAPTERS[id].url(q, 1), ms: Date.now() - t0 });
     }
   }));
-  return flagOutliers(all, refOf);
+  return flagOutliers(all, refOf).map(withTrust);
 }
 
 // ---------- monitoramento ----------
@@ -221,7 +238,7 @@ async function checkItem(it) {
         results[sid] = { error: e.message };
       }
     }));
-    const flagged = flagOutliers(Object.values(results).flatMap(r => r.offers ?? []), refOf);
+    const flagged = flagOutliers(Object.values(results).flatMap(r => r.offers ?? []), refOf).map(withTrust);
     const now = Date.now();
     for (const sid of monitorIds()) {
       const r = results[sid];
@@ -239,7 +256,7 @@ async function checkItem(it) {
       };
       if (st.status === 'ok') record(`${it.id}:${sid}`, st.price);
     }
-    const valid = Object.entries(res).filter(([sid, o]) => o.status === 'ok' && !o.suspeito && (scoreOf(sid) ?? 0) >= settings.alerts.minScore);
+    const valid = Object.entries(res).filter(([sid, o]) => o.status === 'ok' && !o.suspeito && (trustScore(o.offer) ?? 0) >= settings.alerts.minScore);
     if (valid.length) record(`${it.id}:__best`, Math.min(...valid.map(([, o]) => o.price)));
     await evaluateAlerts(it);
   } finally {
@@ -270,7 +287,7 @@ async function evaluateAlerts(it) {
   const hits = [];
   for (const [sid, o] of Object.entries(offers[it.id] ?? {})) {
     if (o.status !== 'ok' || !o.price || (o.suspeito && !a.allowSuspicious)) continue;
-    const sc = scoreOf(sid);
+    const sc = trustScore(o.offer) ?? scoreOf(sid);
     if (sc != null && sc < a.minScore) continue;
     const reasons = [];
     if (it.target && o.price <= it.target) reasons.push(`total final (${refKind() === 'pix' ? 'Pix' : 'cartão'}) caiu abaixo da sua meta de ${brl(it.target)}`);
@@ -292,7 +309,7 @@ async function evaluateAlerts(it) {
     const others = hits.slice(1, 4).map(h => `• ${brl(h.o.price)} na ${escHtml(h.store)}${h.o.url ? ` — <a href="${escHtml(h.o.url)}">abrir</a>` : ''}`).join('\n');
     try {
       await sendMessage(tgc.token, tgc.chatId,
-        `🔥 <b>Preço baixo!</b>\n<b>${escHtml(it.name)}</b>\n\n💰 <b>${brl(top.o.price)}</b> na ${escHtml(top.store)}${top.sc != null ? ` (confiabilidade ${top.sc}/100)` : ''}\n` +
+        `🔥 <b>Preço baixo!</b>\n<b>${escHtml(it.name)}</b>\n\n💰 <b>${brl(top.o.price)}</b> na ${escHtml(top.store)}${top.sc != null ? ` (confiança ${top.sc}/100${top.o.offer?.trust?.tier ? ', ' + escHtml(top.o.offer.trust.tier) : ''}, estimativa)` : ''}\n` +
         top.reasons.map(r => '• ' + escHtml(r)).join('\n') +
         (top.o.title ? `\n\n<i>${escHtml(top.o.title.slice(0, 140))}</i>` : '') + (top.o.url ? `\n<a href="${escHtml(top.o.url)}">Abrir oferta</a>` : '') +
         (others ? `\n\nOutras lojas abaixo da meta:\n${others}` : '') + (DEMO ? '\n\n(modo demo: preço simulado)' : ''));
@@ -371,13 +388,13 @@ async function processPromo(text, opts = {}) {
     });
     await saveCoupons();
   }
-  const o = withTotals(offer);   // recalcula com o cupom recém-salvo
+  const o = withTrust(withTotals(offer));   // recalcula com o cupom recém-salvo
   const fixId = newId();
   pendingFix.set(fixId, o);
   if (pendingFix.size > 50) pendingFix.delete(pendingFix.keys().next().value);
 
   const pr = o.price;
-  const sc = scoreOf(r.store);
+  const sc = o.trust?.score ?? scoreOf(r.store);
   const regraTxt = coupon ? (coupon.type === 'percent' ? `${coupon.value}% OFF` : coupon.type === 'fixed' ? `${brl(coupon.value)} OFF` : 'regra não informada')
     + (coupon.minOrder ? ` acima de ${brl(coupon.minOrder)}` : '') + (coupon.maxDiscount ? ` (até ${brl(coupon.maxDiscount)})` : '') + (coupon.inferred ? ' · inferida pelo preço anunciado' : '') : '';
   const html = [
@@ -387,7 +404,7 @@ async function processPromo(text, opts = {}) {
     coupon ? `🎟️ Cupom: <code>${coupon.codes.map(escHtml).join('</code> ou <code>')}</code> — ${escHtml(regraTxt)}\n<i>divulgado por ${escHtml(coupon.sourceName)} em ${new Date(coupon.seenAt).toLocaleString('pt-BR')}, não verificado</i>` : 'Nenhum cupom no post.',
     '',
     totalsText(o.totals),
-    sc != null ? `\nConfiança da loja: ${sc}/100 (estimativa)` : '',
+    sc != null ? `\nConfiança: ${sc}/100 (${escHtml(o.trust?.tier ?? '')}, estimativa do SetupSniper)${o.trust?.reasons?.length ? '\n• ' + o.trust.reasons.slice(0, 4).map(escHtml).join('\n• ') : ''}` : '',
   ].filter(x => x !== '').join('\n');
   const buttons = [[{ text: '📌 Fixar', data: `fix:${fixId}` }]];
   if (coupon) buttons.push([{ text: '✅ Funcionou', data: `ok:${coupon.id}` }, { text: '❌ Não funcionou', data: `no:${coupon.id}` }]);

@@ -1,0 +1,28 @@
+{
+  "_ajuda": "Dados SINTÉTICOS no formato neutro de src/seller-score.js: vendedores estabelecidos de controle (anos de loja, milhares de vendas, boa reputação). Data de referência: _now.",
+  "_now": "2026-11-03T12:00:00Z",
+  "mercadolivre": {
+    "store": "mercadolivre",
+    "name": "Loja Exemplo Delta",
+    "official": true,
+    "openedAt": "2020-05-04",
+    "sales": 50000,
+    "ratingAvg": 4.8,
+    "ratingsCount": 12000,
+    "ratingDist": { "1": 300, "2": 150, "3": 400, "4": 1500, "5": 9650 },
+    "nativeReputation": { "level": "5_green", "powerSeller": "platinum" },
+    "cnpj": { "situacao": "ATIVA", "abertura": "2015-03-10" },
+    "reviews": [
+      { "text": "Chegou antes do prazo, bem embalado e funcionando perfeitamente.", "lang": "pt", "date": "2026-11-01", "stars": 5 },
+      { "text": "A placa veio certinha, mas a caixa estava amassada.", "lang": "pt", "date": "2026-10-30", "stars": 4 },
+      { "text": "Excelente vendedor, respondeu rápido as minhas dúvidas sobre a fonte.", "lang": "pt", "date": "2026-10-22", "stars": 5 },
+      { "text": "Demorou um pouco para sair do centro de distribuição.", "lang": "pt", "date": "2026-10-15", "stars": 3 },
+      { "text": "Memória compatível com minha placa-mãe, rodando em 3200 MHz.", "lang": "pt", "date": "2026-10-02", "stars": 5 }
+    ]
+  },
+  "amazon": {
+    "store": "amazon",
+    "name": "Vendido e entregue pela plataforma",
+    "soldByStore": true
+  }
+}
