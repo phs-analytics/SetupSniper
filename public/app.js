@@ -1,3 +1,4 @@
+import { groupOffers, sellerLabel } from '/lib/compare.js';
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 // Dinheiro chega do servidor em CENTAVOS inteiros; só é formatado aqui.
@@ -64,7 +65,7 @@ const lget = (k, d) => { try { const v = localStorage.getItem('radar.' + k); ret
 const lset = (k, v) => { try { localStorage.setItem('radar.' + k, JSON.stringify(v)); } catch {} };
 
 let S = null;                                   // estado do servidor (SSE)
-const ui = { sort: lget('ordem', 'balance'), min: lget('min', 0), hideSus: lget('hideSus', true), deep: lget('deep', false), stores: lget('stores', null), shown: 40 };
+const ui = { view: lget('view', 'compare'), sort: lget('ordem', 'balance'), min: lget('min', 0), hideSus: lget('hideSus', true), deep: lget('deep', false), stores: lget('stores', null), shown: 40 };
 const search = { q: '', es: null, status: {}, results: [], running: false, more: [], loadingMore: false };
 
 const store = (id) => S?.stores.find(s => s.id === id) ?? { id, name: id, color: '#666' };
@@ -207,7 +208,7 @@ function loadMore() {
 }
 const moreObserver = 'IntersectionObserver' in window ? new IntersectionObserver((entries) => {
   if (!entries.some(e => e.isIntersecting)) return;
-  if (search.view && search.view.length > ui.shown) { ui.shown += 40; renderSearch(); }
+  if (search.localMore) { ui.shown += 40; renderSearch(); }
   else loadMore();
 }, { rootMargin: '600px 0px' }) : null;
 
@@ -256,6 +257,9 @@ function renderSearch() {
     ? `<b>${list.length}</b> ofertas de <b>${storesN}</b> lojas para “${esc(search.q)}” · menor <b>${brl(cheapest ? refOf(cheapest) : null)}</b>${refKind() === 'pix' ? ' (Pix)' : ' (cartão)'} · mediana <b>${brl(med)}</b>${sus ? ` · ${sus} suspeita(s) ${ui.hideSus ? 'ocultas' : 'marcadas'}` : ''}${search.running ? ' · buscando…' : ''}`
     : search.running ? 'Buscando nas lojas…' : `Nenhuma oferta encontrada para “${esc(search.q)}”. Tente termos mais simples (ex.: marca + modelo) ou ative a busca profunda.`;
 
+  search.view = list;
+  if (ui.view === 'compare') { renderCompare(list, best); return; }
+  search.localMore = list.length > ui.shown;
   $('#results').innerHTML = list.slice(0, ui.shown).map((r, i) => {
     const s = store(r.storeId), sc = trustOf(r), below = sc != null && sc < ui.min;
     const tags = [
@@ -316,6 +320,11 @@ const shortErr = (e = '') => /bloqueio/.test(e) ? 'bloqueado' : /Playwright/.tes
 
 $('#results').addEventListener('click', (e) => {
   if (e.target.id === 'more') { ui.shown += 40; return renderSearch(); }
+  const cw = e.target.closest('[data-cwatch]');
+  if (cw) {
+    const r = search.cmpIndex[Number(cw.dataset.cwatch)];
+    return openWatchDialog({ name: r.title.slice(0, 80), query: search.q, refPrice: refOf(r), pin: r.url && !store(r.storeId).agregador ? { storeId: r.storeId, url: r.url } : null });
+  }
   if (e.target.id === 'more-remote') return loadMore();
   const b = e.target.closest('[data-watch]'); if (!b) return;
   const r = search.view[Number(b.dataset.watch)];
@@ -397,11 +406,17 @@ function renderWatch() {
       return `<div class="row ${o === best ? 'top1' : ''}">
         <div class="store"><div class="chip" style="background:${s.color}">${esc(s.name[0])}</div>
           <div style="min-width:0"><div class="n">${esc(s.name)} ${o.pin ? '<span class="tag info" title="Acompanhando um link fixo">📌</span>' : ''}</div>
+          ${o.status === 'ok' && o.offer ? `<div class="sv">${esc(sellerLabel({ storeId: o.storeId, seller: o.offer.seller }))}</div>` : ''}
           <div class="t" title="${esc(o.title)}">${esc(o.title ?? '')}${o.updatedAt ? ' · ' + ago(o.updatedAt) : ''}</div></div></div>
         <div class="pcell">${priceCell}</div>
         <div class="score">${ring(o.sc, false, s.estimado !== false, o.offer?.trust)}<div class="tier">${o.offer?.trust?.tier ?? s.reliability?.tier ?? ''}</div></div>
         <div class="spk">${sparkline(o.history)}</div>
         <div class="actions">${storeLink(o.url, s, o.searchUrl)}</div>
+        ${o.status === 'ok' && o.others?.length ? `<details class="others"><summary>Outros ${o.others.length} vendedor(es) na ${esc(s.name)}</summary>${o.others.map(x => `
+          <div class="orow"><span class="owho">${esc(sellerLabel({ storeId: o.storeId, seller: x.seller }))}</span>
+            <span class="osc" title="${esc((x.trust?.reasons ?? []).join('; '))}">${x.trust?.score != null ? `<b style="color:${scoreColor(x.trust.score)}">${x.trust.score}</b> ${esc(x.trust.tier ?? '')}` : 'sem nota'}</span>
+            <span class="opr"><b>${brl(x.price)}</b>${best && x.price > best.price ? ` <small>+${brl(x.price - best.price)}</small>` : ''}${x.suspeito ? ' <span class="tag warn">Suspeito</span>' : ''}</span>
+            ${/^https?:\/\//i.test(x.url ?? '') ? `<a class="btn small" href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">Ver ↗</a>` : ''}</div>`).join('')}</details>` : ''}
       </div>`;
     }).join('');
     return `<article class="product ${it.alerts === false ? 'muted-card' : ''}">
@@ -709,3 +724,84 @@ function renderPromos() {
     }
   });
 }
+
+// ================= COMPARATIVO =================
+// O mesmo produto em todas as lojas e em todos os vendedores dos marketplaces, lado a lado.
+// Agrupamento e ordem vêm de src/compare.js e src/ranking.js (os mesmos do servidor).
+for (const b of $$('#view button')) {
+  b.classList.toggle('on', b.dataset.view === ui.view);
+  b.onclick = () => { ui.view = b.dataset.view; lset('view', ui.view); $$('#view button').forEach(x => x.classList.toggle('on', x === b)); ui.shown = 40; renderSearch(); };
+}
+function renderCompare(list, best) {
+  const visiveis = list.filter(r => (trustOf(r) ?? 100) >= ui.min || r.suspeito);
+  const groups = groupOffers(visiveis, { refOf, scoreOf: trustOf });
+  const shownGroups = Math.max(8, Math.round(ui.shown / 5));
+  search.cmpIndex = [];
+  const row = (o, g) => {
+    const s = store(o.storeId), i = search.cmpIndex.push(o) - 1, rp = refOf(o);
+    const tr = o.trust, sc = trustOf(o);
+    const card = o.totals?.card?.total ?? o.price?.card;
+    return `<div class="crow ${o === g.best ? 'cbest' : ''} ${o.suspeito || (sc != null && sc < 40) ? 'risky' : ''}">
+      <div class="cstore"><span class="chip sm" style="background:${s.color}">${esc(s.name[0])}</span>
+        <div class="cwho"><b>${esc(s.name)}</b><small>${esc(sellerLabel(o))}</small></div></div>
+      <div class="cscore" title="${esc((tr?.reasons ?? []).join('; '))}">${sc != null ? `<b style="color:${scoreColor(sc)}">${sc}</b><small>${esc(tr?.tier ?? '')}</small>` : '<small>sem nota</small>'}</div>
+      <div class="cprice">${rp == null ? '<small>preço não lido</small>' : `<b>${brl(rp)}</b><small>${refKind() === 'pix' ? 'Pix' : 'cartão'}${card != null && card !== rp ? ` · ${brl(card)} cartão` : ''}</small>`}
+        ${o.approx ? '<span class="tag info">Parecido</span>' : ''}${o.suspeito ? '<span class="tag warn">Suspeito</span>' : ''}${o.available === false ? '<span class="tag out">Indisponível</span>' : ''}
+        ${g.min != null && rp != null && rp > g.min ? `<small class="cdiff">+${brl(rp - g.min)}</small>` : ''}</div>
+      <div class="cact"><button type="button" class="btn small" data-cwatch="${i}" title="Fixar">📌</button>${storeLink(o.url, s, search.status[o.storeId]?.url)}</div>
+    </div>`;
+  };
+  search.localMore = groups.length > shownGroups;
+  const html = groups.slice(0, shownGroups).map((g, gi) => {
+    const top = g.offers.slice(0, 5), rest = g.offers.slice(5);
+    return `<article class="cgroup ${g.offers.includes(best) ? 'top1' : ''}">
+      <header class="chead"><div class="ctitle">${esc(g.title)}</div>
+        <div class="cmeta">${g.stores.length} loja(s) · ${g.sellers} oferta(s) · ${g.min != null ? `${brl(g.min)}${g.max !== g.min ? ' a ' + brl(g.max) : ''}` : 'sem preço'}</div></header>
+      ${top.map(o => row(o, g)).join('')}
+      ${rest.length ? `<details class="cmore"><summary>Ver mais ${rest.length} vendedor(es)</summary>${rest.map(o => row(o, g)).join('')}</details>` : ''}
+    </article>`;
+  }).join('');
+  const remote = Object.values(search.status).some(s => s.state === 'ok' && s.hasMore);
+  const foot = groups.length > shownGroups ? `<div class="more" id="more-sentinel"><button type="button" class="btn" id="more">Mostrar mais produtos</button></div>`
+    : search.loadingMore ? '<div class="more" id="more-sentinel"><span class="muted">Buscando mais produtos e vendedores nas lojas…</span></div>'
+    : remote && !search.running ? '<div class="more" id="more-sentinel"><button type="button" class="btn" id="more-remote">Buscar mais produtos e vendedores</button></div>'
+    : groups.length && !search.running ? '<div class="more"><span class="muted">Fim dos resultados.</span></div>' : '';
+  $('#results').innerHTML = html + foot;
+  const sentinel = $('#more-sentinel');
+  if (sentinel && moreObserver) { moreObserver.disconnect(); moreObserver.observe(sentinel); }
+}
+
+// ================= DIAGNÓSTICO DAS LOJAS =================
+let lastDiag = null;
+function diagText(d) {
+  const L = [`SetupSniper ${d.versao}${d.commit ? ' (' + d.commit + ')' : ''} · Node ${d.node} · ${d.sistema}${d.demo ? ' · DEMO' : ''}`,
+    `navegador headless: ${d.navegador ? 'sim' : 'não'} · plano B navegador: ${d.browserFallback ? 'ligado' : 'desligado'}`,
+    `APIs oficiais: ML ${d.apisOficiais.mercadolivre ? 'sim' : 'não'} · Shopee ${d.apisOficiais.shopee ? 'sim' : 'não'} · AliExpress ${d.apisOficiais.aliexpress ? 'sim' : 'não'}`,
+    `busca de teste: "${d.busca}" · ${d.quando}`, ''];
+  for (const l of d.lojas) {
+    L.push(`${l.ok ? '✓' : l.bloqueado ? '⛔' : '✕'} ${l.nome}: ${l.ok ? `${l.itens} itens via ${l.fonte}` : l.erro ?? 'nenhum item'} (${l.ms} ms)`);
+    for (const t of l.tentativas ?? []) L.push(`    - ${t.via}: ${t.ok ? `${t.n} itens${t.bytes ? `, ${Math.round(t.bytes / 1024)} KB` : ''}` : t.error}`);
+  }
+  return L.join('\n');
+}
+$('#diag-go').onclick = async () => {
+  const b = $('#diag-go'); b.disabled = true; b.textContent = 'Testando… (até 1 min)';
+  $('#diag-out').innerHTML = '';
+  try {
+    const d = await (await fetch('/api/diagnostico', { method: 'POST' })).json();
+    lastDiag = d;
+    $('#diag-out').innerHTML = `<div class="diag-grid">${d.lojas.map(l => `
+      <div class="dl ${l.ok ? 'ok' : l.bloqueado ? 'blk' : 'err'}"><b>${esc(l.nome)}</b>
+        <span>${l.ok ? `${l.itens} itens via ${esc(l.fonte)}` : l.bloqueado ? 'bloqueado' : 'falhou'} · ${l.ms} ms</span>
+        ${(l.tentativas ?? []).map(t => `<small>${t.ok ? '✓' : '✕'} ${esc(t.via)}: ${t.ok ? t.n + ' itens' : esc(t.error)}</small>`).join('')}</div>`).join('')}</div>
+      <p class="muted">Navegador headless neste aparelho: <b>${d.navegador ? 'sim' : 'não'}</b> · APIs oficiais configuradas: ${Object.entries(d.apisOficiais).filter(([, v]) => v).map(([k]) => store(k).name).join(', ') || 'nenhuma'}</p>`;
+    $('#diag-copy').hidden = false;
+  } catch { toast('O diagnóstico falhou'); }
+  finally { b.disabled = false; b.textContent = 'Testar as lojas de novo'; }
+};
+$('#diag-copy').onclick = async () => {
+  if (!lastDiag) return;
+  const txt = diagText(lastDiag);
+  try { await navigator.clipboard.writeText(txt); toast('Relatório copiado'); }
+  catch { const ta = Object.assign(document.createElement('textarea'), { value: txt, rows: 12 }); ta.className = 'diag-txt'; $('#diag-out').append(ta); ta.select(); toast('Selecione e copie o texto'); }
+};

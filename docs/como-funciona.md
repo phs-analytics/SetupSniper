@@ -196,6 +196,20 @@ A cada `INTERVAL_MIN` minutos, o servidor:
 | `POST /api/promo` | processa um post de promoção (link, página, cupom e totais) |
 | `POST /api/coupons` · `PATCH/DELETE /api/coupons/:id` | cadastro manual e "Funcionou" / "Não funcionou" |
 
+## Comparativo: o mesmo produto em todas as lojas e vendedores
+
+A busca abre no modo **Comparativo** (`src/compare.js`):
+
+- Ofertas do **mesmo produto** escritas de jeitos diferentes em cada loja ("Placa De Vídeo Msi Rtx 4060 Ventus 2x 8gb" e "Placa de Vídeo MSI GeForce RTX 4060 Ventus 2X Black OC, 8GB") viram um grupo só.
+- O grupo é decidido pelo modelo (4060, 7800X3D), pelas variantes (Ti, Super, XT) e pelas palavras que distinguem a versão (Ventus, Eagle). "Ventus" e "Eagle" ficam separados, assim como "4060" e "4060 Ti".
+- Cada grupo mostra **uma linha por vendedor**: a loja (KaBuM!, Pichau, Terabyte vendem o próprio estoque) e **cada vendedor dos marketplaces** (Mercado Livre, Shopee, Amazon, Magalu, AliExpress), com o nome dele, a nota de confiança, o preço e quanto custa a mais que o menor.
+- A ordem é a "Melhor escolha" (abaixo). Do 6º vendedor em diante, as ofertas ficam em "Ver mais N vendedores".
+- O botão **Lista** volta para a lista simples.
+
+Nos **Fixados**, cada loja mostra a oferta principal com o nome do vendedor e, nos marketplaces, "Outros N vendedores" com o preço e a nota de cada um.
+
+Quanto mais vendedores aparecem, melhor fica o comparativo. A **API oficial do Mercado Livre** traz todos os vendedores de cada produto do catálogo (veja `docs/fontes-oficiais.md`).
+
 ## Mais produtos por loja e scroll infinito
 
 - A busca traz a 1ª página de cada loja. Ao chegar perto do fim da lista, a interface pede a página seguinte só das lojas que ainda têm mais (`/api/search?page=2`), sem repetir ofertas.
@@ -213,6 +227,8 @@ Cada loja mostra por que ficou sem ofertas:
 | **sem resultados** | a loja não mostrou nenhum produto | toque no chip para abrir a busca na loja e conferir |
 
 A KaBuM! é lida primeiro pelo catálogo público em JSON que a própria página de busca usa e, se ele recusar, pelo HTML.
+
+**Ainda bloqueado?** Rode o **diagnóstico** (aba Lojas → Testar as lojas agora, ou `/diagnostico` no bot) e veja `docs/fontes-oficiais.md`: lá estão as APIs oficiais (Mercado Livre, Shopee, AliExpress) e as outras saídas.
 
 
 

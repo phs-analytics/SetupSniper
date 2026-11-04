@@ -53,7 +53,7 @@ export function startBot({ getSettings, saveChatId, handlers, log = console.log 
           const [cmd, ...rest] = msg.text.trim().split(/\s+/);
           const c = cmd.toLowerCase().replace(/@.*$/, '');
           if (c === '/start') {
-            if (!getSettings().telegram.chatId) { await saveChatId(from); await sendMessage(token, from, '✅ Pronto! Este chat vai receber os alertas do <b>SetupSniper</b>.\n\nComandos:\n/fixados — produtos fixados e melhores preços\n/fixar &lt;produto&gt; [meta] — ex.: /fixar ryzen 5 7600 meta 1200\n/desafixar &lt;nº&gt; — remove um fixado\n/buscar &lt;produto&gt; — busca rápida\n/cupons — cupons salvos\n/status — situação do servidor\n/atualizar — baixa a versão nova do GitHub\n\n📨 Encaminhe um post de promoção (com link e cupom) e eu calculo o Total Pix e o Total Crédito.'); }
+            if (!getSettings().telegram.chatId) { await saveChatId(from); await sendMessage(token, from, '✅ Pronto! Este chat vai receber os alertas do <b>SetupSniper</b>.\n\nComandos:\n/fixados — produtos fixados e melhores preços\n/fixar &lt;produto&gt; [meta] — ex.: /fixar ryzen 5 7600 meta 1200\n/desafixar &lt;nº&gt; — remove um fixado\n/buscar &lt;produto&gt; — busca rápida\n/cupons — cupons salvos\n/status — situação do servidor\n/diagnostico — testa as lojas agora\n/atualizar — baixa a versão nova do GitHub\n\n📨 Encaminhe um post de promoção (com link e cupom) e eu calculo o Total Pix e o Total Crédito.'); }
             else if (from === String(getSettings().telegram.chatId)) await sendMessage(token, from, 'Este chat já está conectado. Use /precos ou /buscar &lt;produto&gt;.');
             else await sendMessage(token, from, 'Este bot já está conectado a outro chat.');
             continue;
@@ -71,6 +71,7 @@ export function startBot({ getSettings, saveChatId, handlers, log = console.log 
             : c === '/atualizar' ? await handlers.atualizar()
             : c === '/buscar' ? (rest.length ? await handlers.buscar(rest.join(' ')) : 'Use: /buscar ryzen 7 7800x3d')
             : c === '/cupons' ? await handlers.cupons()
+            : c === '/diagnostico' && handlers.diagnostico ? await handlers.diagnostico()
             : 'Comandos:\n/fixados — produtos fixados e melhores preços\n/fixar &lt;produto&gt; [meta] — fixa e passa a avisar\n/desafixar &lt;nº&gt; — remove\n/buscar &lt;produto&gt; — busca rápida\n/cupons — cupons salvos\n/status · /atualizar\n\nEncaminhe um post de promoção para eu calcular o total com o cupom.';
           await send(token, from, reply);
         }

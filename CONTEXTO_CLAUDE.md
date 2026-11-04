@@ -1,6 +1,6 @@
 # SetupSniper: contexto para a próxima sessão do Claude Code
 
-> Situação em 04/11/2026: versão **2.8.0** na branch `main`, com 125 testes passando.
+> Situação em 04/11/2026: versão **2.9.0** na branch `main`, com 136 testes passando.
 > Este arquivo trata **só do SetupSniper**. Leia inteiro antes de mexer no projeto.
 
 ---
@@ -74,6 +74,8 @@ Variáveis úteis:
 | `src/scope.js` | `activeStoreIds()`: lojas ativas pelo `enabled` do `stores.json` ou pelo `settings.enabledStores` |
 | `src/offer.js` | **schema único de oferta** (`normalizeOffer`), `parseBRL`, `toCents`, `formatBRL`, `canonicalUrl` |
 | `src/stores.js` | adaptadores de busca por loja (`ADAPTERS`); `searchStore(id, q, { page, deep, browserFallback })`; `isChallenge()` reconhece captcha; `kabumItems()` lê o catálogo JSON da KaBuM |
+| `src/compare.js` | comparativo: `groupOffers` junta o mesmo produto de lojas/vendedores diferentes (`productSignature`, `sameProduct`), 1 linha por vendedor; `sellerLabel` |
+| `src/official-apis.js` | APIs oficiais com credenciais do usuário no `.env`: Mercado Livre (busca + catálogo multi-vendedor + reputação), Shopee Affiliate, AliExpress Affiliate |
 | `src/ranking.js` | ordem padrão: menor preço ajustado à confiança; alto risco/suspeito depois; sem preço por último |
 | `src/promo-feed.js` | feed de promoções dos canais: `promoFromPost`, `addPromos`, `queryPromos`, `watchMatches`, `channelStatus` |
 | `src/extract.js` | classifica preços pelo nome do campo e pelo texto (Pix, cartão, parcela, preço "de"); `cleanResults`; `flagOutliers` |
@@ -233,6 +235,12 @@ Comparava três produtos fixos e calculava um score de confiabilidade.
   - catálogo JSON da KaBuM como 1ª tentativa.
 - **Canais do Telegram:** aba 📣 Promoções, 26 canais sugeridos, leitura a cada 30 min, aviso de promoção que bate com produto fixado.
 - **Celular:** Fixados sem cortes, carimbo sem sobrepor o preço, cabeçalho compacto.
+
+### 2.9.0: comparativo, vendedores, APIs oficiais, diagnóstico
+- **Comparativo:** busca abre no modo Comparativo (o mesmo produto em todas as lojas e em cada vendedor de marketplace); Fixados mostram "Outros N vendedores".
+- **APIs oficiais** opcionais (ML, Shopee Affiliate, AliExpress Affiliate) como 1ª tentativa, antes da página da loja.
+- **Diagnóstico** (aba Lojas e `/diagnostico`), com relatório sem dados pessoais e erros de rede explicados.
+- **O que o dono quer acima de tudo:** comparativo entre lojas e entre vendedores dos marketplaces. "Bloqueado" ainda acontece no servidor dele: **peça o relatório do diagnóstico** antes de mexer nos adaptadores.
 
 ## 6. Decisões já tomadas (não reabrir)
 

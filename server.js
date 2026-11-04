@@ -23,6 +23,7 @@ import { fetchPtax } from './src/ptax.js';
 import { parseProductPage } from './src/scraper.js';
 import { fetchText } from './src/http.js';
 import { browserAvailable } from './src/browser.js';
+import { configured as officialConfigured } from './src/official-apis.js';
 import { startBot, sendMessage, escHtml } from './src/telegram.js';
 import { VERSION, selfUpdate } from './src/update.js';
 
@@ -187,7 +188,16 @@ async function demoSearch(storeId, q, page = 1) {
   const maxPages = ADAPTERS[storeId]?.pages ?? 3;
   if (page > maxPages) return { items: [], searchUrl: ADAPTERS[storeId]?.url(q, 1), hasMore: false };
   const base = demoBase(q), h = hash(storeId + q + (page > 1 ? page : '')), n = 6 + (h % 7);
-  const variants = ['', 'Box', 'Lacrado', 'Versão 2026', 'Garantia 1 ano', 'Envio imediato'];
+  const variants = ['', 'Box', 'Lacrado', 'Original', 'Garantia', 'Envio imediato'];
+  // Marketplaces: vários vendedores simulados, de estabelecidos a lojas novas (para o comparativo e a nota)
+  const SELLERS = [
+    { id: 11, name: 'TECHSTORE', info: { ageDays: 2900, sales: 48000, nativeReputation: { level: '5_green', powerSeller: 'platinum' } } },
+    { id: 12, name: 'MEGA INFO', info: { ageDays: 1300, sales: 6200, nativeReputation: { level: '5_green', powerSeller: 'gold' } } },
+    { id: 13, name: 'Loja Oficial da Marca', official: true, info: {} },
+    { id: 14, name: 'PC Express', info: { ageDays: 700, sales: 900, nativeReputation: { level: '4_light_green' } } },
+    { id: 15, name: 'loja_nova_83', info: { ageDays: 18, sales: 4, nativeReputation: { level: null } } },
+  ];
+  const marketplace = ['mercadolivre', 'shopee', 'aliexpress', 'amazon', 'magalu'].includes(storeId);
   const items = Array.from({ length: n }, (_, i) => {
     const drift = Math.sin(Date.now() / 6e5 + h + i) * 0.03;
     const f = 0.9 + ((h >> (i * 3)) % 25) / 100 + drift + (storeId === 'aliexpress' ? -0.12 : 0);
@@ -196,7 +206,8 @@ async function demoSearch(storeId, q, page = 1) {
     const preco = ['amazon', 'shopee', 'aliexpress'].includes(storeId) ? { price: card, samePrice: true } : { pix: Math.round(card * 0.9 * 100) / 100, card };
     return { title: `${q.replace(/\b\w/g, c => c.toUpperCase())} ${variants[(h + i) % variants.length]}`.trim(),
       ...preco, installments: { n: 10, value: Math.round(card * 10) / 100, interestFree: true },
-      url: `https://example.com/${storeId}/${page}-${i}`, image: null, available: (h + i) % 9 !== 0, official: i === 0 && page === 1 };
+      url: `https://example.com/${storeId}/${page}-${i}`, image: null, available: (h + i) % 9 !== 0,
+      ...(marketplace ? (() => { const sv = SELLERS[(h + i + page) % SELLERS.length]; return { seller: { id: sv.id, name: sv.name, official: !!sv.official }, official: !!sv.official, sellerInfo: sv.info }; })() : {}) };
   });
   if (['shopee', 'aliexpress'].includes(storeId)) items.push({ title: `${q} Promoção`, price: Math.round(base * 0.45), samePrice: true, url: `https://example.com/${storeId}/x`, available: true });
   items.push({ title: `Adesivo ${q}`, price: Math.round(base * 0.05), url: `https://example.com/${storeId}/a`, available: true });
@@ -237,6 +248,33 @@ async function runSearch(q, { deep = false, stores, onStore, page = 1 } = {}) {
   return flagOutliers(all, refOf).map(withTrust);
 }
 
+// ---------- diagnóstico das lojas ----------
+// Sem dados pessoais: só versão, sistema, se há navegador, quais APIs oficiais estão configuradas (sim/não)
+// e, por loja, o resultado de cada tentativa. Feito para o usuário copiar e mandar para quem for ajudar.
+let diagRunning = null;
+async function diagnostico(q = 'ssd 1tb') {
+  if (diagRunning) return diagRunning;
+  diagRunning = (async () => {
+    const lojas = await Promise.all(activeIds().map(async (id) => {
+      const t0 = Date.now();
+      try {
+        const r = DEMO ? { ...(await demoSearch(id, q)), source: 'demo', trace: [{ via: 'demo', ok: true }] }
+          : await searchStore(id, q, { noCache: true, browserFallback: settings.browserFallback !== false });
+        return { id, nome: storeName(id), ok: r.items.length > 0, itens: r.items.length, fonte: r.source, ms: Date.now() - t0, tentativas: r.trace };
+      } catch (e) {
+        return { id, nome: storeName(id), ok: false, itens: 0, bloqueado: !!e.blocked, erro: e.message, ms: Date.now() - t0, tentativas: e.trace ?? [] };
+      }
+    }));
+    return {
+      quando: new Date().toISOString(), versao: VERSION.version, commit: VERSION.commit, node: process.version, sistema: `${process.platform}/${process.arch}`,
+      demo: DEMO, navegador: browserAvailable(), browserFallback: settings.browserFallback !== false,
+      apisOficiais: { mercadolivre: officialConfigured.mercadolivre(), shopee: officialConfigured.shopee(), aliexpress: officialConfigured.aliexpress() },
+      busca: q, lojas,
+    };
+  })();
+  try { return await diagRunning; } finally { diagRunning = null; }
+}
+
 // ---------- monitoramento ----------
 async function checkItem(it) {
   if (checking.has(it.id)) return;
@@ -271,6 +309,8 @@ async function checkItem(it) {
         status: st.status, message: st.message, error: st.status === 'error' ? st.message : null,
         updatedAt: now, errorAt: st.status === 'error' ? now : undefined, searchUrl: r.searchUrl,
         price: st.price, offer: o,
+        // outros vendedores desta loja (marketplace), já na ordem preço + confiança
+        others: (st.others ?? []).map(x => ({ title: x.title, url: x.url, price: refOf(x), seller: x.seller ?? null, trust: x.trust ? { score: x.trust.score, tier: x.trust.tier, reasons: x.trust.reasons?.slice(0, 4) } : null, suspeito: !!x.suspeito, totals: x.totals })),
         title: o?.title ?? res[sid]?.title ?? null, url: o?.url ?? res[sid]?.url ?? null, image: o?.image ?? null,
         suspeito: !!o?.suspeito, pinned: !!o?.pinned, official: !!o?.seller?.official, count: st.count ?? 0,
       };
@@ -543,6 +583,11 @@ async function refreshPtax() {
 
 // ---------- comandos do bot ----------
 const botHandlers = {
+  async diagnostico() {
+    const d = await diagnostico();
+    return '🩺 <b>Diagnóstico das lojas</b> (busca "ssd 1tb")\n\n' + d.lojas.map(l => `${l.ok ? '✅' : l.bloqueado ? '⛔' : '❌'} <b>${escHtml(l.nome)}</b>: ${l.ok ? `${l.itens} itens via ${escHtml(l.fonte)}` : escHtml((l.erro ?? 'nenhum item').slice(0, 120))}`).join('\n') +
+      `\n\nNavegador headless: ${d.navegador ? 'sim' : 'não'}. Relatório completo: aba Lojas → Diagnóstico.`;
+  },
   post: async (text) => processPromo(text, { source: 'telegram_forward' }),
   async callback(data) {
     const [acao, id] = String(data).split(':');
@@ -667,6 +712,9 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (pathname === '/api/refresh' && req.method === 'POST') { refreshAll(); return json(res, 202, { ok: true }); }
+
+    // ---- diagnóstico: testa cada loja agora, sem cache, e diz o que cada tentativa devolveu ----
+    if (pathname === '/api/diagnostico' && req.method === 'POST') return json(res, 200, await diagnostico());
 
     // ---- promoções dos canais do Telegram (feed com scroll infinito) ----
     if (pathname === '/api/promos') {
@@ -796,9 +844,12 @@ const server = http.createServer(async (req, res) => {
       catch (e) { return json(res, 502, { error: 'Telegram recusou: ' + e.message }); }
     }
 
-    const file = path.join(ROOT, 'public', pathname === '/' ? 'index.html' : pathname);
-    if (!file.startsWith(path.join(ROOT, 'public')) || !existsSync(file)) { res.writeHead(404); return res.end('não encontrado'); }
-    res.writeHead(200, { 'Content-Type': MIME[path.extname(file)] ?? 'application/octet-stream' });
+    // Módulos puros compartilhados com a interface (a mesma regra de agrupar e ordenar nos dois lados)
+    const lib = pathname.match(/^\/lib\/(compare|extract|ranking|offer)\.js$/);
+    const file = lib ? path.join(ROOT, 'src', lib[1] + '.js') : path.join(ROOT, 'public', pathname === '/' ? 'index.html' : pathname);
+    if (!lib && (!file.startsWith(path.join(ROOT, 'public')) || !existsSync(file))) { res.writeHead(404); return res.end('não encontrado'); }
+    // no-cache: depois de atualizar o servidor, o navegador confere se há versão nova (sem precisar limpar o cache)
+    res.writeHead(200, { 'Content-Type': MIME[path.extname(file)] ?? 'application/octet-stream', 'Cache-Control': 'no-cache' });
     res.end(await readFile(file));
   } catch (e) {
     if (!res.headersSent) json(res, 500, { error: e.message }); else res.end();

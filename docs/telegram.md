@@ -29,6 +29,8 @@ Cada produto fixado tem um sininho 🔔 para ligar ou desligar os alertas só de
 | `/status` | Versão, tempo ligado e memória do servidor |
 | `/atualizar` | Baixa a versão nova do GitHub e reinicia (precisa ter sido instalado com `git clone`) |
 
+`/diagnostico` testa todas as lojas agora e diz, para cada uma, se funcionou e por qual caminho (API oficial, API pública, página ou navegador), ou por que falhou.
+
 ## Encaminhar posts de promoção
 
 Encaminhe ao bot um post de grupo ou canal de promoções, com link e cupom. O bot:

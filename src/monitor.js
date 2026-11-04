@@ -4,6 +4,8 @@
 // extrator pegava o valor de uma parcela) ficava sem preço E sem erro: a tela mostrava
 // "aguardando" para sempre. Agora toda loja termina com um estado explícito.
 import { formatBRL } from './offer.js';
+import { rankOffers } from './ranking.js';
+import { sellerKey } from './compare.js';
 
 export const STATUS_MSG = {
   no_results: 'Nenhum resultado na busca da loja',
@@ -20,8 +22,9 @@ export function storeState(result, item, refOf) {
   const inRange = (o) => { const p = refOf(o); return (!item.minPrice || p >= item.minPrice) && (!item.maxPrice || p <= item.maxPrice); };
   const mine = result.offers ?? [];
   const priced = mine.filter((o) => refOf(o) != null);
-  const ok = priced.filter(inRange).filter((o) => o.available !== false)
-    .sort((a, b) => (a.suspeito - b.suspeito) || (refOf(a) - refOf(b)));
+  // Ordem: menor preço dos vendedores mais confiáveis primeiro (src/ranking.js)
+  const ok = rankOffers(priced.filter(inRange).filter((o) => o.available !== false),
+    (o) => ({ price: refOf(o), score: o.trust?.score ?? null, suspeito: !!o.suspeito }));
   let status = 'ok', offer = ok[0] ?? null;
   if (!result.raw) status = 'no_results';
   else if (!mine.length) status = 'no_match';
@@ -31,5 +34,8 @@ export function storeState(result, item, refOf) {
   const message = status === 'out_of_range'
     ? `Fora da faixa de preço do produto (${formatBRL(item.minPrice)} a ${formatBRL(item.maxPrice)}): ${formatBRL(refOf(offer))}`
     : STATUS_MSG[status] ?? null;
-  return { status, message, price: status === 'ok' ? refOf(offer) : null, offer, count: ok.length };
+  // Outros vendedores da mesma loja (marketplaces): 1 oferta por vendedor, na mesma ordem, até 8
+  const vistos = new Set(offer ? [sellerKey(offer)] : []);
+  const others = status !== 'ok' ? [] : ok.filter((o) => { const k = sellerKey(o); if (vistos.has(k)) return false; vistos.add(k); return true; }).slice(0, 8);
+  return { status, message, price: status === 'ok' ? refOf(offer) : null, offer, others, count: ok.length };
 }
