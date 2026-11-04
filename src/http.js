@@ -1,5 +1,8 @@
-// Requisições HTTP com cabeçalhos de navegador, timeout e cache curto.
-export const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36';
+// Requisições HTTP com timeout e cache curto. O SetupSniper se identifica como ele mesmo: nada de se passar
+// por navegador (regra do projeto: não burlar proteção das lojas).
+import { readFileSync } from 'node:fs';
+const VERSAO = (() => { try { return JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version; } catch { return '3'; } })();
+export const UA = `SetupSniper/${VERSAO} (+https://github.com/phs-analytics/SetupSniper; uso pessoal)`;
 const cache = new Map(); // url -> {t, body}
 const CACHE_MS = 8 * 60e3;
 

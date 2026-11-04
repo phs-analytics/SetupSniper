@@ -29,7 +29,7 @@ export const ADAPTERS = {
     // 1ª tentativa: o catálogo público em JSON que a própria página de busca carrega (sem login).
     // [não verificado ao vivo nesta versão] Se mudar ou recusar, cai para o HTML.
     api: async (q, p, ft = fetchText) => kabumItems(await ft(`https://servicespub.prod.api.aws.grupokabum.com.br/catalog/v2/products?query=${enc(q)}&page_number=${p}&page_size=40&facet_filters=&sort=most_searched`,
-      { json: true, headers: { Origin: 'https://www.kabum.com.br', Referer: 'https://www.kabum.com.br/' } })),
+      { json: true })),
     parse: (html, a) => generic(html, a.base, {
       linkOf: (o) => o.code && o.friendlyName ? `/produto/${o.code}/${o.friendlyName}` : null,
       productPath: /\/produto\/\d+/,
@@ -130,7 +130,7 @@ export const ADAPTERS = {
     url: (q, p) => `https://shopee.com.br/search?keyword=${enc(q)}&page=${p - 1}`,
     api: async (q, p, ft = fetchText) => {
       const j = await ft(`https://shopee.com.br/api/v4/search/search_items?by=relevancy&keyword=${enc(q)}&limit=60&newest=${(p - 1) * 60}&order=desc&page_type=search&scenario=PAGE_GLOBAL_SEARCH&version=2`,
-        { json: true, headers: { Referer: 'https://shopee.com.br/', 'X-Api-Source': 'pc', 'X-Shopee-Language': 'pt-BR' } });
+        { json: true, headers: { 'X-Shopee-Language': 'pt-BR' } });
       return shopeeItems(j);
     },
     browserCapture: /api\/v4\/search\/search_items/,

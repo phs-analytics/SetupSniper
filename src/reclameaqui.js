@@ -1,6 +1,6 @@
 // Atualização automática (melhor esforço) dos indicadores do Reclame Aqui.
 // O site usa proteção anti-bot; se a coleta falhar, os valores de data/stores.json são mantidos.
-const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36';
+import { UA } from './http.js';   // identificação honesta, a mesma de src/http.js
 
 function findNumber(obj, keys) {
   const stack = [obj];

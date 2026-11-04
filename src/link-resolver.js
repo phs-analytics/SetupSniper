@@ -3,8 +3,9 @@
 // sem executar JavaScript. Só segue para domínios conhecidos de lojas e encurtadores.
 import { canonicalUrl } from './offer.js';
 import { storeFromUrl } from './promo-parser.js';
+import { UA } from './http.js';
 
-const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36';
+// identificação honesta, a mesma de src/http.js
 
 // Domínios pelos quais o resolvedor aceita passar (lojas + encurtadores de afiliado)
 const ALLOWED = /(^|\.)(meli\.la|mercadolivre\.com\.br|mercadolibre\.com|amzn\.to|a\.co|amazon\.com\.br|shp\.ee|shopee\.com\.br|aliexpress\.com|aliexpress\.us|magazineluiza\.com\.br|magalu\.com|magalu\.com\.br|mglu\.me|kabum\.com\.br|pichau\.com\.br|terabyteshop\.com\.br|tiktok\.com|vm\.tiktok\.com|shopee\.ee|magazinevoce\.com\.br|tidd\.ly|bit\.ly|tinyurl\.com|cutt\.ly|rebrand\.ly)$/i;

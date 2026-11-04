@@ -5,8 +5,9 @@
 //   3. Padrões específicos (KaBuM __NEXT_DATA__, Amazon a-offscreen, etc.)
 import { parseBRL } from './offer.js';
 import { pricesFromText, pricesOf } from './extract.js';
+import { UA } from './http.js';
 
-const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36';
+// identificação honesta, a mesma de src/http.js
 
 // parseBRL mora em src/offer.js; reexportado aqui por compatibilidade.
 export { parseBRL };
