@@ -26,5 +26,15 @@ for (const p of PATTERNS) {
   if (out) bad(`possível segredo encontrado:\n${out}`);
 }
 
+// 4) uma versão só: package.json, extensão, CHANGELOG e modelo de relato de bug com o mesmo número
+import { readFileSync } from 'node:fs';
+const ver = JSON.parse(readFileSync('package.json', 'utf8')).version;
+const extVer = JSON.parse(readFileSync('extensao/manifest.json', 'utf8')).version;
+if (extVer !== ver) bad(`versão da extensão (${extVer}) diferente da do projeto (${ver}): ajuste extensao/manifest.json`);
+const logVer = readFileSync('CHANGELOG.md', 'utf8').match(/^## (\d+\.\d+\.\d+)/m)?.[1];
+if (logVer !== ver) bad(`a primeira versão do CHANGELOG (${logVer}) é diferente da do projeto (${ver})`);
+const bugVer = readFileSync('.github/ISSUE_TEMPLATE/bug.yml', 'utf8').match(/placeholder: "(\d+\.\d+\.\d+)/)?.[1];
+if (bugVer && bugVer !== ver) bad(`o exemplo de versão em .github/ISSUE_TEMPLATE/bug.yml (${bugVer}) é diferente da do projeto (${ver})`);
+
 if (fail) { console.error('\nCorrija os itens acima antes de publicar.'); process.exit(1); }
-console.log('✓ sintaxe ok · nenhum arquivo pessoal versionado · nenhum segredo encontrado');
+console.log(`✓ sintaxe ok · nenhum arquivo pessoal versionado · nenhum segredo encontrado · versão ${ver} em todo o projeto`);
