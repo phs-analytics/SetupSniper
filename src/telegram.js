@@ -77,7 +77,7 @@ export async function handleUpdate(u, ctx) {
       ctx.pending.delete(id);
       await saveDb(addGroup(getDb(), chat, now));
       await tgFn(token, 'answerCallbackQuery', { callback_query_id: cq.id, text: 'Canal conectado.' }).catch(() => {});
-      await toOwner(`✅ Canal <b>${chatLabel(chat)}</b> conectado. Os posts de oferta dele entram na aba de promoções.`);
+      await toOwner(`✅ Canal <b>${chatLabel(chat)}</b> conectado. Os posts de oferta dele entram na aba Ofertas.`);
       return { action: 'group_added' };
     }
     if (handlers.callback) {
@@ -136,7 +136,7 @@ export async function handleUpdate(u, ctx) {
       if (!owner || String(msg.from?.id) !== owner) return { action: 'ignored_not_owner' };
       if (cmd.c === '/grupo_add') {
         await saveDb(addGroup(getDb(), chat, now));
-        await toOwner(`✅ Grupo <b>${chatLabel(chat)}</b> conectado. As mensagens com oferta entram na aba de promoções.\n\nSe nada chegar, o <i>privacy mode</i> do bot está ligado: veja docs/telegram.md (BotFather → /setprivacy → Disable, e readicione o bot ao grupo).`);
+        await toOwner(`✅ Grupo <b>${chatLabel(chat)}</b> conectado. As mensagens com oferta entram na aba Ofertas.\n\nSe nada chegar, o <i>privacy mode</i> do bot está ligado: veja docs/telegram.md (BotFather → /setprivacy → Disable, e readicione o bot ao grupo).`);
         return { action: 'group_added' };
       }
       await saveDb(removeGroup(getDb(), chat.id));

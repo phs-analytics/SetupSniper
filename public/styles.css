@@ -548,6 +548,11 @@ dialog .btn.ghost { color: var(--ink); border-color: var(--ink); }
 .pvazio { color: var(--ink2); }
 @media (min-width: 640px) { .prow { grid-template-columns: minmax(0, 1fr) auto auto auto; } .pact { grid-column: auto; } }
 
-/* cupons oficiais x divulgados */
-.cupom-oficial { border-left: 4px solid var(--good); padding-left: 8px; }
+/* cupons divulgados (Telegram) */
 .cupom-divulgado { border-left: 4px dashed var(--warn); padding-left: 8px; }
+
+/* Ofertas: seções por tipo (produto, cupom, desconto) */
+.of-tipos { display: flex; width: 100%; margin: 0 0 12px; }
+.of-tipos button { flex: 1 1 auto; min-width: 0; }
+.of-tipos .count { font: 700 11px var(--mono); opacity: .8; }
+.ch-panel { margin-bottom: 14px; }

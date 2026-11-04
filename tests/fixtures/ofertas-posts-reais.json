@@ -1,0 +1,320 @@
+{
+  "_fonte": "Posts públicos de canais de promoção do Telegram (prévia t.me/s), lidos em 04/11/2026; o esperado foi conferido à mão.",
+  "casos": [
+    {
+      "canal": "@CupomKabum",
+      "texto": "🚨 Novo Cupom KABUM\n🏷 R$300 OFF em Smartphone selecionado\n🏷 Código: MAGA300\n🔗 Válido/Ative aqui: https://ofertou.ai/qBsw-Kabum\n🔎 Só aviso de Cupom Kabum: http://t.me/CupomKabum\n🚀 Mais grupos de ofertas e cupons: http://nerdofertas.com/",
+      "esperado": {
+        "tipo": "cupom",
+        "titulo": "R$300 OFF em Smartphone selecionado",
+        "preco": null,
+        "pagamento": null,
+        "loja": "kabum",
+        "codes": [
+          "MAGA300"
+        ]
+      }
+    },
+    {
+      "canal": "@CupomKabum",
+      "texto": "🚨 Novo Cupom KABUM\n🏷 R$200 OFF em Impressora selecionada\n🏷 Código: 200OFF\n🔗 Válido/Ative aqui: https://ofertou.ai/gLZG-Kabum\n🔎 Só aviso de Cupom Kabum: http://t.me/CupomKabum\n🚀 Mais grupos de ofertas e cupons: http://nerdofertas.com/",
+      "esperado": {
+        "tipo": "cupom",
+        "titulo": "R$200 OFF em Impressora selecionada",
+        "preco": null,
+        "pagamento": null,
+        "loja": "kabum",
+        "codes": [
+          "200OFF"
+        ]
+      }
+    },
+    {
+      "canal": "@CupomKabum",
+      "texto": "🚨 Novo Cupom KABUM\n🏷 15% OFF em Memórias ram selecionadas\n🏷 Código: DRAMOFF15\n🔗 Válido/Ative aqui: https://ofertou.ai/MXBJ-Kabum\n🔎 Só aviso de Cupom Kabum: http://t.me/CupomKabum\n🚀 Mais grupos de ofertas e cupons: http://nerdofertas.com/",
+      "esperado": {
+        "tipo": "cupom",
+        "titulo": "15% OFF em Memórias ram selecionadas",
+        "preco": null,
+        "pagamento": null,
+        "loja": "kabum",
+        "codes": [
+          "DRAMOFF15"
+        ]
+      }
+    },
+    {
+      "canal": "@CupomKabum",
+      "texto": "🚨 Novo Cupom KABUM\n🏷 11% OFF em Cadeiras selecionadas\n🏷 Código: 11DO11HUSKY\n🔗 Válido/Ative aqui: https://ofertou.ai/y6J4-Kabum\n🔎 Só aviso de Cupom Kabum: http://t.me/CupomKabum\n🚀 Mais grupos de ofertas e cupons: http://nerdofertas.com/",
+      "esperado": {
+        "tipo": "cupom",
+        "titulo": "11% OFF em Cadeiras selecionadas",
+        "preco": null,
+        "pagamento": null,
+        "loja": "kabum",
+        "codes": [
+          "11DO11HUSKY"
+        ]
+      }
+    },
+    {
+      "canal": "@LaPromotion",
+      "texto": "🔥 Sanduicheira Elétrica Cadence Click 127V\nPreço: R$ 60\n🎟 Cupom: BF20OFF\nhttps://link.amazon/B0f9nPGwa",
+      "esperado": {
+        "tipo": "produto",
+        "titulo": "Sanduicheira Elétrica Cadence Click 127V",
+        "preco": 6000,
+        "pagamento": null,
+        "loja": "amazon",
+        "codes": [
+          "BF20OFF"
+        ]
+      }
+    },
+    {
+      "canal": "@LaPromotion",
+      "texto": "🔥 Integralmedica Creatina Hardcore 60 Cápsulas Pura Monohidratada\nPreço: R$ 12\n🎟 Resgate cupom do anúncio\nhttps://link.amazon/B00E4YABl",
+      "esperado": {
+        "tipo": "produto",
+        "titulo": "Integralmedica Creatina Hardcore 60 Cápsulas Pura Monohidratada",
+        "preco": 1200,
+        "pagamento": null,
+        "loja": "amazon",
+        "codes": []
+      }
+    },
+    {
+      "canal": "@LaPromotion",
+      "texto": "🔥 Cupom Magalu x WhatsAPP\n🎟 R$ 60 OFF em R$ 150: CUPOMLUESQUENTABLACK\n1️⃣ Envie o seu produto e peça para adicionar na sacola\n2️⃣ Clique em “Revisar pedido”\n3️⃣ Envie a mensagem “Aplicar cupom CUPOMLUESQUENTABLACK”\n👉 Chame a Magalu no WhatsApp:\nhttps://wa.me/5511974627106\n⭐️ Procure o ID do seu produto:\nhttps://divulgador.magalu.com/vJwUkvVW",
+      "esperado": {
+        "tipo": "cupom",
+        "titulo": "R$ 60 OFF em R$ 150",
+        "preco": null,
+        "pagamento": null,
+        "loja": "magalu",
+        "codes": [
+          "CUPOMLUESQUENTABLACK"
+        ]
+      }
+    },
+    {
+      "canal": "@LaPromotion",
+      "texto": "🔥 Wap Extratora Portátil Spot Cleaner W3, 3 em 1, Borrifa, Esfrega e Extrai, com Sistema de Autolimpeza, 1450W 220V\nPreço: R$ 399\n⭐️ 8x sem Juros\n🎟 Resgate cupom do anúncio\nhttps://link.amazon/B0945YRb1",
+      "esperado": {
+        "tipo": "produto",
+        "titulo": "Wap Extratora Portátil Spot Cleaner W3, 3 em 1, Borrifa, Esfrega e Extrai, com Sistema de Autolimpeza, 1450W 220V",
+        "preco": 39900,
+        "pagamento": "parcelado",
+        "loja": "amazon",
+        "codes": []
+      }
+    },
+    {
+      "canal": "@LaPromotion",
+      "texto": "🔥 Fritadeira Air Fryer Six Fry Elgin 6,5L Cesto removível 1.500W Preta 220V\nPreço: R$ 160\n⭐️ 5x sem Juros\nhttps://link.amazon/B0gEQAPXs",
+      "esperado": {
+        "tipo": "produto",
+        "titulo": "Fritadeira Air Fryer Six Fry Elgin 6,5L Cesto removível 1.500W Preta 220V",
+        "preco": 16000,
+        "pagamento": "parcelado",
+        "loja": "amazon",
+        "codes": []
+      }
+    },
+    {
+      "canal": "@LaPromotion",
+      "texto": "🔥 Fritadeira Air Fryer Six Fry Elgin 6,5L Cesto removível 1.500W Preta 220V - R$128\n-Resgate o cupom\nhttps://link.amazon/B0gEQAPXs",
+      "esperado": {
+        "tipo": "produto",
+        "titulo": "Fritadeira Air Fryer Six Fry Elgin 6,5L Cesto removível 1.500W Preta 220V",
+        "preco": 12800,
+        "pagamento": null,
+        "loja": "amazon",
+        "codes": []
+      }
+    },
+    {
+      "canal": "@LaPromotion",
+      "texto": "🔥 Monitor Gamer Alienware 25\" Full Hd (1920 x 1080) 320Hz Fast Ips 0,5ms com Amd FreeSync Premium e Nvidia G-Sync Aw2525hm\nPreço: R$ 1539\n⭐️ 12x sem Juros\n🎟 Cupom: BF20OFF\nhttps://link.amazon/B03sRjK5H",
+      "esperado": {
+        "tipo": "produto",
+        "titulo": "Monitor Gamer Alienware 25\" Full Hd (1920 x 1080) 320Hz Fast Ips 0,5ms com Amd FreeSync Premium e Nvidia G-Sync Aw2525hm",
+        "preco": 153900,
+        "pagamento": "parcelado",
+        "loja": "amazon",
+        "codes": [
+          "BF20OFF"
+        ]
+      }
+    },
+    {
+      "canal": "@pcdofafapromo",
+      "texto": "👌 Caixa de Som JBL PartyBox Stage 320 Bluetooth Portátil Com Show de Luzes e Resistente a Respingos – 240W RMS Preta\n💲 Valor: R$1.973,00 no pix\nCupom: AQUITEMPROMO\n👀 https://meli.la/2ZUntcU\n✅BOT DE DESCONTOS: https://t.me/FafaPromobot\n🔔 https://t.me/Promoavisa_bot?start=p_ml_MLB4728634751\n_________________________\n✅ O nosso adm Kodaz conferiu manualmente o cupom e a oferta",
+      "esperado": {
+        "tipo": "produto",
+        "titulo": "Caixa de Som JBL PartyBox Stage 320 Bluetooth Portátil Com Show de Luzes e Resistente a Respingos – 240W RMS Preta",
+        "preco": 197300,
+        "pagamento": "pix",
+        "loja": "mercadolivre",
+        "codes": [
+          "AQUITEMPROMO"
+        ]
+      }
+    },
+    {
+      "canal": "@pcdofafapromo",
+      "texto": "👌 Celular Motorola Edge 70 Fusion 5g - 256gb 12gb Ram\n💲 Valor: R$1.799,10 no PIX\nCupom: AQUITEMPROMO\n👀 https://meli.la/2h2hMDK\n✅BOT DE DESCONTOS: https://t.me/FafaPromobot\n🔔 https://t.me/Promoavisa_bot?start=p_ml_MLB5139944859\n_________________________\n✅ O nosso adm David conferiu manualmente o cupom e a oferta",
+      "esperado": {
+        "tipo": "produto",
+        "titulo": "Celular Motorola Edge 70 Fusion 5g - 256gb 12gb Ram",
+        "preco": 179910,
+        "pagamento": "pix",
+        "loja": "mercadolivre",
+        "codes": [
+          "AQUITEMPROMO"
+        ]
+      }
+    },
+    {
+      "canal": "@pcdofafapromo",
+      "texto": "👌 Monitor Gamer Curvo Husky Boreal 34\", WQHD, Ultrawide, 200Hz, 1ms, Adaptive Sync, DisplayPort e HDMI, HDR HMG00234PT\n💲 Valor: R$1.169,99 no PIX\nCupom: KORUJAO\n👀 https://pcdofafa.com.br/p/kabum/gq3vdq\n🔔 https://t.me/Promoavisa_bot?start=p_awin_17729_871300\n_________________________\n✅ O nosso adm David conferiu manualmente o cupom e a oferta",
+      "esperado": {
+        "tipo": "produto",
+        "titulo": "Monitor Gamer Curvo Husky Boreal 34\", WQHD, Ultrawide, 200Hz, 1ms, Adaptive Sync, DisplayPort e HDMI, HDR HMG00234PT",
+        "preco": 116999,
+        "pagamento": "pix",
+        "loja": "kabum",
+        "codes": [
+          "KORUJAO"
+        ]
+      }
+    },
+    {
+      "canal": "@pcdofafapromo",
+      "texto": "👌 Monitor Gamer Gigabyte 25\", Fhd, 200Hz, 1ms, Ips, Vrr, FreeSync Premium, Hdr 10, Alto-falante Embutido Gs25f2-Sa\n💲 Valor: R$584,99 no PIX\nCupom: KORUJAO\n👀 https://pcdofafa.com.br/p/kabum/tad2rg\n🔔 https://t.me/Promoavisa_bot?start=p_awin_17729_699153\n_________________________\n✅ O nosso adm David conferiu manualmente o cupom e a oferta",
+      "esperado": {
+        "tipo": "produto",
+        "titulo": "Monitor Gamer Gigabyte 25\", Fhd, 200Hz, 1ms, Ips, Vrr, FreeSync Premium, Hdr 10, Alto-falante Embutido Gs25f2-Sa",
+        "preco": 58499,
+        "pagamento": "pix",
+        "loja": "kabum",
+        "codes": [
+          "KORUJAO"
+        ]
+      }
+    },
+    {
+      "canal": "@pcdofafapromo",
+      "texto": "👌 Impressora 3D Bambu Lab A1 + AMS Lite (Combo) - A1C, Bivolt\n💲 Valor: R$3.732,55 no PIX\n👀 https://www.amazon.com.br/dp/B0DD81K7V7?tag=davitech0-20\n🔥 30 dias grátis de Amazon Prime\n👉 https://www.amazon.com.br/amazonprime?tag=davitech0-20\n🔔 https://t.me/Promoavisa_bot?start=p_amzn_B0DD81K7V7\n_________________________\n✅ O nosso adm David conferiu manualmente o cupom e a oferta",
+      "esperado": {
+        "tipo": "produto",
+        "titulo": "Impressora 3D Bambu Lab A1 + AMS Lite (Combo) - A1C, Bivolt",
+        "preco": 373255,
+        "pagamento": "pix",
+        "loja": "amazon",
+        "codes": []
+      }
+    },
+    {
+      "canal": "@pcdofafapromo",
+      "texto": "👌CPU Ryzen 7 5700x AM4\n💲Valor: R$902,52 - 9x sem juros\n-Cupom: 570XLIBRETX ou 57XXLIBRETX + FAFA5 ou AEMEGA5 + 343 Moedas no APP\n✅ Link App com desconto em moedas:\n👀 https://a.aliexpress.com/_c3KCqq6T\n✅ Link para PC / sem super desconto moedas:\n👀 https://a.aliexpress.com/_c36eHeHh\n✅BOT DE DESCONTOS: https://t.me/FafaPromobot\n-Somente no APP, vai abrir na página de moedas e clique no primeiro anúncio\n🔔 https://t.me/Promoavisa_bot?start=p_1005007453597372\n_________________________\n✅ O nosso adm David conferiu manualmente o cupom e a oferta",
+      "esperado": {
+        "tipo": "produto",
+        "titulo": "CPU Ryzen 7 5700x AM4",
+        "preco": 90252,
+        "pagamento": "parcelado",
+        "loja": "aliexpress",
+        "codes": [
+          "570XLIBRETX",
+          "57XXLIBRETX",
+          "FAFA5",
+          "AEMEGA5"
+        ]
+      }
+    },
+    {
+      "canal": "@urubupromo",
+      "texto": "🥈TÃO LYSO QUANTO EU ANTES DO PAGAMENTO...\n4 un. Lysoform Original 1L\n💡selecione \"Programe e Poupe\"\npor 32,86 à vista\nhttps://link.amazon/B08oR7hex",
+      "esperado": {
+        "tipo": "produto",
+        "titulo": "4 un. Lysoform Original 1L",
+        "preco": 3286,
+        "pagamento": "avista",
+        "loja": "amazon",
+        "codes": []
+      }
+    },
+    {
+      "canal": "@urubupromo",
+      "texto": "🥈NÃO ADIANTA TER UM PC FORTE E USAR 60HZ...\nMonitor LG Ultragear Ips 27\" 200hz, 1ms\n🎟 Cupom: DESCONTOS ou DESCONTOSEMPRE\npor 719,10 em 10x sem juros\nhttps://meli.la/1csLaio",
+      "esperado": {
+        "tipo": "produto",
+        "titulo": "Monitor LG Ultragear Ips 27\" 200hz, 1ms",
+        "preco": 71910,
+        "pagamento": "parcelado",
+        "loja": "mercadolivre",
+        "codes": [
+          "DESCONTOS",
+          "DESCONTOSEMPRE"
+        ]
+      }
+    },
+    {
+      "canal": "@urubupromo",
+      "texto": "🥉 DEIXA QUE O URUBU CUIDA DA SUA JUBA\nKit Braé Stages Nutrition Shampoo,cond,másc + Essential 60ml\n🎟 Cupom: SUPER0411\nPor 98,60 à Vista\nhttps://meli.la/1fs1Qf4",
+      "esperado": {
+        "tipo": "produto",
+        "titulo": "Kit Braé Stages Nutrition Shampoo,cond,másc + Essential 60ml",
+        "preco": 9860,
+        "pagamento": "avista",
+        "loja": "mercadolivre",
+        "codes": [
+          "SUPER0411"
+        ]
+      }
+    },
+    {
+      "canal": "@urubupromo",
+      "texto": "🥉 ESSA É PRESSÃO DE VERDADE\nPanela De Pressão Elétrica Chef 4L 800w Fmaxx\n🎟 Cupom: DESCONTOS ou DESCONTOSEMPRE\npor 178,12 no pix\nhttps://meli.la/2cvL8wW",
+      "esperado": {
+        "tipo": "produto",
+        "titulo": "Panela De Pressão Elétrica Chef 4L 800w Fmaxx",
+        "preco": 17812,
+        "pagamento": "pix",
+        "loja": "mercadolivre",
+        "codes": [
+          "DESCONTOS",
+          "DESCONTOSEMPRE"
+        ]
+      }
+    },
+    {
+      "canal": "@urubupromo",
+      "texto": "AMAZON SOLTOU CUPOM\n20% OFF limitado em R$50 OFF:\n🎟 Cupom: BF20OFF\nResgate aqui:\nhttps://link.amazon/B0b5zwxq0",
+      "esperado": {
+        "tipo": "cupom",
+        "titulo": "20% OFF limitado em R$50 OFF",
+        "preco": null,
+        "pagamento": null,
+        "loja": "amazon",
+        "codes": [
+          "BF20OFF"
+        ]
+      }
+    },
+    {
+      "canal": "@urubupromo",
+      "texto": "🥈 FAMOSO MONITOR PAY TO WIN\n⚠️ Exclusivo prime\nMonitor Gamer Alienware 25\" Full HD (1920 x 1080) 320 Hz IPS 0,5ms\n🎟 Cupom: BF20OFF\npor 1.539 em 12x sem juros\nhttps://link.amazon/B00J6t68L",
+      "esperado": {
+        "tipo": "produto",
+        "titulo": "Monitor Gamer Alienware 25\" Full HD (1920 x 1080) 320 Hz IPS 0,5ms",
+        "preco": 153900,
+        "pagamento": "parcelado",
+        "loja": "amazon",
+        "codes": [
+          "BF20OFF"
+        ]
+      }
+    }
+  ]
+}

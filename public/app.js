@@ -2,7 +2,7 @@ import { groupOffers, sellerLabel } from '/lib/compare.js';
 import { sparklineSvg, historyBadges } from '/historico.js';
 import { porLoja } from '/lib/por-loja.js';
 import { renderPorLoja } from '/por-loja.js';
-import { couponCard } from '/cupons-oficiais.js';
+import { couponCard } from '/cupons.js';
 import { renderOfertas, novasPendentes, avisoNovas, filtrosDe } from '/ofertas.js';
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
@@ -72,7 +72,7 @@ const lset = (k, v) => { try { localStorage.setItem('radar.' + k, JSON.stringify
 let S = null;                                   // estado do servidor (SSE)
 const ui = { view: lget('view', 'compare'), sort: lget('ordem', 'balance'), min: lget('min', 0), hideSus: lget('hideSus', true), deep: lget('deep', false), stores: lget('stores', null), shown: 40 };
 // estado da aba Ofertas (a lista só muda quando a pessoa toca no aviso de novas)
-const of = { items: [], pendentes: [], categorias: [], lojas: [], filtros: filtrosDe({}), rev: -1, loading: false };
+const of = { items: [], pendentes: [], categorias: [], lojas: [], filtros: filtrosDe({}), rev: -1, loading: false, tipo: lget('ofTipo', 'produto') };
 const search = { q: '', es: null, status: {}, results: [], running: false, more: [], loadingMore: false };
 
 const store = (id) => S?.stores.find(s => s.id === id) ?? { id, name: id, color: '#666' };
@@ -122,10 +122,9 @@ function sparkline(hist) {
 // ================= ABAS =================
 function showTab() {
   const tab = (location.hash.slice(1) || 'busca');
-  const valid = tab === 'monitorados' ? 'fixados' : ['busca', 'fixados', 'ofertas', 'promos', 'cupons', 'lojas', 'alertas'].includes(tab) ? tab : 'busca';
+  const valid = tab === 'monitorados' ? 'fixados' : tab === 'promos' ? 'ofertas' : ['busca', 'fixados', 'ofertas', 'cupons', 'lojas', 'alertas'].includes(tab) ? tab : 'busca';
   $$('.tab').forEach(t => t.hidden = t.id !== 'tab-' + valid);
   $$('.tabs a').forEach(a => a.classList.toggle('on', a.dataset.tab === valid));
-  if (valid === 'promos' && !promo.loaded) loadPromos(true);
   if (valid === 'ofertas') loadOfertas({ aplicar: true });
 }
 addEventListener('hashchange', showTab);
@@ -559,10 +558,7 @@ function render() {
   $('#aff-on').checked = !!S.settings?.affiliateLinks;
   if (!document.activeElement?.closest('#pl-panel')) { const pl = S.settings?.porLoja ?? {}; $('#pl-nota').value = pl.notaMinima ?? 70; $('#pl-n').value = pl.produtosPorLoja ?? 10; $('#pl-alerta').checked = pl.alertasSoVendedorBom !== false; }
   ofertasMudaram();
-  renderStatus(); renderWatch(); renderPinned(); renderCoupons(); if (search.q && !search.running) renderSearch(); renderStores(); renderAlerts(); renderPromos(); renderMl();
-  // Promoções novas chegaram e a pessoa está no topo da aba: atualiza a lista sozinha
-  const nPromo = S.channels?.promos ?? 0;
-  if (nPromo !== ui.lastPromos) { const was = ui.lastPromos; ui.lastPromos = nPromo; if (was != null && promo.loaded && promo.offset <= 30 && !$('#tab-promos').hidden) loadPromos(true); }
+  renderStatus(); renderWatch(); renderPinned(); renderCoupons(); if (search.q && !search.running) renderSearch(); renderStores(); renderAlerts(); renderCanais(); renderMl();
   if (first) { renderStoreFilter(); renderSearch(); first = false;
     const sugg = [...new Set([...S.items.map(i => i.query), 'RTX 4060', 'SSD 2TB NVMe', 'Ryzen 5 7600'])].slice(0, 6);
     $('#suggest').innerHTML = sugg.map(q => `<button type="button" class="fchip on" data-q="${esc(q)}">${esc(q)}</button>`).join('');
@@ -591,11 +587,8 @@ function renderCoupons() {
   const list = S.coupons ?? [];
   const ativos = list.filter(c => c.status !== 'expired' && (!c.expiresAt || Date.parse(c.expiresAt) > Date.now()));
   $('#count-cup').textContent = ativos.length;
-  const feed = S.couponFeed;
-  $('#coupon-feed-status').innerHTML = feed ? `Cupons oficiais das redes de afiliados: ${feed.atualizadoEm ? `última leitura ${ago(Date.parse(feed.atualizadoEm))}` : 'ainda não lidos'} · ${Object.entries(feed.redes ?? {}).map(([k, r]) => `${esc(k)}: ${r.ok ? `${r.n ?? 0} cupom(ns)` : r.pulada ? 'desligada' : esc(r.erro ?? r.motivo ?? 'sem credencial')}`).join(' · ') || 'nenhuma rede configurada (veja docs/credenciais.md)'}` : '';
-  $('#coupon-list').innerHTML = list.length ? list.map(c => couponCard(c, { now: Date.now(), lojaNome: store(c.store).name, cor: store(c.store).color })).join('') +
-    (feed?.historico?.length ? `<details class="pmore"><summary>Histórico de cupons oficiais (${feed.historico.length})</summary>${feed.historico.map(c => couponCard(c, { now: Date.now(), lojaNome: store(c.store).name, cor: store(c.store).color })).join('')}</details>` : '')
-    : '<p class="muted">Nenhum cupom ainda. Cole um post acima, encaminhe um para o bot do Telegram ou configure a Awin/Lomadee para receber cupons oficiais.</p>';
+  $('#coupon-list').innerHTML = list.length ? list.map(c => couponCard(c, { now: Date.now(), lojaNome: store(c.store).name, cor: store(c.store).color })).join('')
+    : '<p class="muted">Nenhum cupom ainda. Os cupons chegam dos canais e grupos do Telegram; você também pode colar um post acima ou encaminhar um para o bot.</p>';
   if (!$('#c-store').options.length) $('#c-store').innerHTML = S.stores.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
   if (!cfgFilled || !document.activeElement?.closest('#tab-cupons')) {
     const st = S.settings;
@@ -662,35 +655,15 @@ $('#coupon-form').onsubmit = async (e) => {
   } catch (err) { toast(err.message); }
 };
 
-// ================= PROMOÇÕES DOS CANAIS (scroll infinito) =================
-const promo = { items: [], offset: 0, hasMore: true, loading: false, loaded: false, total: 0, seq: 0 };
-async function loadPromos(reset = false) {
-  if (promo.loading && !reset) return;
-  if (reset) Object.assign(promo, { items: [], offset: 0, hasMore: true, loaded: true });
-  if (!promo.hasMore) return;
-  const seq = ++promo.seq;
-  promo.loading = true; renderPromos();
-  const qs = new URLSearchParams({ offset: promo.offset, limit: 30, store: $('#pf-store').value, q: $('#pf-q').value.trim() });
-  try {
-    const r = await (await fetch('/api/promos?' + qs)).json();
-    if (seq !== promo.seq) return;
-    promo.items.push(...r.items); promo.offset += r.items.length; promo.hasMore = r.hasMore; promo.total = r.total;
-  } catch { toast('Não consegui carregar as promoções'); promo.hasMore = false; }
-  finally { if (seq === promo.seq) { promo.loading = false; renderPromos(); } }
-}
-const promoObserver = 'IntersectionObserver' in window ? new IntersectionObserver((es) => { if (es.some(e => e.isIntersecting)) loadPromos(); }, { rootMargin: '600px 0px' }) : null;
-const safeHref = (u) => /^https:\/\//i.test(u ?? '') ? esc(u) : null;
-
-function renderPromos() {
+// ================= CANAIS DO TELEGRAM (dentro da aba Ofertas) =================
+// Os posts dos canais e grupos viram ofertas (produto, cupom ou desconto); aqui ficam só a situação e os botões.
+function renderCanais() {
   if (!S) return;
   const ch = S.channels ?? { suggested: [], status: {} };
   const ativos = S.settings?.channels ?? [];
   const st = Object.entries(ch.status ?? {}).filter(([k]) => ativos.includes(k));
   const ok = st.filter(([, v]) => v.ok).length;
   const last = Math.max(0, ...st.map(([, v]) => Date.parse(v.at) || 0));
-  $('#count-promo').textContent = ch.promos ?? 0;
-  const sel = $('#pf-store');
-  if (sel.options.length <= 1) for (const s of S.stores) sel.add(new Option(s.name, s.id));
   $('#ch-summary').innerHTML = !ativos.length
     ? `<p>Nenhum canal ativado.</p><button type="button" class="btn primary" id="ch-enable">Ativar os ${ch.suggested.length} canais sugeridos</button> <small class="muted-i">dá para editar a lista na aba 🎟️ Cupons</small>`
     : `<span><b>${ok}</b> de <b>${ativos.length}</b> canais lidos${last ? ' · última leitura ' + ago(last) : ''}${ch.reading ? ' · <b>lendo agora…</b>' : ''}</span>
@@ -701,51 +674,17 @@ function renderPromos() {
     const txt = !v ? 'aguardando a primeira leitura' : v.ok ? `${v.posts} posts na prévia · ${ago(Date.parse(v.at))}` : v.error;
     return `<div class="ch ${cls}"><a href="https://t.me/${esc(c)}" target="_blank" rel="noopener noreferrer">@${esc(c)}</a><span>${esc(txt)}</span></div>`;
   }).join('') || '<p class="muted">Ative canais para ver a situação de cada um.</p>';
-
-  const card = (p) => {
-    const s = p.store ? store(p.store) : null;
-    const link = safeHref(p.link), post = safeHref(p.postUrl);
-    const kind = p.kind === 'promo' ? 'promoção' : p.kind === 'cupom' ? 'cupom' : 'promoção + cupom';
-    return `<article class="promo-card">
-      <div class="pc-top"><span class="sdot" style="background:${s?.color ?? 'var(--fg2)'}"></span><b>${esc(s?.name ?? 'loja a confirmar')}</b>
-        <span class="muted">@${esc(p.channel)} · ${ago(Date.parse(p.date ?? p.seenAt))}</span>
-        <span class="tag ${p.kind === 'promo' ? 'info' : 'warn'}">${kind}</span></div>
-      ${p.product ? `<div class="pc-title">${esc(p.product)}</div>` : ''}
-      <div class="pc-price">${p.price != null ? `<b>${brl(p.price)}</b>` : ''}${p.oldPrice ? ` <s>${brl(p.oldPrice)}</s>` : ''}${p.price != null ? ' <small class="muted-i">divulgado, não verificado</small>' : ''}</div>
-      ${p.coupons?.length ? `<div class="pc-coupons">🎟️ ${p.coupons.map(c => `<code>${esc(c)}</code>`).join(' ou ')}</div>` : ''}
-      <div class="pc-actions">
-        ${p.product ? `<button type="button" class="btn small" data-pfix="${esc(p.id)}">📌 Fixar</button>` : ''}
-        ${link ? `<a class="btn small" href="${link}" target="_blank" rel="noopener noreferrer nofollow">Abrir link ↗</a>` : ''}
-        ${post ? `<a class="btn small ghost" href="${post}" target="_blank" rel="noopener noreferrer">Ver post ↗</a>` : ''}
-      </div></article>`;
-  };
-  const filtro = $('#pf-q').value || $('#pf-store').value;
-  const empty = !promo.items.length && !promo.loading
-    ? `<div class="empty"><h2>Nenhuma promoção ${filtro ? 'com esse filtro' : 'ainda'}</h2><p class="muted">${ativos.length ? 'Os canais são lidos a cada 30 min. Toque em "Ler agora" para buscar já.' : 'Ative os canais sugeridos acima.'}</p></div>` : '';
-  $('#promo-feed').innerHTML = promo.items.map(card).join('') + empty +
-    (promo.items.length ? `<div class="more" id="promo-sentinel">${promo.loading ? '<span class="muted">Carregando…</span>' : promo.hasMore ? '<button type="button" class="btn" id="promo-more">Mostrar mais</button>' : '<span class="muted">Fim das promoções.</span>'}</div>` : '');
-  const sent = $('#promo-sentinel');
-  if (sent && promoObserver) { promoObserver.disconnect(); if (promo.hasMore) promoObserver.observe(sent); }
 }
 {
-  let tmr;
-  $('#pf-store').onchange = () => loadPromos(true);
-  $('#pf-q').oninput = () => { clearTimeout(tmr); tmr = setTimeout(() => loadPromos(true), 350); };
   const enable = async (list) => {
     const r = await fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ channels: list }) });
     if (!r.ok) return toast((await r.json()).error ?? 'Erro ao salvar');
-    toast(`${list.length} canais ativados: lendo agora…`); setTimeout(() => loadPromos(true), 4000);
+    toast(`${list.length} canais ativados: lendo agora…`); setTimeout(() => loadOfertas({ aplicar: true }), 5000);
   };
   document.addEventListener('click', async (e) => {
     if (e.target.id === 'ch-enable') return enable((S.channels?.suggested ?? []).map(c => c.canal));
     if (e.target.id === 'cfg-suggested') { $('#cfg-channels').value = (S.channels?.suggested ?? []).map(c => c.canal).join('\n'); return toast('Lista preenchida: toque em Salvar'); }
-    if (e.target.id === 'ch-read') { await fetch('/api/channels/read', { method: 'POST' }); toast('Lendo os canais…'); setTimeout(() => loadPromos(true), 5000); return; }
-    if (e.target.id === 'promo-more') return loadPromos();
-    const f = e.target.closest('[data-pfix]');
-    if (f) {
-      const p = promo.items.find(x => x.id === f.dataset.pfix);
-      if (p) openWatchDialog({ name: p.product.slice(0, 80), query: p.product.split(/\s+/).slice(0, 6).join(' '), refPrice: p.price, pin: null });
-    }
+    if (e.target.id === 'ch-read') { await fetch('/api/channels/read', { method: 'POST' }); toast('Lendo os canais…'); setTimeout(() => loadOfertas({ aplicar: true }), 6000); }
   });
 }
 
@@ -768,10 +707,18 @@ async function loadOfertas({ aplicar = false } = {}) {
     renderOfertasTab();
   } catch (e) { toast(e.message); } finally { of.loading = false; }
 }
+// Três seções: produto com preço baixo, cupom de desconto e oferta de desconto (src/post-oferta.js decide o tipo).
+const OF_TIPOS = [['produto', 'Produtos com preço baixo'], ['cupom', 'Cupons de desconto'], ['desconto', 'Ofertas de desconto']];
+const tipoDe = (o) => (o.tipo === 'cupom' ? 'cupom' : o.tipo === 'desconto' ? 'desconto' : 'produto');
 function renderOfertasTab() {
   const nomes = new Set((S?.items ?? []).map(it => it.name.toLowerCase()));
   const fixados = new Set(of.items.filter(o => o.titulo && nomes.has(o.titulo.slice(0, 80).toLowerCase())).map(o => o.id));
-  $('#ofertas-root').innerHTML = renderOfertas(of.items, { brl, now: Date.now(), filtros: of.filtros, ordem: of.filtros.ordem, categorias: of.categorias, lojas: of.lojas,
+  const visiveis = of.items.filter(o => o.tech || of.filtros.outros);
+  const conta = (t) => visiveis.filter(o => tipoDe(o) === t).length;
+  const barra = `<div class="seg of-tipos" role="tablist" aria-label="Tipo de oferta">${OF_TIPOS.map(([t, nome]) =>
+    `<button type="button" role="tab" data-otipo="${t}" aria-selected="${of.tipo === t}" class="${of.tipo === t ? 'on' : ''}">${nome} <span class="count">${conta(t)}</span></button>`).join('')}</div>`;
+  const lista = of.items.filter(o => tipoDe(o) === of.tipo);
+  $('#ofertas-root').innerHTML = barra + renderOfertas(lista, { brl, now: Date.now(), filtros: of.filtros, ordem: of.filtros.ordem, categorias: of.categorias, lojas: of.lojas,
     lojaNome: (id) => store(id).name, lojaCor: (id) => store(id).color, fixados, novas: of.pendentes.length });
 }
 function ofertasMudaram() {
@@ -787,6 +734,8 @@ $('#ofertas-root').addEventListener('change', (e) => {
 $('#ofertas-root').addEventListener('submit', (e) => { if (e.target.closest('[data-ofiltros]')) e.preventDefault(); });
 $('#ofertas-root').addEventListener('click', async (e) => {
   const t = (s) => e.target.closest(s);
+  const tp = t('[data-otipo]');
+  if (tp) { of.tipo = tp.dataset.otipo; lset('ofTipo', of.tipo); return renderOfertasTab(); }
   if (t('[data-onovas]')) { await loadOfertas({ aplicar: true }); $('#tab-ofertas').scrollIntoView({ behavior: 'smooth' }); return; }
   if (t('[data-omostrar-outros]')) { of.filtros = { ...of.filtros, outros: true }; return renderOfertasTab(); }
   const cp = t('[data-ocopiar]');

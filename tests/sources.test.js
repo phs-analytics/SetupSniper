@@ -135,29 +135,6 @@ test('Awin: sem credenciais, não chama a rede', async (t) => {
   await assert.rejects(awin.search('ssd', 1, { fetchImpl: async () => { throw new Error('não devia chamar'); } }), /falta AWIN_TOKEN, AWIN_PUBLISHER_ID/);
 });
 
-test('Awin Offers API: promoções e cupons divulgados, sempre como não verificados', async (t) => {
-  cleanEnv(t, { AWIN_TOKEN: 'T', AWIN_PUBLISHER_ID: '999999' });
-  resetLimiters();
-  const c = clock();
-  let body;
-  const fetchImpl = async (url, opts) => {
-    assert.equal(url, 'https://api.awin.com/publisher/999999/promotions');
-    assert.equal(opts.method, 'POST');
-    body = JSON.parse(opts.body);
-    return json(fx('awin-ofertas.json'));
-  };
-  const ofs = await awin.offers({ advertiserId: 17729, fetchImpl, now: c.now, sleep: c.sleep });
-  assert.deepEqual(body.filters.advertiserIds, [17729]);
-  assert.equal(body.filters.membership, 'joined');
-  assert.equal(ofs.length, 2);
-  assert.equal(ofs[0].codigo, 'SSD10');
-  assert.equal(ofs[0].url, 'https://www.kabum.com.br/hardware/ssd-2-5');
-  assert.match(ofs[0].affiliateUrl, /awin1\.com/);
-  assert.equal(ofs[0].verificado, false);
-  assert.equal(ofs[0].fonte, 'Awin Offers API');
-  assert.equal(ofs[1].codigo, null);
-});
-
 // ---------------- Lomadee (Terabyte) ----------------
 test('Lomadee: busca com x-api-key, preço em centavos, só produtos da Terabyte', async (t) => {
   cleanEnv(t, { LOMADEE_API_KEY: 'LMDKEY' });

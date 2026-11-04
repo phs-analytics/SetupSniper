@@ -286,76 +286,9 @@ verificado** até o usuário confirmar. Isso é exatamente o "preço calculado" 
 
 ---
 
-## 7. Cupons oficiais das redes de afiliados
+## 7. Cupons das redes de afiliados (retirados)
 
-Atualizado em **04/11/2026**. A aba Cupons junta duas origens, com rótulos diferentes:
-
-| Origem | De onde vem | Rótulo |
-|---|---|---|
-| **Oficial** | a loja publicou na rede de afiliados (Awin, Lomadee) em que a sua conta foi aprovada | "Oficial — enviado pela loja via Awin, válido até 10/11" |
-| **Divulgado** | post de canal do Telegram, post encaminhado ao bot, post colado ou cadastro manual | "Divulgado por @canal em 04/11, não verificado" |
-
-Os dois começam **não verificados**. Só o seu ✅ Funcionou muda isso ("· ✅ funcionou para você"). O ❌ Não
-funcionou manda o cupom para o histórico.
-
-### Como funciona
-
-- **`src/coupon-feed.js`** consulta as redes a cada **6 horas** (`intervaloHoras` em `data/coupon-sources.json`,
-  com fonte e data). A hora da última consulta fica no arquivo, então reiniciar o servidor não gera consultas extras.
-- **Awin Offers API** (KaBuM!): `POST https://api.awin.com/publisher/{publisherId}/promotions`, com
-  `membership: "joined"` (só os programas em que você foi aceito; nos outros o código vem nulo) e duas consultas:
-  `active` (vigentes, incluindo os que vencem em 7 dias) e `upcoming` (ainda não começaram). As datas vêm em UTC.
-  Fonte: https://help.awin.com/apidocs/promotions (aberta em 04/11/2026). Promoção sem código aparece como
-  "Promoção" e **nunca** entra no total (o desconto já está no preço da página).
-- **Lomadee** (Terabyte): o endpoint de cupons **existe** na API atual, como "campanhas":
-  `GET https://api.lomadee.com.br/affiliate/campaigns?types=GenericCoupon,PersonalCoupon&status=onTime,scheduled`,
-  com a chave no cabeçalho `x-api-key` e o escopo **`campaigns:read`** (crie a chave com esse escopo, além de
-  `products:read`). Máximo de 20 por página. Não existem mais `/affiliate/coupons` nem `/affiliate/offers`.
-  Fontes: https://docs.lomadee.com.br/api-reference/affiliate/campaigns/all,
-  https://docs.lomadee.com.br/api-reference/api-keys e https://docs.lomadee.com.br/api-reference/changelog
-  (abertas em 04/11/2026).
-- **Shopee e AliExpress: desligadas**, com o motivo em `data/coupon-sources.json`. A Shopee Affiliate Open API
-  integrada (`productOfferV2`, `shopOfferV2`) devolve preço, comissão e link, não códigos; o explorador do
-  GraphQL exige login e o esquema não pôde ser lido. A consulta do AliExpress (`aliexpress.affiliate.product.query`)
-  não traz códigos na documentação conferida; o campo `promo_code_info` só aparece em relatos de terceiros.
-  **[não verificado]**: fica para quando houver credenciais reais para testar.
-
-### Normalização
-
-As redes mandam o desconto só em texto ("10% OFF em SSDs", "limitado a R$ 50", "acima de R$ 300").
-`ruleFromText()` lê esse texto e monta a regra no formato de `src/discounts.js`, em **centavos inteiros**:
-percentual com teto, valor fixo com mínimo, frete grátis, forma de pagamento (só Pix ou só cartão), primeira
-compra, assinantes e só no app. "Até R$ 80 de desconto" depois de um percentual é o **teto**, não um cupom de
-R$ 80. Parcela ("12x de R$ 100") e cashback não viram cupom.
-
-Cada cupom oficial guarda: `origem: 'oficial'`, `rede`, `store` (loja), `codes`, a regra (`type`, `value`,
-`maxDiscount`, `minOrder`, `appliesTo`, `conditions`), a validade (`startsAt`, `expiresAt`), `divulgadoEm` (data em
-que a rede publicou; sem ela, a hora da leitura), `lidoEm`, `pageUrl` (URL limpa), `affiliateUrl` (separado) e
-`verificado: false`.
-
-Quando o texto diz "selecionados" ou o link aponta para uma categoria (ex.: `/hardware/ssd-2-5`), o cupom ganha
-a condição `selected_items`: ele aparece na lista, mas **não entra sozinho** no total, porque não dá para saber
-se vale para o produto. Cupom futuro também não entra até começar.
-
-### Duplicados, vencidos e o total
-
-- **Duplicados:** loja + código. Se o mesmo código vier de uma rede e de um canal, fica o rótulo oficial, com a
-  nota de que também foi divulgado; o ✅ dado ao divulgado passa para o oficial (`mergeCoupons`).
-- **Vencidos:** saem da lista ativa e vão para o histórico de cupons (`splitActive`), com o motivo ("venceu",
-  "marcado como não funcionou" ou "saiu da rede"). O histórico guarda 30 dias (`historicoDias`).
-- **Nunca aplicar:** o SetupSniper não testa, não gera e não aplica cupom. Na interface só há Copiar, ✅ e ❌.
-  O total continua usando **um cupom por pedido** (`stacking: 1`), o de maior desconto entre os que valem.
-- **Arquivo:** `data/coupons-feed.json` (dados do usuário, fora do git).
-
-### [não verificado ao vivo]
-
-Sem contas Awin e Lomadee no ambiente de desenvolvimento, tudo foi testado com fixtures
-(`tests/fixtures/awin-cupons-*.json` e `tests/fixtures/lomadee-cupons.json`). Não conferidos: o envelope real da
-resposta das duas APIs; se a KaBuM! publica códigos na Awin para afiliados pessoa física; se a Terabyte publica
-cupons na Lomadee; se o `url` das campanhas da Lomadee é o da loja ou um link rastreado; a leitura da regra em
-textos reais (o rótulo "regra não informada (leia as condições)" aparece quando o texto não é entendido).
-
----
+Na versão 3.0 o SetupSniper chegou a ler cupons pela Awin e pela Lomadee. A partir da 3.1.0, **os cupons vêm só dos canais e grupos do Telegram** (e dos cadastrados à mão): eles aparecem como "divulgado por @canal em data, não verificado", e o SetupSniper continua sem testar, gerar ou aplicar cupons. As credenciais da Awin e da Lomadee seguem servindo só para a **busca de produtos** (`docs/fontes-oficiais.md`).
 
 ## 8. O que não foi possível confirmar
 

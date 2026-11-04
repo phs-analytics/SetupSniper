@@ -38,7 +38,7 @@ Depois de proteger o arquivo (Linux, macOS, Termux), deixe só você ler: `chmod
 | `ML_CLIENT_ID`, `ML_CLIENT_SECRET`, `ML_REDIRECT_URI` | API oficial do **Mercado Livre** (grátis) | [passo a passo](fontes-oficiais.md#mercado-livre-api-oficial-grátis-recomendado) |
 | `SHOPEE_AFFILIATE_APP_ID`, `SHOPEE_AFFILIATE_SECRET` | API de afiliados da **Shopee** | [passo a passo](fontes-oficiais.md#shopee-shopee-affiliate-open-api) |
 | `ALIEXPRESS_APP_KEY`, `ALIEXPRESS_APP_SECRET` | API de afiliados do **AliExpress** | [passo a passo](fontes-oficiais.md#aliexpress-aliexpress-affiliate-api) |
-| `AWIN_TOKEN`, `AWIN_PUBLISHER_ID` | feed de produtos e cupons oficiais da **KaBuM!** pela Awin | [passo a passo](fontes-oficiais.md#kabum-feed-de-produtos-da-awin) |
+| `AWIN_TOKEN`, `AWIN_PUBLISHER_ID` | feed de produtos da **KaBuM!** pela Awin | [passo a passo](fontes-oficiais.md#kabum-feed-de-produtos-da-awin) |
 | `LOMADEE_API_KEY` | produtos da **Terabyte** pela Lomadee | [passo a passo](fontes-oficiais.md#terabyte-busca-de-produtos-da-lomadee) |
 | `AMAZON_CREATORS_CLIENT_ID`, `AMAZON_CREATORS_CLIENT_SECRET`, `AMAZON_PARTNER_TAG` | Creators API da **Amazon** (exige vendas como associado) | [passo a passo](fontes-oficiais.md#amazon-creators-api) |
 | `KEEPA_API_KEY` | histórico de preços da Amazon pelo Keepa (pago, opcional) | [historico.md](historico.md) |

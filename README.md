@@ -29,8 +29,8 @@ Roda num **servidor próprio**, do jeito que você preferir: o seu PC, um mini P
 | 🛡️ **Nota de confiança** | De 0 a 100 por oferta: junta a nota da loja (Reclame Aqui, avaliação, vendas, reviews), os **sinais de risco do vendedor** e os da própria oferta, com motivos e nível de confiança. É uma estimativa do projeto, não uma certificação. |
 | 🧹 **Filtro de lixo** | Descarta acessórios e marca como **suspeito** o preço bom demais para ser verdade. |
 | 💳 **Total Pix e Total Crédito** | Cada oferta mostra os dois totais finais, com cupom, frete e, nos importados de Amazon, AliExpress e Shopee, imposto de importação e ICMS da sua UF. |
-| 🛒 **Ofertas de tecnologia** | Uma lista só com ofertas de tecnologia vindas do Telegram, dos cupons oficiais e das páginas que você abre, com o preço final estimado com cupom e o histórico de cada produto. |
-| 📣 **Canais de promoção** | Lê os canais públicos de promoções e cupons do Telegram (26 sugeridos), mostra tudo num feed com scroll infinito e avisa quando um post bate com um produto fixado. |
+| 🛒 **Ofertas de tecnologia** | Uma lista só com ofertas de tecnologia vindas dos canais e grupos do Telegram e das páginas que você abre, separada em **produtos com preço baixo**, **cupons de desconto** e **ofertas de desconto**, com o preço final estimado com cupom e o histórico de cada produto. |
+| 📣 **Canais e grupos do Telegram** | Lê os canais públicos de promoções e cupons (26 sugeridos) e os grupos onde o bot está. Cada post vira uma oferta na aba Ofertas, com o nome e o preço do produto, e o bot avisa quando um post bate com um produto fixado. |
 | 🎟️ **Cupons** | Encaminhe ao bot um post de promoção: ele resolve o link, lê o preço na loja, salva o cupom e calcula os totais. |
 | 📌 **Fixar produtos** | Fixe uma oferta com **meta de preço**. O servidor confere de tempos em tempos e guarda o histórico. |
 | 🔔 **Alertas no Telegram** | Avisa quando o preço atinge a meta ou cai abaixo da média. Também dá para fixar produtos pelo próprio bot. |

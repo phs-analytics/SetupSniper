@@ -1,15 +1,24 @@
 # Aba Ofertas
 
-A aba Ofertas mostra **uma linha por oferta de tecnologia**: nome do produto, preço anunciado, loja, cupom (se houver) e preço final estimado com o cupom. As ofertas chegam sozinhas dos canais e grupos do Telegram, dos cupons oficiais das redes de afiliados, das APIs das lojas e da extensão do navegador.
+A aba Ofertas mostra **uma linha por oferta de tecnologia**: nome do produto, preço anunciado, loja, cupom (se houver) e preço final estimado com o cupom. As ofertas chegam sozinhas dos canais e grupos do Telegram, dos posts encaminhados ao bot e da extensão do navegador.
 
-A aba 📣 Promoções continua como o feed bruto dos canais. A aba Ofertas é a versão filtrada e organizada.
+A antiga aba 📣 Promoções foi juntada aqui: a situação de cada canal, "Ativar os canais sugeridos" e "Ler agora" ficam no topo da aba Ofertas.
+
+## Três seções
+
+| Seção | O que é | Exemplo de post |
+|---|---|---|
+| **Produtos com preço baixo** | um produto com preço | "Monitor Gamer AOC 25" 310Hz · Valor: R$ 949,99 no Pix · Cupom: BF20OFF" |
+| **Cupons de desconto** | um código (ou um cupom para resgatar) sem produto específico | "Novo Cupom KABUM · 15% OFF em Memórias RAM selecionadas · Código: DRAMOFF15" |
+| **Ofertas de desconto** | um desconto anunciado pela loja, sem código | "Semana do Hardware na Pichau: até 30% OFF em placas de vídeo" |
+
+O tipo é decidido por `src/post-oferta.js`, testado com posts reais de canais (`tests/fixtures/ofertas-posts-reais.json`).
 
 ## De onde vêm as ofertas
 
 | Origem | Função | O que entra |
 |---|---|---|
 | Canais, grupos e posts encaminhados ao bot | `fromPost(text, meta, deps)` | todo post com link de loja do escopo ou link encurtado |
-| Cupons oficiais (Awin, Lomadee) | `fromCoupon(c)` | cupons com código; promoção sem código não vira card |
 | APIs das lojas | `fromApiItem(offer)` | só itens com desconto (preço "de" maior que o preço) |
 | Extensão e favorito | `fromCapture(offer)` | as páginas que **você** abriu no seu navegador |
 
@@ -17,7 +26,10 @@ Tudo vira o mesmo formato, com dinheiro em centavos (veja o topo de `src/offers.
 
 ## Como um post é lido
 
-- **Nome, preço e preço "de"**: `src/promo-parser.js`, mais "de R$ X por R$ Y", "(de R$ X)", "349 reais" e "💰 189,90".
+- **Nome do produto**: `src/post-oferta.js` pula as chamadas do canal ("ESSA É SUCESSO NA FARIA LIMA", "🚨 Novo Cupom KABUM", "Exclusivo prime"), os avisos ("Só aviso de Cupom", "Mais grupos de ofertas", "Link para PC") e escolhe a linha com cara de produto (marca, modelo, capacidade).
+- **Preço e preço "de"**: com ou sem "R$" ("Por 98,60 à vista", "por 1.539 em 12x", "Valor: R$584,99 no PIX", "- R$128"), "de R$ X por R$ Y", "(de R$ X)", "349 reais" e "💰 189,90". O cifrão que o Telegram manda como `R&#036;` é convertido.
+- **Loja**: pelo link (inclusive `link.amazon`, `meli.la`, `ofertou.ai/…-Kabum` e `pcdofafa.com.br/p/kabum/…`) ou pelo texto ("Cupom KABUM", "AMAZON SOLTOU CUPOM"). Esses encurtadores nunca viram o link do botão "Ver na loja": o card mostra "Ver o post" até o link da loja ser conhecido. Se `link.amazon`, `ofertou.ai` e `pcdofafa.com.br` redirecionam por HTTP ou por HTML ainda não foi conferido \[não verificado\].
+- **Cupom no anúncio**: "Resgate o cupom do anúncio" aparece no card como aviso para ativar o cupom na página do produto.
 - **Forma de pagamento do preço**: Pix, à vista, parcelado (o total das parcelas, quando o post só traz "10x de R$ 99,90") ou cartão.
 - **Emojis no lugar de números**: "R$ 3️⃣4️⃣9️⃣" vira R$ 349, e dígitos em negrito ("𝟖𝟗") viram números. A numeração "1️⃣ 2️⃣ 3️⃣" de listas é tratada como marcador.
 - **Vários produtos num post**: um trecho por link de loja. O post só é dividido quando pelo menos dois trechos têm preço. Um cupom no fim do post ("Cupom para os dois: X") vale para todos, se forem da mesma loja.
@@ -39,7 +51,7 @@ O teste `tests/tech-filter.test.js` confere 50 títulos, metade de tecnologia e 
 ## Cupom e preço final
 
 - **Com cupom:** o preço final é **estimado** com `src/final-price.js`, usando **um cupom por pedido**. Se o post traz "X OU Y", os códigos são alternativas e não somam.
-- **Rótulo:** o cupom aparece como **"cupom oficial"** quando o mesmo código veio de uma rede de afiliados. Fora isso, aparece como **"cupom divulgado, não verificado"**, com "Divulgado por @canal em 04/11".
+- **Rótulo:** o cupom aparece como **"cupom divulgado, não verificado"**, com "Divulgado por @canal em 04/11". Os cupons vêm só dos canais e grupos do Telegram.
 - **Sem estimativa:** sem a regra do cupom, sem loja definida, abaixo do pedido mínimo ou com o cupom só no Pix num preço parcelado, o card diz **"não estimado"** e o motivo.
 - **Preço já com cupom:** se o post diz "preço com cupom", o preço do post é mostrado como está.
 - **Sem cupom:** o preço do post é mostrado como está.

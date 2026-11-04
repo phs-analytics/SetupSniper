@@ -50,13 +50,13 @@ Também dá para colar o post na aba **🎟️ Cupons** do site. O comando `/cup
 
 ### Canais públicos (opcional)
 
-Abra a aba **📣 Promoções** e toque em **Ativar os canais sugeridos**. A lista dos 26 canais fica em `data/telegram-channels.json` e pode ser editada na aba 🎟️ Cupons (até 40, um por linha).
+Abra a aba **🛒 Ofertas** e toque em **Ativar os canais sugeridos**. A lista dos 26 canais fica em `data/telegram-channels.json` e pode ser editada na aba 🎟️ Cupons (até 40, um por linha).
 
 - **Como lê:** pela prévia pública `https://t.me/s/<canal>`, sem login e sem conta do Telegram. Um canal de cada vez, com pausa entre eles.
 - **Com que frequência:** cada canal tem o seu intervalo (`intervaloMin` em `data/telegram-channels.json`): 5 min para os canais de promoções, que postam mais, e 30 min para os de cupons e de lojas. Canal adicionado por você começa em 30 min. Um canal que fica 24 h sem post novo passa a ser lido a cada 30 min e volta ao ritmo normal quando posta de novo. As regras ficam no bloco `agendamento` do mesmo arquivo, com fonte e data. A atividade de cada canal foi estimada pelo tipo, não medida [não verificado].
 - **Só o que é novo:** o SetupSniper guarda o número do último post visto em cada canal e só trata os posts depois dele.
 - **Quando a prévia falha:** a espera aumenta sozinha (10 min, 20, 40… até 6 h) e volta ao normal no primeiro acerto. Canal sem prévia pública espera 6 h entre as tentativas.
-- **O que guarda:** todo post com link de uma loja do escopo entra no feed da aba Promoções, com scroll infinito, filtro por loja e por produto. Com um produto no filtro, os mais baratos vêm primeiro.
+- **O que guarda:** todo post com link de uma loja do escopo vira uma oferta na aba **🛒 Ofertas**: produto com preço baixo, cupom de desconto ou oferta de desconto, com o nome e o preço do produto lidos do post.
 - **Cupons:** posts com cupom também passam pelo mesmo fluxo dos posts encaminhados (abre o link, lê o preço na loja e salva o cupom), no máximo 3 por canal a cada leitura.
 - **Aviso no Telegram:** se uma promoção bater com um produto fixado e ficar dentro da meta, o bot avisa. O aviso diz "divulgado por @canal, não verificado".
 - **Grupos não funcionam assim.** A prévia `t.me/s` só existe para **canais** públicos. Grupos e canais com a prévia desativada aparecem como "sem prévia pública" em "Situação de cada canal". Para eles, use o bot dentro do grupo (abaixo) ou encaminhe os posts ao seu bot.
@@ -110,7 +110,7 @@ O pedido fica só na memória do servidor: se ele reiniciar antes do toque, post
 - **Só o que parece oferta:** link de uma loja (ou encurtador de afiliado), ou preço junto de um link. Conversa, mesmo com um "R$" no meio, é descartada.
 - **Nada de quem postou:** o bot não guarda nome, @ nem id de quem escreveu, nem a assinatura do autor nos canais. Guarda só o título e o @ do grupo ou canal, e a hora do último post.
 - **Silêncio no grupo:** o bot nunca responde dentro do grupo ou do canal. Os comandos de dono (`/fixados`, `/buscar`…) só funcionam no chat privado, e `/start` num grupo não conecta nada.
-- Todo post aceito segue o mesmo caminho dos canais e dos encaminhados: leitura do post, aba de promoções, aviso ao vivo na página aberta e alerta se bater com um produto fixado.
+- Todo post aceito segue o mesmo caminho dos canais e dos encaminhados: leitura do post, aba Ofertas, aviso ao vivo na página aberta e alerta se bater com um produto fixado.
 
 ### Por que não há userbot
 

@@ -1,4 +1,4 @@
-// Awin (rede de afiliados), usada para a KaBuM!: feed de produtos do anunciante e Offers API.
+// Awin (rede de afiliados), usada para a KaBuM!: feed de produtos do anunciante.
 //
 // Credenciais (no .env do usuário): AWIN_TOKEN (token pessoal em https://ui.awin.com/awin-api) e
 // AWIN_PUBLISHER_ID (o número da sua conta de publisher). A conta precisa estar aprovada no programa da loja.
@@ -12,14 +12,12 @@
 //     (https://help.awin.com/apidocs/retail-publisher-productapidocumentation-1). O feed é o catálogo inteiro:
 //     é baixado uma vez, guardado em memória (cacheHoras em data/source-limits.json) e filtrado aqui.
 //     Se a última linha trouxer { error }, o download veio incompleto.
-//   - Offers API: POST https://api.awin.com/publisher/{publisherId}/promotions (https://help.awin.com/apidocs/promotions):
-//     promoções e cupons divulgados pelo anunciante. Só leitura: nada é testado nem aplicado.
 //   - Limites: 20 chamadas/min por usuário na API; no máximo 5/min para o download do feed.
 //
 // [não verificado ao vivo] Sem conta Awin no ambiente de desenvolvimento: testado com fixtures
 // (tests/fixtures/awin-*.json*). Não conferidos: se a KaBuM publica o feed no formato Google (enhanced) e com
 // locale pt_BR; o nome do campo com o link rastreado no feed (aceitos: aw_deep_link, awin_deep_link,
-// tracking_url, deeplink); o envelope da resposta da Offers API (lista direta ou { data }); se a linha do feed
+// tracking_url, deeplink); se a linha do feed
 // vem plana ou em seções (product_basic, product_price...). O leitor aceita as duas formas.
 import { canonicalUrl } from '../offer.js';
 import { SOURCE_LIMITS } from '../rate-limit.js';
@@ -156,35 +154,3 @@ export async function search(query, page = 1, opts = {}) {
   return found.slice((page - 1) * o.pageSize, page * o.pageSize).map(toOffer);
 }
 
-// Offers API: promoções e cupons divulgados pelo anunciante. Sempre "não verificado": o SetupSniper
-// nunca testa, gera nem aplica cupom.
-// opts.status: 'active' (padrão), 'expiringSoon' (vencem em 7 dias) ou 'upcoming' (ainda não começaram).
-// As datas vêm em UTC sem "Z" (ex.: 2026-11-10T23:59:59.000); src/coupon-feed.js converte.
-export async function offers(opts = {}) {
-  if (!configured()) throw new Error(`${NOME}: falta ${missing().join(', ')} no .env`);
-  const o = { ...DEFAULTS, fetchImpl: fetch, ...opts };
-  const advertiserId = await findAdvertiser(o);
-  const pid = env('AWIN_PUBLISHER_ID');
-  const body = { filters: { advertiserIds: [advertiserId], membership: 'joined', regionCodes: ['BR'], status: ['active', 'expiringSoon', 'upcoming'].includes(o.status) ? o.status : 'active', type: 'all' }, pagination: { page: 1, pageSize: 200 } };
-  const res = await callApi(`https://api.awin.com/publisher/${encodeURIComponent(pid)}/promotions`,
-    { ...o, nome: NOME, limits: ['awin'], hint: HINT, method: 'POST', body: JSON.stringify(body), headers: { ...auth(), 'Content-Type': 'application/json' } });
-  const j = await readJson(res, NOME);
-  const list = Array.isArray(j) ? j : (j?.data ?? j?.promotions ?? []);
-  return list.map(p => ({
-    id: p.promotionId ?? null,
-    tipo: p.type === 'voucher' ? 'cupom' : 'promocao',
-    titulo: p.title ?? null,
-    descricao: p.description ?? null,
-    termos: p.terms ?? null,
-    inicio: p.startDate ?? null,
-    fim: p.endDate ?? null,
-    url: p.url ? canonicalUrl(p.url) : null,
-    affiliateUrl: typeof p.urlTracking === 'string' && /^https:\/\//.test(p.urlTracking) ? p.urlTracking : null,
-    codigo: p.voucher?.code ?? null,
-    exclusivo: p.voucher?.exclusive === true,
-    adicionadoEm: p.dateAdded ?? null,
-    loja: p.advertiser?.name ?? null,
-    fonte: 'Awin Offers API',
-    verificado: false,
-  }));
-}

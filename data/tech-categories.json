@@ -1,6 +1,6 @@
 {
   "_ajuda": "Filtro de tecnologia da aba Ofertas (src/tech-filter.js) e prazos das ofertas (src/offers.js). Termos comparados com o título normalizado (minúsculas, sem acento, só letras e números: 'Placa-Mãe' vira 'placa mae', 'M.2' vira 'm 2'). Guia: docs/ofertas.md.",
-  "_fonte": "Decisão do projeto (SetupSniper 3.0), definida em 04/11/2026. Categorias: hardware (CPU, GPU, placa-mãe, memória, SSD, fonte, gabinete, cooler), periféricos, monitores, notebooks e PCs, celulares e tablets, rede, áudio, consoles e jogos; as palavras vêm dos títulos das 8 lojas do escopo vistos nas fixtures do projeto. Não há norma externa: pesos e nota mínima são escolha do projeto.",
+  "_fonte": "Decisão do projeto (SetupSniper 3.0), definida em 04/11/2026. Categorias: hardware (CPU, GPU, placa-mãe, memória, SSD, fonte, gabinete, cooler), periféricos, monitores, notebooks e PCs, celulares e tablets, rede, áudio, consoles e jogos; as palavras vêm dos títulos das 8 lojas do escopo vistos nas fixtures do projeto. Não há norma externa: pesos e nota mínima são escolha do projeto. Atualizado na 3.1.0 (04/11/2026): cupons das 8 lojas acompanhadas em 'lojasDeTecnologia' e a lista 'cuponsForaDeTecnologia', porque os cupons passaram a vir só do Telegram; Starlink, impressora 3D e Smart TV entraram nas categorias depois de conferir posts reais.",
   "_data": "2026-11-04",
   "pesos": {
     "forte": 60,
@@ -13,95 +13,533 @@
   "_notaMinimaExplica": "Abaixo de notaMinima o título vai para 'Outros' (escondido na aba Ofertas, com um botão para mostrar).",
   "acertoMinimo": 0.95,
   "_acertoMinimoExplica": "Acerto mínimo combinado para o conjunto de títulos de teste (tests/fixtures/ofertas-titulos.json, metade tecnologia e metade não). O teste falha abaixo disso.",
-  "lojasDeTecnologia": ["kabum", "pichau", "terabyte"],
-  "_lojasExplica": "Cupom de loja inteira (sem produto) dessas lojas conta como tecnologia, na categoria 'cupons'. Nas demais lojas, o cupom só entra se o texto dele for de tecnologia.",
+  "lojasDeTecnologia": [
+    "kabum",
+    "pichau",
+    "terabyte",
+    "amazon",
+    "mercadolivre",
+    "magalu",
+    "shopee",
+    "aliexpress"
+  ],
+  "_lojasExplica": "Cupom de loja inteira (sem produto) das 8 lojas acompanhadas conta como tecnologia, na categoria 'cupons': os cupons vêm só dos canais e grupos do Telegram, e o usuário quer ver todos os das lojas que acompanha.",
   "acessorios": {
-    "palavras": ["capa", "capinha", "pelicula", "adesivo", "protetor", "caixa vazia", "suporte", "bracket", "skin", "case para", "bolsa"],
+    "palavras": [
+      "capa",
+      "capinha",
+      "pelicula",
+      "adesivo",
+      "protetor",
+      "caixa vazia",
+      "suporte",
+      "bracket",
+      "skin",
+      "case para",
+      "bolsa"
+    ],
     "penalidade": 60,
     "_explica": "Reaproveita isAccessory() de src/extract.js com esta lista: acessório quando a palavra abre o título ou vem seguida de 'para' ('Capa para iPhone'). Mencionar no meio não conta. 'Cooler' e 'gabinete' ficam de fora porque aqui são categorias."
   },
   "negativasGerais": [
-    "camiseta", "camisa", "blusa", "moletom", "jaqueta", "tenis", "chinelo", "sandalia", "cueca", "cuecas", "calca", "vestido", "bermuda", "meia", "perfume", "maquiagem", "shampoo",
-    "fralda", "racao", "panela", "panelas", "caneca", "copo", "garrafa", "funko", "pelucia", "brinquedo", "boneca", "lego", "livro", "whey", "suplemento", "creatina",
-    "bicicleta", "air fryer", "fritadeira", "cafeteira", "liquidificador", "geladeira", "fogao", "micro ondas", "maquina de lavar", "aspirador", "ventilador de mesa",
-    "sofa", "colchao", "travesseiro", "toalha", "lencol", "mochila", "ferramentas", "furadeira", "parafusadeira", "chocolate", "cerveja", "vinho", "cafe", "tabuleiro"
+    "camiseta",
+    "camisa",
+    "blusa",
+    "moletom",
+    "jaqueta",
+    "tenis",
+    "chinelo",
+    "sandalia",
+    "cueca",
+    "cuecas",
+    "calca",
+    "vestido",
+    "bermuda",
+    "meia",
+    "perfume",
+    "maquiagem",
+    "shampoo",
+    "fralda",
+    "racao",
+    "panela",
+    "panelas",
+    "caneca",
+    "copo",
+    "garrafa",
+    "funko",
+    "pelucia",
+    "brinquedo",
+    "boneca",
+    "lego",
+    "livro",
+    "whey",
+    "suplemento",
+    "creatina",
+    "bicicleta",
+    "air fryer",
+    "fritadeira",
+    "cafeteira",
+    "liquidificador",
+    "geladeira",
+    "fogao",
+    "micro ondas",
+    "maquina de lavar",
+    "aspirador",
+    "ventilador de mesa",
+    "sofa",
+    "colchao",
+    "travesseiro",
+    "toalha",
+    "lencol",
+    "mochila",
+    "ferramentas",
+    "furadeira",
+    "parafusadeira",
+    "chocolate",
+    "cerveja",
+    "vinho",
+    "cafe",
+    "tabuleiro"
   ],
   "categorias": [
-    { "id": "cpu", "grupo": "hardware", "nome": "Processador",
-      "fortes": ["processador", "ryzen", "threadripper", "athlon", "core ultra", "xeon", "celeron", "pentium"],
-      "fracas": ["am4", "am5", "lga1700", "lga1851", "nucleos", "threads"],
-      "padroes": ["\\bi[3579] ?\\d{4,5}[a-z]{0,2}\\b", "\\b\\d{4}x3d\\b"],
-      "negativas": ["notebook", "laptop", "mini pc", "pc gamer", "computador", "desktop", "cooler para", "para processador", "water cooler", "placa mae", "kit upgrade"] },
-    { "id": "gpu", "grupo": "hardware", "nome": "Placa de vídeo",
-      "fortes": ["placa de video", "geforce", "radeon", "intel arc"],
-      "fracas": ["gddr6", "gddr6x", "gddr7"],
-      "padroes": ["\\b(rtx|gtx) ?\\d{4}\\b", "\\brx ?\\d{4}\\b"],
-      "negativas": ["notebook", "laptop", "pc gamer", "computador", "suporte"] },
-    { "id": "placa-mae", "grupo": "hardware", "nome": "Placa-mãe",
-      "fortes": ["placa mae", "motherboard"],
-      "fracas": ["chipset"],
-      "padroes": ["\\b[abhxz]\\d{3}m?\\b"],
-      "negativas": ["notebook", "kit upgrade"] },
-    { "id": "memoria", "grupo": "hardware", "nome": "Memória RAM",
-      "fortes": ["memoria ram", "memoria"],
-      "fracas": ["sodimm", "dimm", "cl16", "cl30", "cl36"],
-      "padroes": ["\\bddr[345]\\b"],
-      "negativas": ["notebook", "laptop", "pc gamer", "computador", "mini pc", "cartao de memoria", "placa de video"] },
-    { "id": "armazenamento", "grupo": "hardware", "nome": "SSD e armazenamento",
-      "fortes": ["ssd", "nvme", "hd externo", "hd interno", "disco rigido", "pendrive", "pen drive", "cartao de memoria", "micro sd", "microsd"],
-      "fracas": ["sata", "m 2"],
+    {
+      "id": "cpu",
+      "grupo": "hardware",
+      "nome": "Processador",
+      "fortes": [
+        "processador",
+        "ryzen",
+        "threadripper",
+        "athlon",
+        "core ultra",
+        "xeon",
+        "celeron",
+        "pentium"
+      ],
+      "fracas": [
+        "am4",
+        "am5",
+        "lga1700",
+        "lga1851",
+        "nucleos",
+        "threads"
+      ],
+      "padroes": [
+        "\\bi[3579] ?\\d{4,5}[a-z]{0,2}\\b",
+        "\\b\\d{4}x3d\\b"
+      ],
+      "negativas": [
+        "notebook",
+        "laptop",
+        "mini pc",
+        "pc gamer",
+        "computador",
+        "desktop",
+        "cooler para",
+        "para processador",
+        "water cooler",
+        "placa mae",
+        "kit upgrade"
+      ]
+    },
+    {
+      "id": "gpu",
+      "grupo": "hardware",
+      "nome": "Placa de vídeo",
+      "fortes": [
+        "placa de video",
+        "geforce",
+        "radeon",
+        "intel arc"
+      ],
+      "fracas": [
+        "gddr6",
+        "gddr6x",
+        "gddr7"
+      ],
+      "padroes": [
+        "\\b(rtx|gtx) ?\\d{4}\\b",
+        "\\brx ?\\d{4}\\b"
+      ],
+      "negativas": [
+        "notebook",
+        "laptop",
+        "pc gamer",
+        "computador",
+        "suporte"
+      ]
+    },
+    {
+      "id": "placa-mae",
+      "grupo": "hardware",
+      "nome": "Placa-mãe",
+      "fortes": [
+        "placa mae",
+        "motherboard"
+      ],
+      "fracas": [
+        "chipset"
+      ],
+      "padroes": [
+        "\\b[abhxz]\\d{3}m?\\b"
+      ],
+      "negativas": [
+        "notebook",
+        "kit upgrade"
+      ]
+    },
+    {
+      "id": "memoria",
+      "grupo": "hardware",
+      "nome": "Memória RAM",
+      "fortes": [
+        "memoria ram",
+        "memoria"
+      ],
+      "fracas": [
+        "sodimm",
+        "dimm",
+        "cl16",
+        "cl30",
+        "cl36"
+      ],
+      "padroes": [
+        "\\bddr[345]\\b"
+      ],
+      "negativas": [
+        "notebook",
+        "laptop",
+        "pc gamer",
+        "computador",
+        "mini pc",
+        "cartao de memoria",
+        "placa de video"
+      ]
+    },
+    {
+      "id": "armazenamento",
+      "grupo": "hardware",
+      "nome": "SSD e armazenamento",
+      "fortes": [
+        "ssd",
+        "nvme",
+        "hd externo",
+        "hd interno",
+        "disco rigido",
+        "pendrive",
+        "pen drive",
+        "cartao de memoria",
+        "micro sd",
+        "microsd"
+      ],
+      "fracas": [
+        "sata",
+        "m 2"
+      ],
       "padroes": [],
-      "negativas": ["notebook", "laptop", "pc gamer", "computador", "mini pc", "console", "playstation"] },
-    { "id": "fonte", "grupo": "hardware", "nome": "Fonte",
-      "fortes": ["fonte atx", "80 plus", "fonte de alimentacao", "fonte gamer", "fonte modular"],
-      "fracas": ["fonte", "modular", "pfc ativo"],
-      "padroes": ["\\bfonte\\b.*\\b\\d{3,4}w\\b"],
-      "negativas": ["notebook", "carregador"] },
-    { "id": "gabinete", "grupo": "hardware", "nome": "Gabinete",
-      "fortes": ["gabinete"],
-      "fracas": ["mid tower", "full tower", "vidro temperado"],
+      "negativas": [
+        "notebook",
+        "laptop",
+        "pc gamer",
+        "computador",
+        "mini pc",
+        "console",
+        "playstation"
+      ]
+    },
+    {
+      "id": "fonte",
+      "grupo": "hardware",
+      "nome": "Fonte",
+      "fortes": [
+        "fonte atx",
+        "80 plus",
+        "fonte de alimentacao",
+        "fonte gamer",
+        "fonte modular"
+      ],
+      "fracas": [
+        "fonte",
+        "modular",
+        "pfc ativo"
+      ],
+      "padroes": [
+        "\\bfonte\\b.*\\b\\d{3,4}w\\b"
+      ],
+      "negativas": [
+        "notebook",
+        "carregador"
+      ]
+    },
+    {
+      "id": "gabinete",
+      "grupo": "hardware",
+      "nome": "Gabinete",
+      "fortes": [
+        "gabinete"
+      ],
+      "fracas": [
+        "mid tower",
+        "full tower",
+        "vidro temperado"
+      ],
       "padroes": [],
-      "negativas": ["banheiro", "pia", "cozinha", "espelho"] },
-    { "id": "cooler", "grupo": "hardware", "nome": "Cooler",
-      "fortes": ["water cooler", "watercooler", "air cooler", "para processador", "cooler processador"],
-      "fracas": ["cooler", "fan", "ventoinha", "dissipador", "pasta termica", "argb"],
-      "padroes": ["\\b(120|140|240|280|360)mm\\b"],
-      "negativas": ["caixa termica", "bebida", "bebidas", "camping", "litros", "notebook"] },
-    { "id": "perifericos", "grupo": "perifericos", "nome": "Periféricos",
-      "fortes": ["mouse", "teclado", "webcam", "mesa digitalizadora", "mousepad", "mouse pad"],
-      "fracas": ["gamer", "mecanico", "sem fio", "wireless", "dpi", "switch red", "switch brown"],
+      "negativas": [
+        "banheiro",
+        "pia",
+        "cozinha",
+        "espelho"
+      ]
+    },
+    {
+      "id": "cooler",
+      "grupo": "hardware",
+      "nome": "Cooler",
+      "fortes": [
+        "water cooler",
+        "watercooler",
+        "air cooler",
+        "para processador",
+        "cooler processador"
+      ],
+      "fracas": [
+        "cooler",
+        "fan",
+        "ventoinha",
+        "dissipador",
+        "pasta termica",
+        "argb"
+      ],
+      "padroes": [
+        "\\b(120|140|240|280|360)mm\\b"
+      ],
+      "negativas": [
+        "caixa termica",
+        "bebida",
+        "bebidas",
+        "camping",
+        "litros",
+        "notebook"
+      ]
+    },
+    {
+      "id": "perifericos",
+      "grupo": "perifericos",
+      "nome": "Periféricos",
+      "fortes": [
+        "mouse",
+        "teclado",
+        "webcam",
+        "mesa digitalizadora",
+        "mousepad",
+        "mouse pad",
+        "impressora 3d",
+        "impressora",
+        "bambu lab"
+      ],
+      "fracas": [
+        "gamer",
+        "mecanico",
+        "sem fio",
+        "wireless",
+        "dpi",
+        "switch red",
+        "switch brown"
+      ],
       "padroes": [],
-      "negativas": ["musical", "piano", "sintetizador", "caneca"] },
-    { "id": "monitores", "grupo": "monitores", "nome": "Monitor",
-      "fortes": ["monitor", "ultragear", "odyssey"],
-      "fracas": ["ips", "qhd", "fhd", "4k", "ultrawide", "oled"],
-      "padroes": ["\\b\\d{2,3}hz\\b"],
-      "negativas": ["monitor cardiaco", "pressao arterial", "monitor de pressao", "baba eletronica", "monitor de bebe", "glicose", "suporte"] },
-    { "id": "notebooks-pcs", "grupo": "notebooks-pcs", "nome": "Notebook e PC",
-      "fortes": ["notebook", "laptop", "macbook", "chromebook", "ultrabook", "mini pc", "pc gamer", "computador", "all in one", "ideapad", "vivobook", "inspiron"],
-      "fracas": ["desktop"],
+      "negativas": [
+        "musical",
+        "piano",
+        "sintetizador",
+        "caneca"
+      ]
+    },
+    {
+      "id": "monitores",
+      "grupo": "monitores",
+      "nome": "Monitor e TV",
+      "fortes": [
+        "monitor",
+        "ultragear",
+        "odyssey",
+        "smart tv",
+        "qled",
+        "mini led"
+      ],
+      "fracas": [
+        "ips",
+        "qhd",
+        "fhd",
+        "4k",
+        "ultrawide",
+        "oled"
+      ],
+      "padroes": [
+        "\\b\\d{2,3}hz\\b"
+      ],
+      "negativas": [
+        "monitor cardiaco",
+        "pressao arterial",
+        "monitor de pressao",
+        "baba eletronica",
+        "monitor de bebe",
+        "glicose",
+        "suporte"
+      ]
+    },
+    {
+      "id": "notebooks-pcs",
+      "grupo": "notebooks-pcs",
+      "nome": "Notebook e PC",
+      "fortes": [
+        "notebook",
+        "laptop",
+        "macbook",
+        "chromebook",
+        "ultrabook",
+        "mini pc",
+        "pc gamer",
+        "computador",
+        "all in one",
+        "ideapad",
+        "vivobook",
+        "inspiron"
+      ],
+      "fracas": [
+        "desktop"
+      ],
       "padroes": [],
-      "negativas": ["suporte para notebook", "base para notebook", "cooler para notebook", "carregador", "bateria para"] },
-    { "id": "celulares-tablets", "grupo": "celulares-tablets", "nome": "Celular e tablet",
-      "fortes": ["smartphone", "celular", "iphone", "ipad", "tablet", "galaxy", "redmi", "xiaomi", "motorola", "moto g", "poco", "realme"],
-      "fracas": ["5g", "android"],
+      "negativas": [
+        "suporte para notebook",
+        "base para notebook",
+        "cooler para notebook",
+        "carregador",
+        "bateria para"
+      ]
+    },
+    {
+      "id": "celulares-tablets",
+      "grupo": "celulares-tablets",
+      "nome": "Celular e tablet",
+      "fortes": [
+        "smartphone",
+        "celular",
+        "iphone",
+        "ipad",
+        "tablet",
+        "galaxy",
+        "redmi",
+        "xiaomi",
+        "motorola",
+        "moto g",
+        "poco",
+        "realme"
+      ],
+      "fracas": [
+        "5g",
+        "android"
+      ],
       "padroes": [],
-      "negativas": ["galaxy buds", "carregador", "cabo", "smartwatch", "relogio"] },
-    { "id": "rede", "grupo": "rede", "nome": "Rede",
-      "fortes": ["roteador", "wi fi 6", "wi fi 7", "mesh", "switch de rede", "switch gigabit", "adaptador wi fi", "placa de rede", "repetidor", "access point", "modem"],
-      "fracas": ["wi fi", "gigabit", "dual band", "tp link", "tplink"],
+      "negativas": [
+        "galaxy buds",
+        "carregador",
+        "cabo",
+        "smartwatch",
+        "relogio"
+      ]
+    },
+    {
+      "id": "rede",
+      "grupo": "rede",
+      "nome": "Rede",
+      "fortes": [
+        "roteador",
+        "wi fi 6",
+        "wi fi 7",
+        "mesh",
+        "switch de rede",
+        "switch gigabit",
+        "adaptador wi fi",
+        "placa de rede",
+        "repetidor",
+        "access point",
+        "modem",
+        "starlink",
+        "internet via satelite",
+        "antena wi fi"
+      ],
+      "fracas": [
+        "wi fi",
+        "gigabit",
+        "dual band",
+        "tp link",
+        "tplink"
+      ],
       "padroes": [],
-      "negativas": [] },
-    { "id": "audio", "grupo": "audio", "nome": "Áudio",
-      "fortes": ["headset", "fone de ouvido", "fone", "caixa de som", "soundbar", "earbuds", "airpods", "microfone", "headphone", "tws", "galaxy buds"],
-      "fracas": ["bluetooth", "jbl", "anc"],
+      "negativas": []
+    },
+    {
+      "id": "audio",
+      "grupo": "audio",
+      "nome": "Áudio",
+      "fortes": [
+        "headset",
+        "fone de ouvido",
+        "fone",
+        "caixa de som",
+        "soundbar",
+        "earbuds",
+        "airpods",
+        "microfone",
+        "headphone",
+        "tws",
+        "galaxy buds"
+      ],
+      "fracas": [
+        "bluetooth",
+        "jbl",
+        "anc"
+      ],
       "padroes": [],
-      "negativas": ["suporte"] },
-    { "id": "consoles-jogos", "grupo": "consoles-jogos", "nome": "Console e jogo",
-      "fortes": ["playstation", "ps5", "ps4", "xbox", "nintendo switch", "steam deck", "rog ally", "console", "dualsense", "dualshock", "controle sem fio", "midia fisica", "game pass"],
-      "fracas": ["nintendo", "jogo", "game"],
+      "negativas": [
+        "suporte"
+      ]
+    },
+    {
+      "id": "consoles-jogos",
+      "grupo": "consoles-jogos",
+      "nome": "Console e jogo",
+      "fortes": [
+        "playstation",
+        "ps5",
+        "ps4",
+        "xbox",
+        "nintendo switch",
+        "steam deck",
+        "rog ally",
+        "console",
+        "dualsense",
+        "dualshock",
+        "controle sem fio",
+        "midia fisica",
+        "game pass"
+      ],
+      "fracas": [
+        "nintendo",
+        "jogo",
+        "game"
+      ],
       "padroes": [],
-      "negativas": ["jogo de panelas", "jogo de cama", "jogo de toalhas", "jogo de lencol", "jogo de copos", "jogo americano", "jogo de tabuleiro"] }
+      "negativas": [
+        "jogo de panelas",
+        "jogo de cama",
+        "jogo de toalhas",
+        "jogo de lencol",
+        "jogo de copos",
+        "jogo americano",
+        "jogo de tabuleiro"
+      ]
+    }
   ],
   "ofertas": {
     "janelaDuplicadaHoras": 24,
@@ -116,5 +554,40 @@
     "_suspeitoExplica": "Preço mais de 50% abaixo da mediana de 90 dias do histórico é marcado 'suspeito' (bom demais para ser verdade) e vai para o fim.",
     "fonte": "Decisão do projeto (SetupSniper 3.0): duplicadas em 24 h, validade de 24 h, guardar por 7 dias.",
     "data": "2026-11-04"
-  }
+  },
+  "cuponsForaDeTecnologia": [
+    "moda",
+    "roupa",
+    "roupas",
+    "calcado",
+    "calcados",
+    "tenis",
+    "beleza",
+    "perfume",
+    "perfumaria",
+    "maquiagem",
+    "casa",
+    "cozinha",
+    "mercado",
+    "supermercado",
+    "pet",
+    "brinquedo",
+    "brinquedos",
+    "livro",
+    "livros",
+    "farmacia",
+    "cervejeira",
+    "eletroportatil",
+    "eletroportateis",
+    "fitness",
+    "esporte",
+    "esportes",
+    "moveis",
+    "decoracao",
+    "bebe",
+    "infantil",
+    "alimentos",
+    "bebidas"
+  ],
+  "_cuponsForaExplica": "Cupom de loja cujo texto cita um destes assuntos (sem acento, em minúsculas) fica em 'fora de tecnologia', mesmo nas lojas acompanhadas."
 }

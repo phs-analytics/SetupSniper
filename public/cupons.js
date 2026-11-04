@@ -1,10 +1,8 @@
 // Rótulos e cartões da aba Cupons: funções puras que devolvem texto ou HTML (sem DOM, sem rede).
-// Usado pela interface (public/app.js) e pelo servidor (src/coupon-feed.js reexporta couponLabel e regraTexto).
-// Testado em tests/coupon-feed.test.js.
+// Usado pela interface (public/app.js), pelo servidor (endpoint da extensão) e por src/offers.js.
 //
-// Duas origens, com rótulos diferentes (docs/cupons.md, "Cupons oficiais"):
-//   oficial   → "Oficial — enviado pela loja via Awin, válido até 10/11"
-//   divulgado → "Divulgado por @canal em 04/11, não verificado"
+// Os cupons vêm dos canais e grupos do Telegram (e dos cadastrados à mão):
+//   "Divulgado por @canal em 04/11, não verificado"
 // Nenhum botão aplica cupom: só Copiar, ✅ Funcionou e ❌ Não funcionou. Quem digita o código é o usuário.
 
 export const TZ = 'America/Sao_Paulo';

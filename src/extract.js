@@ -188,8 +188,10 @@ export function pricesFromText(html) {
   return { pix, card, installments };
 }
 
+// Entidades numéricas também: o Telegram escreve o cifrão como "R&#036;".
+const fromCode = (n) => { try { return n > 0 && n <= 0x10FFFF ? String.fromCodePoint(n) : ''; } catch { return ''; } };
 export function decode(s) {
-  return String(s).replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;|&#x27;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
+  return String(s).replace(/&#(\d{1,7});/g, (_, n) => fromCode(Number(n))).replace(/&#x([0-9a-f]{1,6});/gi, (_, h) => fromCode(parseInt(h, 16))).replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;|&#x27;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
 // ---------- relevância e limpeza ----------

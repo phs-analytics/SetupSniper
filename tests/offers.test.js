@@ -5,7 +5,7 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import {
-  fromPost, fromCoupon, fromApiItem, fromCapture, normalizarTexto, dividirPost, precosDe, estimarPrecoFinal,
+  fromPost, fromApiItem, fromCapture, normalizarTexto, dividirPost, precosDe, estimarPrecoFinal,
   chaveDuplicada, estadoOferta, enrichOffer, ordenarOfertas, createOffersStore,
 } from '../src/offers.js';
 import { normalizeOffer } from '../src/offer.js';
@@ -78,40 +78,16 @@ test('lojas fora das ativas e TikTok Shop ficam de fora', async () => {
   assert.equal((await fromPost('Fone TWS\nR$ 50\nhttps://www.tiktok.com/view/product/1', meta())).length, 0);
 });
 
-test('cupom do post que também é oficial ganha o rótulo "cupom oficial" e a regra da rede', async () => {
-  const oficiais = [{ origem: 'oficial', store: 'kabum', codes: ['TECH10'], type: 'percent', value: 10, maxDiscount: 5000, rede: 'Awin', expiresAt: '2026-11-10T23:59:59.000Z' }];
-  const [o] = await fromPost('SSD Kingston NV3 1TB\nR$ 400 no Pix\nCupom: TECH10\nhttps://www.kabum.com.br/produto/1', meta(), { cupons: oficiais });
-  assert.equal(o.cupom.origem, 'oficial');
-  assert.equal(o.cupom.rotulo, 'cupom oficial');
-  assert.match(o.cupom.detalhe, /Oficial — enviado pela loja via Awin/);
-  assert.equal(o.precoFinal, 36000);
-  const [d] = await fromPost('SSD Kingston NV3 1TB\nR$ 400 no Pix\nCupom: OUTRO10 (10% OFF)\nhttps://www.kabum.com.br/produto/1', meta(), { cupons: oficiais });
-  assert.equal(d.cupom.rotulo, 'cupom divulgado, não verificado');
-  assert.match(d.cupom.detalhe, /^Divulgado por @canal em 04\/11, não verificado$/);
-});
-
 test('estimativa: um cupom por pedido, pedido mínimo e cupom futuro', () => {
   const base = { preco: 15990, loja: 'kabum', pagamento: 'pix' };
   const min = estimarPrecoFinal({ ...base, cupom: { codes: ['A'], type: 'fixed', value: 3000, minOrder: 30000 } }, { now: T0 });
   assert.equal(min.precoFinal, null);
   assert.match(min.nota, /pedido mínimo/);
-  const fut = estimarPrecoFinal({ ...base, cupom: { codes: ['A'], type: 'fixed', value: 3000, origem: 'oficial', startsAt: '2026-12-01T00:00:00Z' } }, { now: T0 });
+  const fut = estimarPrecoFinal({ ...base, cupom: { codes: ['A'], type: 'fixed', value: 3000, origem: 'divulgado', startsAt: '2026-12-01T00:00:00Z' } }, { now: T0 });
   assert.equal(fut.precoFinal, null);
   const ok = estimarPrecoFinal({ ...base, cupom: { codes: ['A', 'B'], type: 'fixed', value: 3000 } }, { now: T0 });
   assert.equal(ok.precoFinal, 12990, 'códigos alternativos não somam');
   assert.deepEqual(estimarPrecoFinal({ ...base, cupom: null }), { precoFinal: 15990, nota: null });
-});
-
-test('fromCoupon: cupom oficial vira card de cupom; promoção sem código e vencido, não', () => {
-  const c = { id: 'awin:1', origem: 'oficial', rede: 'Awin', store: 'kabum', codes: ['KABUM20'], type: 'percent', value: 20, maxDiscount: 10000, title: '20% OFF em SSDs', expiresAt: '2026-11-10T23:59:59.000Z', pageUrl: 'https://www.kabum.com.br/hardware/ssd-2-5?utm=x', lidoEm: AT };
-  const [o] = fromCoupon(c, { now: T0 });
-  assert.equal(o.tipo, 'cupom');
-  assert.equal(o.tech, true);
-  assert.equal(o.cupom.rotulo, 'cupom oficial');
-  assert.equal(o.url, 'https://www.kabum.com.br/hardware/ssd-2-5');
-  assert.equal(o.preco, null);
-  assert.equal(fromCoupon({ ...c, kind: 'promocao', codes: [] }, { now: T0 }).length, 0);
-  assert.equal(fromCoupon({ ...c, expiresAt: '2026-11-01T00:00:00Z' }, { now: T0 }).length, 0);
 });
 
 test('fromApiItem: só com desconto (preço "de" maior); fromCapture: entra mesmo sem "de"', () => {
@@ -147,16 +123,6 @@ test('duplicadas: mesma assinatura + loja + preço em 24 h viram um card "visto 
   now = T0 + 40 * H;
   assert.equal(store.add(await fromPost(t, meta('@d', new Date(T0 + 40 * H).toISOString()))).novas.length, 1);
   assert.equal(store.size(), 3);
-});
-
-test('cupom de loja divulgado e oficial com o mesmo código viram um card, com o rótulo oficial', async () => {
-  const store = createOffersStore({ file: '/x.json', now: () => T0 });
-  store.add(await fromPost('Cupom KabuM: KABUM20\n20% OFF\nhttps://www.kabum.com.br', meta('@a')));
-  store.add(fromCoupon({ origem: 'oficial', rede: 'Awin', store: 'kabum', codes: ['KABUM20'], type: 'percent', value: 20, lidoEm: AT }, { now: T0 }));
-  const l = store.list();
-  assert.equal(l.length, 1);
-  assert.equal(l[0].vistoEm, 2);
-  assert.equal(l[0].cupom.rotulo, 'cupom oficial');
 });
 
 test('validade: 24 h sem ser vista, conferência com outro preço ou ❌ → "pode ter acabado"', () => {
@@ -246,7 +212,7 @@ test('list(): filtros com cupom, sem cupom, categoria, loja, preço máximo e "O
 
 test('chave de duplicada: produto por assinatura + loja + preço; cupom por loja + códigos', () => {
   assert.equal(chaveDuplicada({ tipo: 'cupom', loja: 'kabum', cupom: { codes: ['b', 'A'] } }), 'cupom|kabum|A,B');
-  assert.match(chaveDuplicada({ tipo: 'oferta', sig: '4060|msi', loja: 'kabum', preco: 1 }), /^4060\|msi\|kabum\|1$/);
+  assert.match(chaveDuplicada({ tipo: 'produto', sig: '4060|msi', loja: 'kabum', preco: 1 }), /^4060\|msi\|kabum\|1$/);
 });
 
 test('prazos vêm do JSON', () => {

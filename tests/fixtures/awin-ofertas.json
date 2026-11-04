@@ -1,7 +1,0 @@
-{
-  "data": [
-    { "promotionId": 9001, "type": "voucher", "advertiser": { "id": 17729, "name": "KaBuM!", "joined": true }, "title": "10% em SSDs selecionados", "description": "Cupom válido em SSDs selecionados", "terms": "Limitado a R$ 50 de desconto", "startDate": "2026-11-01T00:00:00.000", "endDate": "2026-11-30T23:59:59.000", "url": "https://www.kabum.com.br/hardware/ssd-2-5?utm_source=awin", "urlTracking": "https://www.awin1.com/cread.php?awinmid=17729&awinaffid=999999&ued=https%3A%2F%2Fwww.kabum.com.br%2Fhardware%2Fssd-2-5", "regions": { "all": false, "list": [{ "name": "Brazil", "countryCode": "BR" }] }, "voucher": { "code": "SSD10", "exclusive": false, "attributable": true } },
-    { "promotionId": 9002, "type": "promotion", "advertiser": { "id": 17729, "name": "KaBuM!", "joined": true }, "title": "Esquenta Black Friday", "description": "Ofertas em hardware", "startDate": "2026-11-03T00:00:00.000", "endDate": "2026-11-28T23:59:59.000", "url": "https://www.kabum.com.br/black-friday", "urlTracking": "https://www.awin1.com/cread.php?awinmid=17729&awinaffid=999999", "regions": { "all": true } }
-  ],
-  "pagination": { "page": 1, "pageSize": 200, "total": 2 }
-}

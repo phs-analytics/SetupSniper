@@ -139,7 +139,8 @@ export function ofertaCard(o, h = {}) {
     `<span class="of-quando">${esc(haQuanto(o.ultimaVez ?? o.at, now))}</span>`,
   ].filter(Boolean).join('');
 
-  const nome = o.titulo ? esc(o.titulo) : (o.tipo === 'cupom' ? 'Cupom de loja' : 'Produto sem nome no post');
+  const ehProduto = o.tipo !== 'cupom' && o.tipo !== 'desconto';
+  const nome = o.titulo ? esc(o.titulo) : (o.tipo === 'cupom' ? 'Cupom de loja' : o.tipo === 'desconto' ? 'Oferta de desconto' : 'Produto sem nome no post');
 
   // Preço anunciado (como veio) e preço final estimado com o cupom (sempre como estimativa)
   let precos = '';
@@ -152,19 +153,21 @@ export function ofertaCard(o, h = {}) {
       else if (Number.isInteger(o.precoFinal) && o.precoFinal !== o.preco) precos += `<div class="of-final"><small>preço final estimado com cupom</small><b>${esc(fmt(o.precoFinal))}</b><small class="of-est">estimativa: confira o total na loja</small></div>`;
       else precos += `<div class="of-final of-sem-est"><small>preço final com cupom</small><b>não estimado</b>${o.precoFinalNota ? `<small class="of-est">${esc(o.precoFinalNota)}</small>` : ''}</div>`;
     }
-  } else if (o.tipo === 'cupom') {
-    precos = '<div class="of-anunciado"><small>cupom para a loja</small><b>sem preço</b></div>';
   }
 
   let cupom = '';
   if (temCupom(o)) {
     const codes = o.cupom.codes.map((c) => `<code>${esc(c)}</code>`).join(' ou ');
-    const oficial = o.cupom.origem === 'oficial';
-    const rot = o.cupom.rotulo ?? (oficial ? 'cupom oficial' : 'cupom divulgado, não verificado');
+    const rot = o.cupom.rotulo ?? 'cupom divulgado, não verificado';
     cupom = `<div class="of-cupom">🎟️ ${codes} <span class="of-regra">${esc(regraCurta(o.cupom, fmt))}</span>` +
-      ` <span class="of-rotulo ${oficial ? 'oficial' : 'divulgado'}">${esc(rot)}</span>` +
+      ` <span class="of-rotulo divulgado">${esc(rot)}</span>` +
       (o.cupom.detalhe ? ` <small class="of-detalhe">${esc(o.cupom.detalhe)}</small>` : '') + '</div>';
+  } else if (o.tipo === 'cupom') {
+    cupom = '<div class="of-cupom">🎟️ cupom para resgatar na loja (o post não traz código) <span class="of-rotulo divulgado">divulgado, não verificado</span></div>';
+  } else if (o.tipo === 'desconto') {
+    cupom = '<div class="of-cupom">🏷️ desconto anunciado pela loja, sem código <span class="of-rotulo divulgado">divulgado, não verificado</span></div>';
   }
+  if (o.cupomNoAnuncio && ehProduto) cupom += '<div class="of-cupom">🎟️ cupom no anúncio: ative na página do produto antes de comprar</div>';
 
   const selos = [];
   const hi = o.historico;
@@ -180,11 +183,13 @@ export function ofertaCard(o, h = {}) {
   const aviso = acabou ? `<p class="of-aviso">⚠️ pode ter acabado${o.motivoStatus ? `: ${esc(o.motivoStatus)}` : ''}</p>` : '';
 
   const url = linkSeguro(o.url);
+  const post = !url ? linkSeguro(o.fontes?.[0]?.sourceUrl) : null;
   const comp = linkInterno(o.comparativoUrl);
   const fixado = h.fixados?.has?.(o.id);
   const acoes = [
-    o.titulo ? `<button type="button" class="btn small" data-ofixar="${id}"${fixado ? ' disabled' : ''}>📌 ${fixado ? 'Fixado' : 'Fixar'}</button>` : '',
+    o.titulo && ehProduto ? `<button type="button" class="btn small" data-ofixar="${id}"${fixado ? ' disabled' : ''}>📌 ${fixado ? 'Fixado' : 'Fixar'}</button>` : '',
     url ? `<a class="btn small" href="${esc(url)}" target="_blank" rel="noopener noreferrer nofollow">Ver na loja ↗</a>` : '',
+    post ? `<a class="btn small" href="${esc(post)}" target="_blank" rel="noopener noreferrer" title="O link da loja no post é um encurtador: abra o post para ir à loja">Ver o post ↗</a>` : '',
     ...(o.cupom?.codes ?? []).slice(0, 2).map((c) => `<button type="button" class="btn small" data-ocopiar="${esc(c)}">Copiar ${esc(c)}</button>`),
     comp ? `<a class="btn small ghost" href="${esc(comp)}">Ver nas outras lojas</a>` : '',
     `<button type="button" class="btn small ghost" data-ook="${id}" title="Funcionou para você">✅ Funcionou</button>`,
@@ -231,7 +236,7 @@ export function renderOfertas(list, h = {}) {
   partes.push(`<div class="of-aviso-novas">${avisoNovas(h.novas ?? 0)}</div>`);
   partes.push('<p class="of-legenda">Preço anunciado é o divulgado na fonte. Preço final com cupom é uma <b>estimativa</b> (um cupom por pedido); o SetupSniper nunca aplica cupom: confira o total na loja.</p>');
   if (!vis.length) {
-    partes.push(`<div class="of-vazio">${todas.length ? 'Nenhuma oferta com esses filtros.' : 'Nenhuma oferta de tecnologia ainda. Elas chegam sozinhas dos canais do Telegram, dos cupons oficiais e das APIs.'}</div>`);
+    partes.push(`<div class="of-vazio">${todas.length ? 'Nenhuma oferta com esses filtros.' : 'Nenhuma oferta de tecnologia ainda. Elas chegam sozinhas dos canais e grupos do Telegram e das páginas que você envia.'}</div>`);
   } else {
     partes.push(`<div class="of-lista">${vis.map((o) => ofertaCard(o, h)).join('')}</div>`);
   }

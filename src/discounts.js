@@ -7,8 +7,8 @@
 //   conditions: ['first_purchase','app_only','subscriber','new_account'],
 //   announcedPrice, inferred, source, sourceName, sourceUrl, seenAt, expiresAt,
 //   status: 'unverified'|'confirmed_by_user'|'expired' }
-// Cupons oficiais das redes de afiliados (src/coupon-feed.js) usam o mesmo modelo, mais:
-// { origem: 'oficial', rede: 'Awin'|'Lomadee', kind: 'cupom'|'promocao', startsAt, divulgadoEm, lidoEm,
+// Campos extras aceitos no modelo:
+// { kind: 'cupom'|'promocao', startsAt, divulgadoEm, lidoEm,
 //   verificado, pageUrl, affiliateUrl, title, description, terms, exclusivo, regraDoTexto }
 // e a condição 'selected_items' (vale só em parte da loja: não entra sozinho no total).
 // Promoção sem código (kind 'promocao') aparece na aba Cupons, mas nunca entra no total.

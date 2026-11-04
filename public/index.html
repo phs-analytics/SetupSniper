@@ -53,7 +53,6 @@
       <a href="#busca" data-tab="busca">Busca</a>
       <a href="#fixados" data-tab="fixados">📌 Fixados <span class="count" id="count-mon">0</span></a>
       <a href="#ofertas" data-tab="ofertas">🛒 Ofertas <span class="count" id="count-of">0</span></a>
-      <a href="#promos" data-tab="promos">📣 Promoções <span class="count" id="count-promo">0</span></a>
       <a href="#cupons" data-tab="cupons">🎟️ Cupons <span class="count" id="count-cup">0</span></a>
       <a href="#lojas" data-tab="lojas">Lojas</a>
       <a href="#alertas" data-tab="alertas">Alertas <span class="dot" id="tg-dot" hidden></span></a>
@@ -109,22 +108,14 @@
     <!-- PROMOÇÕES DOS CANAIS DO TELEGRAM -->
     <section id="tab-ofertas" class="tab" hidden>
       <div class="panel-head"><h2>Ofertas de tecnologia</h2>
-        <p class="muted">Uma linha por oferta, vinda dos canais e grupos do Telegram, dos cupons oficiais e das páginas que você enviou. O preço final com cupom é uma <b>estimativa</b>; nada é aplicado na loja.</p></div>
-      <div id="ofertas-root"></div>
-    </section>
-
-    <section id="tab-promos" class="tab" hidden>
-      <div class="panel">
-        <div class="panel-head"><h2>Promoções dos canais do Telegram</h2>
-          <p class="muted">Posts lidos da prévia pública dos canais (<code>t.me/s</code>), sem login. O preço é o <b>divulgado no post</b>, não verificado: toque em <b>📌 Fixar</b> para o SetupSniper conferir na loja.</p></div>
+        <p class="muted">Uma linha por oferta, vinda dos canais e grupos do Telegram e das páginas que você enviou, separada em produtos com preço baixo, cupons de desconto e ofertas de desconto. O preço final com cupom é uma <b>estimativa</b>; nada é aplicado na loja.</p></div>
+      <div class="panel ch-panel">
+        <div class="panel-head"><h2>Canais e grupos do Telegram</h2>
+          <p class="muted">Os posts lidos da prévia pública dos canais (<code>t.me/s</code>, sem login), dos grupos com o bot e os que você encaminha viram as ofertas abaixo. Preços e cupons são os <b>divulgados no post</b>, não verificados.</p></div>
         <div id="ch-summary" class="ch-summary"></div>
-        <div class="promo-tools">
-          <select id="pf-store" aria-label="Filtrar por loja"><option value="">Todas as lojas</option></select>
-          <input id="pf-q" type="search" placeholder="Filtrar: rtx 4060, ryzen…" aria-label="Filtrar promoções">
-        </div>
+        <details class="ch-details"><summary>Situação de cada canal</summary><div id="ch-list" class="ch-list"></div></details>
       </div>
-      <div id="promo-feed" class="promo-feed"></div>
-      <details class="panel ch-details"><summary>Situação de cada canal</summary><div id="ch-list" class="ch-list"></div></details>
+      <div id="ofertas-root"></div>
     </section>
 
     <section id="tab-cupons" class="tab" hidden>
@@ -148,7 +139,7 @@
             <div class="field">Já comprei em <small class="muted-i">esconde cupons de "primeira compra"</small><div class="chips" id="cfg-bought"></div></div>
             <div class="field">Assinaturas<div class="chips" id="cfg-subs">
               <button type="button" class="fchip" data-sub="meli+">Meli+</button><button type="button" class="fchip" data-sub="prime">Amazon Prime</button></div></div>
-            <label class="field" for="cfg-channels">Canais públicos do Telegram <small class="muted-i">opcional: lidos a cada 30 min pela prévia pública t.me/s, um por linha (até 40). As promoções aparecem na aba 📣 Promoções.</small>
+            <label class="field" for="cfg-channels">Canais públicos do Telegram <small class="muted-i">opcional: lidos a cada 30 min pela prévia pública t.me/s, um por linha (até 40). Os posts viram ofertas na aba 🛒 Ofertas.</small>
               <textarea id="cfg-channels" rows="4" placeholder="canal_de_promocoes"></textarea>
               <button type="button" class="btn small" id="cfg-suggested">Usar os canais sugeridos</button></label>
             <button type="button" class="btn primary" id="cfg-save">Salvar</button>
@@ -157,7 +148,6 @@
       </div>
       <div class="panel">
         <div class="panel-head"><h2>Cupons salvos</h2><p class="muted">Cupom de post ou canal vale por 24 h e aparece como "não verificado" até você marcar se funcionou.</p></div>
-        <p class="muted" id="coupon-feed-status"></p>
         <div id="coupon-list" class="alert-log"></div>
         <details class="addc"><summary>Cadastrar cupom manualmente</summary>
           <form id="coupon-form" class="form-grid">

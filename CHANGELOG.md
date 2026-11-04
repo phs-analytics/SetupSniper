@@ -1,5 +1,17 @@
 # Changelog
 
+## 3.1.0 — 2026-11-04
+
+**Ofertas numa aba só, com nome e preço certos**
+- **A aba 📣 Promoções foi juntada à 🛒 Ofertas.** A situação dos canais, "Ativar os canais sugeridos" e "Ler agora" ficam no topo da aba Ofertas.
+- **Três seções:** **Produtos com preço baixo**, **Cupons de desconto** e **Ofertas de desconto**, cada uma com a contagem.
+- **Nome e preço certos:** a leitura nova dos posts (`src/post-oferta.js`) pula as chamadas do canal ("ESSA É SUCESSO NA FARIA LIMA", "Novo Cupom KABUM") e os avisos, acha a linha do produto e lê o preço com ou sem "R$" ("Por 98,60 à vista", "por 1.539 em 12x", "Valor: R$584,99 no PIX"). O cifrão que o Telegram manda como `R&#036;` passa a ser lido, o que antes fazia muitos preços sumirem.
+- **Loja reconhecida** também em `link.amazon`, `ofertou.ai/…-Kabum`, `pcdofafa.com.br/p/kabum/…` e pelo texto do post ("Cupom Magalu", "AMAZON SOLTOU CUPOM").
+- **"Cupom no anúncio"** aparece como aviso no card, e o post com link encurtado ganha o botão "Ver o post".
+- Testado com 23 posts reais de 4 canais públicos, além dos 34 de exemplo.
+- **Cupons só do Telegram:** os cupons das redes de afiliados (Awin e Lomadee) foram retirados. Os cupons vêm só dos canais e grupos do Telegram (e dos cadastrados à mão), sempre como "divulgado, não verificado". As credenciais da Awin e da Lomadee continuam servindo para a busca de produtos.
+- Filtro de tecnologia: Starlink, impressora 3D e Smart TV entram; cupons das 8 lojas acompanhadas aparecem, menos os de outros assuntos (moda, beleza, casa, mercado…).
+
 ## 3.0.1 — 2026-11-04
 
 **O servidor não abre mais navegador automático para ler lojas**

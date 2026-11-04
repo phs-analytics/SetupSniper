@@ -15,15 +15,15 @@ import { finalTotals } from './src/final-price.js';
 import { finalScore } from './src/seller-score.js';
 import { rankOffers } from './src/ranking.js';
 import { parsePromo, storeFromUrl } from './src/promo-parser.js';
-import { resolveLink } from './src/link-resolver.js';
+import { resolveLink, isShortener } from './src/link-resolver.js';
 import { inferCouponRule, defaultExpiry, isCouponActive, SOURCE_LABEL } from './src/discounts.js';
 import { parseChannelPage, channelUrl, validChannel, channelConfigs, planChannelReads, nextState, postsAfterCursor, DEFAULT_SCHEDULE } from './src/telegram-channels.js';
 import { normalizeGroups } from './src/telegram-groups.js';
 import { createPriceHistory, keepaConfigured, fetchKeepa } from './src/price-history.js';
 import { dailyMin } from './public/historico.js';
-import { createCouponFeed, mergeCoupons, regraTexto, couponLabel } from './src/coupon-feed.js';
+import { regraTexto, couponLabel } from './public/cupons.js';
 import { normalizeRules, buscarAteCompletar, produtosBons, motivoSemAlerta } from './src/por-loja.js';
-import { fromPost, fromCoupon, fromCapture, createOffersStore, techCategories } from './src/offers.js';
+import { fromPost, fromCapture, createOffersStore, techCategories } from './src/offers.js';
 import { filtrosDe } from './public/ofertas.js';
 import { channelStatus, promoFromPost, addPromos, queryPromos, watchMatches } from './src/promo-feed.js';
 import { fetchPtax } from './src/ptax.js';
@@ -78,12 +78,9 @@ const taxesCfg = await readConfig('taxes.json', { importTaxStores: [] });
 const cepUf = await readConfig('cep-uf.json', { faixas: [] });
 const couponRules = await readConfig('coupon-rules.json', { channelTtlHours: 24, stacking: { default: 1 } });
 const couponsDb = await readJson('coupons.json', { coupons: [] });
-// cupons OFICIAIS das redes de afiliados (Awin, Lomadee), lidos a cada 6 h, em data/coupons-feed.json (fora do git).
-// Juntos com os divulgados (Telegram, manuais): mesmo código nas duas origens fica com o rótulo oficial.
-const couponFeed = createCouponFeed({ file: DATA('coupons-feed.json') });
-await couponFeed.load().catch(e => console.error('[cupons] ' + e.message));
-const allCoupons = () => mergeCoupons(couponFeed.active(), couponsDb.coupons);
-// Aba Ofertas: posts, cupons oficiais e capturas viram ofertas de tecnologia (data/offers.json, fora do git, 7 dias).
+// Cupons: só os divulgados nos canais e grupos do Telegram (e os cadastrados à mão), sempre "não verificados".
+const allCoupons = () => couponsDb.coupons;
+// Aba Ofertas: posts do Telegram e capturas viram ofertas de tecnologia (data/offers.json, fora do git, 7 dias).
 const offersDb = createOffersStore({ file: DATA('offers.json') });
 await offersDb.load().catch(e => console.error('[ofertas] ' + e.message));
 let offersRev = 0, offersNew = [];
@@ -189,9 +186,8 @@ function state() {
     alerts: alertState.log.slice(0, 30),
     ml: mlStatus(),
     channels: { suggested: suggestedChannels, status: channelsState.status, reading: readingChannels, promos: promosDb.promos.length },
-    coupons: mergeCoupons(couponFeed.active(), couponsDb.coupons.filter(c => isCouponActive(c) || Date.now() - Date.parse(c.seenAt ?? 0) < 7 * 864e5)).slice(0, 250),
+    coupons: couponsDb.coupons.filter(c => isCouponActive(c) || Date.now() - Date.parse(c.seenAt ?? 0) < 7 * 864e5).slice(0, 250),
     ofertas: { rev: offersRev, novas: offersNew, total: offersDb.size() },
-    couponFeed: (({ atualizadoEm, proximaEm, intervaloHoras, redes, historico }) => ({ atualizadoEm, proximaEm, intervaloHoras, redes, historico: (historico ?? []).slice(0, 50) }))(couponFeed.state()),
     taxes: { importTaxStores: taxesCfg.importTaxStores, atualizadoEm: taxesCfg.atualizadoEm },
     items: watch.items.map(it => ({
       ...it, checking: checking.has(it.id),
@@ -565,7 +561,7 @@ async function processPromo(text, opts = {}) {
   } catch (e) {
     // Link direto de loja (compartilhado do app, por exemplo) que não abriu agora: dá para fixar mesmo assim,
     // e os Fixados tentam de novo depois. Encurtador que não abriu não diz a loja: aí não tem jeito.
-    const direta = storeFromUrl(p.links[0]);
+    const direta = isShortener(p.links[0]) ? null : storeFromUrl(p.links[0]);
     if (!direta) return { text: `❌ Não consegui abrir o link: ${escHtml(e.message)}` };
     r = { finalUrl: p.links[0], canonicalUrl: canonicalUrlOf(p.links[0]), store: direta, html: '', erro: e.message };
   }
@@ -634,7 +630,7 @@ function setCouponStatus(id, status) {
 // ---------- canais públicos do Telegram (opt-in) ----------
 let readingChannels = false;
 // Lê cada canal ativado pela prévia pública t.me/s/<canal>, um de cada vez, com pausa entre eles.
-// Toda promoção com link de loja do escopo entra no feed (aba Promoções). Posts com cupom também passam
+// Toda promoção com link de loja do escopo entra no feed (alertas de Fixados) e na aba Ofertas. Posts com cupom também passam
 // pelo fluxo dos posts encaminhados (resolve o link, lê o preço na loja e salva o cupom), no máximo 3 por canal.
 async function readChannels({ only } = {}) {
   if (readingChannels) return;
@@ -687,7 +683,7 @@ async function readChannels({ only } = {}) {
 // ---------- aba Ofertas ----------
 const offerDeps = () => ({
   // Links encurtados não são abertos aqui: ficam "a resolver" (sem acesso automático extra às lojas).
-  cupons: allCoupons(), activeStores: activeIds(), profile: settings.profile,
+  activeStores: activeIds(), profile: settings.profile,
   finalCtx: { taxes: taxesCfg, cep: settings.cep, cepUf, fx: settings.fx?.usdBrl },
 });
 async function ingestOffers(lista) {
@@ -697,7 +693,6 @@ async function ingestOffers(lista) {
   if (novas?.length) { offersRev++; offersNew = novas.filter(o => o.tech).map(o => o.id); broadcast(); }
 }
 const offersFromPost = (text, meta) => fromPost(text, meta, offerDeps()).then(ingestOffers).catch(e => log('[ofertas] ' + e.message));
-const offersFromCoupons = () => ingestOffers(couponFeed.active().flatMap(c => fromCoupon(c))).catch(e => log('[ofertas] ' + e.message));
 
 // Saída única de todo post novo (canal, grupo, canal com o bot admin): feed, aviso de Fixado e página aberta (SSE).
 async function newPromos(novos) {
@@ -750,7 +745,7 @@ async function alertPromoMatches(novos) {
   await writeJson('alerts.json', alertState);
 }
 
-// Modo demo: posts simulados no formato da prévia t.me/s, para ver a aba Promoções funcionando
+// Modo demo: posts simulados no formato da prévia t.me/s, para ver a aba Ofertas funcionando
 function demoChannelPage(canal) {
   const prods = [['Placa de Vídeo MSI GeForce RTX 4060 Ventus 2X 8GB', 1799, 'kabum', 'https://www.kabum.com.br/produto/1'], ['Processador AMD Ryzen 5 7600, AM5', 999, 'pichau', 'https://www.pichau.com.br/processador-amd-ryzen-5-7600'],
     ['SSD Kingston NV2 1TB NVMe', 389, 'amazon', 'https://amzn.to/demo'], ['Memória Kingston Fury Beast 16GB DDR5 5600', 329, 'mercadolivre', 'https://meli.la/demo'],
@@ -765,7 +760,12 @@ function demoChannelPage(canal) {
     const date = new Date(Date.now() - i * 47 * 60e3 - (h % 50) * 60e3).toISOString();
     return `<div class="tgme_widget_message_wrap"><div class="tgme_widget_message" data-post="${id}"><div class="tgme_widget_message_text">🔥 ${t}<br/>Por: R$ ${price},90${cupom}<br/><a href="${link}">${link}</a></div><time datetime="${date}"></time></div></div>`;
   });
-  return `<section class="tgme_channel_history">${posts.join('')}</section>`;
+  // um cupom sem produto e uma oferta de desconto sem código, para o demo mostrar as três seções da aba Ofertas
+  const extra = [
+    `🚨 Novo Cupom KABUM<br/>🏷 15% OFF em SSDs selecionados<br/>🏷 Código: ${canal.replace(/[^A-Za-z]/g, '').slice(0, 4).toUpperCase()}SSD15<br/><a href="https://www.kabum.com.br/hardware/ssd">https://www.kabum.com.br/hardware/ssd</a>`,
+    `Semana do Hardware na Pichau: até 30% OFF em placas de vídeo<br/><a href="https://www.pichau.com.br/hardware/placa-de-video">https://www.pichau.com.br/hardware/placa-de-video</a>`,
+  ].map((txt, k) => `<div class="tgme_widget_message_wrap"><div class="tgme_widget_message" data-post="${canal}/${slot * 10 + 8 + k}"><div class="tgme_widget_message_text">${txt}</div><time datetime="${new Date(Date.now() - (k + 1) * 31 * 60e3).toISOString()}"></time></div></div>`);
+  return `<section class="tgme_channel_history">${[...posts, ...extra].join('')}</section>`;
 }
 
 async function refreshPtax() {
@@ -1127,7 +1127,7 @@ const server = http.createServer(async (req, res) => {
         .filter(c => c.store === sid && isCouponActive(c) && (!c.productUrl || canonicalUrlOf(c.productUrl) === canon))
         .slice(0, 50)
         .map(c => ({
-          id: c.id, origem: c.origem === 'oficial' ? 'oficial' : 'divulgado', rede: c.rede ?? null, kind: c.kind ?? 'cupom', codes: c.codes ?? [], title: c.title ?? null,
+          id: c.id, origem: 'divulgado', rede: null, kind: c.kind ?? 'cupom', codes: c.codes ?? [], title: c.title ?? null,
           regra: regraTexto(c), rotulo: couponLabel(c, { now: Date.now() }), startsAt: c.startsAt ?? null, expiresAt: c.expiresAt ?? null,
           divulgadoEm: c.divulgadoEm ?? c.seenAt ?? null, seenAt: c.seenAt ?? null, sourceName: c.sourceName ?? null,
           verificado: !!c.verificado || c.status === 'confirmed_by_user', status: c.status ?? null, produto: !!c.productUrl,
@@ -1147,20 +1147,13 @@ const server = http.createServer(async (req, res) => {
       }
       return json(res, 200, { loja: { id: sid, nome: storeName(sid) }, cupons, historico, atualizadoEm });
     }
-    if (pathname === '/api/coupons/feed' && req.method === 'GET') return json(res, 200, couponFeed.state());
-    if (pathname === '/api/coupons/feed/refresh' && req.method === 'POST') {
-      const r = await couponFeed.refresh({ force: true }); broadcast();
-      return json(res, 200, { ok: r.ok ?? true, redes: r.redes, ativos: (r.ativos ?? []).length });
-    }
     const cm = pathname.match(/^\/api\/coupons\/([\w-]+)$/);
     if (cm && req.method === 'PATCH') {
       const b = await body(req);
       if (!['confirmed_by_user', 'expired', 'unverified'].includes(b.status)) return json(res, 400, { error: 'Status inválido' });
-      if (couponFeed.isOfficialId(cm[1])) { try { const c = couponFeed.setStatus(cm[1], b.status); broadcast(); return json(res, 200, c); } catch (e) { return json(res, 404, { error: e.message }); } }
       try { return json(res, 200, setCouponStatus(cm[1], b.status)); } catch (e) { return json(res, 404, { error: e.message }); }
     }
     if (cm && req.method === 'DELETE') {
-      if (couponFeed.isOfficialId(cm[1])) return json(res, 400, { error: 'Cupom oficial não se apaga: ele voltaria na próxima consulta. Marque ❌ Não funcionou.' });
       couponsDb.coupons = couponsDb.coupons.filter(c => c.id !== cm[1]);
       await saveCoupons(); broadcast();
       return json(res, 200, { ok: true });
@@ -1206,9 +1199,6 @@ server.listen(PORT, HOST, () => {
   refreshAll();
   schedule();
   setInterval(refreshReclameAqui, 24 * 3600e3);
-  // cupons oficiais (confere a cada 10 min se já passaram 6 h desde a última leitura)
-  if (!DEMO) couponFeed.start({ onUpdate: () => { broadcast(); offersFromCoupons(); }, onError: (e) => log(`[cupons] ${e.message}`) });
-  offersFromCoupons();
   // histórico: pontos com mais de 180 dias viram 1 por dia (o menor)
   const compactHist = () => priceHist.compact().catch(e => log('[histórico] ' + e.message));
   setTimeout(compactHist, 10 * 60e3); setInterval(compactHist, 24 * 3600e3);

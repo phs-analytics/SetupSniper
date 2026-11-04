@@ -2,16 +2,15 @@
 //
 // Entradas (uma função por tipo; todas devolvem uma LISTA de ofertas no formato único):
 //   fromPost(text, meta, deps)   post de canal, grupo ou encaminhado (async: o link encurtado pode ser resolvido)
-//   fromCoupon(c, deps)          cupom oficial das redes de afiliados (src/coupon-feed.js)
 //   fromApiItem(offer, deps)     item com desconto das APIs (oferta normalizada de src/offer.js + precoDe em centavos)
 //   fromCapture(offer, deps)     oferta enviada pela extensão ou pelo favorito (página aberta pelo próprio usuário)
 //
 // Formato único (dinheiro em centavos inteiros):
-//   { id, tipo: 'oferta'|'cupom', origem: 'telegram'|'cupom_oficial'|'api'|'extensao',
+//   { id, tipo: 'produto'|'cupom'|'desconto', origem: 'telegram'|'api'|'extensao',
 //     titulo, sig (signatureKey), categoria, categoriaNome, catNota, tech,
 //     loja, url (canônica, limpa) | null, linkOriginal, linkStatus: 'ok'|'a_resolver'|'sem_link',
 //     preco, precoDe, pagamento: 'pix'|'avista'|'parcelado'|'cartao'|null, parcelas: { n, valor, semJuros } | null,
-//     cupom: { codes, type, value, maxDiscount, minOrder, appliesTo, conditions, origem: 'oficial'|'divulgado',
+//     cupom: { codes, type, value, maxDiscount, minOrder, appliesTo, conditions, origem: 'divulgado',
 //              rotulo, detalhe, ... } | null,
 //     precoJaComCupom, precoFinal (estimativa com 1 cupom) | null, precoFinalNota,
 //     fontes: [{ source, sourceName, sourceUrl, at }], vistoEm, at, ultimaVez, checked, feedback, trust?, seller?, suspeito? }
@@ -33,7 +32,8 @@ import { rankGroup } from './ranking.js';
 import { normalize } from './extract.js';
 import { classifyTech, classifyCoupon, techCategories, TECH_RULES } from './tech-filter.js';
 import { filtrarOfertas, precoRef } from '../public/ofertas.js';
-import { couponLabel } from '../public/cupons-oficiais.js';
+import { couponLabel } from '../public/cupons.js';
+import { lerPost } from './post-oferta.js';
 
 export { techCategories, filtrarOfertas };
 
@@ -159,30 +159,20 @@ export function precosDe(texto, p = parsePromo(texto)) {
 
 // ---------------- cupom ----------------
 export function rotuloCupom(c) {
-  if (c.origem === 'oficial') return 'cupom oficial';
   if (c.status === 'confirmed_by_user' || c.verificado === true) return 'cupom divulgado, funcionou para você';
   return 'cupom divulgado, não verificado';
 }
 const up = (s) => String(s).toUpperCase();
 
-function cupomDoPost(p, { loja, fonte, now, oficiais = [] }) {
-  if (!p.coupons.length) return null;
+function cupomDoPost(codes, p, { loja, fonte, now }) {
+  if (!codes.length) return null;
   const regra = p.rules.find((r) => r.type !== 'shipping') ?? p.rules.find((r) => r.type === 'shipping') ?? null;
-  let c = {
-    codes: [...p.coupons], type: regra?.type ?? 'unknown', value: regra?.value ?? null, maxDiscount: regra?.maxDiscount ?? null,
+  return {
+    codes: [...codes], type: regra?.type ?? 'unknown', value: regra?.value ?? null, maxDiscount: regra?.maxDiscount ?? null,
     minOrder: regra?.minOrder ?? null, appliesTo: p.appliesTo ?? null, conditions: p.conditions ?? [],
     store: loja, origem: 'divulgado', status: 'unverified', verificado: false,
     source: fonte.source ?? null, sourceName: fonte.sourceName ?? null, sourceUrl: fonte.sourceUrl ?? null, seenAt: iso(now),
   };
-  // O mesmo código já veio de uma rede de afiliados: vale o rótulo (e a regra, se o post não trouxe) do oficial.
-  const of = loja && oficiais.find((o) => o?.origem === 'oficial' && o.store === loja && o.status !== 'expired'
-    && (o.codes ?? []).some((x) => c.codes.some((y) => up(x) === up(y))));
-  if (of) {
-    const semRegra = c.type === 'unknown';
-    c = { ...c, origem: 'oficial', rede: of.rede ?? null, expiresAt: of.expiresAt ?? null, startsAt: of.startsAt ?? null, verificado: of.verificado === true,
-      ...(semRegra ? { type: of.type ?? 'unknown', value: of.value ?? null, maxDiscount: of.maxDiscount ?? null, minOrder: of.minOrder ?? null, appliesTo: of.appliesTo ?? c.appliesTo, conditions: of.conditions ?? c.conditions } : {}) };
-  }
-  return c;
 }
 function rotular(c, now) {
   if (!c) return c;
@@ -208,7 +198,7 @@ export function estimarPrecoFinal(o, { now = Date.now(), profile = {}, finalCtx 
     shipping: { cost: null, origin: null, freeAbove: null },
   };
   // Cupom divulgado vale pela janela do post (já filtrada pela validade da oferta), então não leva expiresAt aqui.
-  const cupom = { ...c, store: o.loja, productUrl: null, seller: null, expiresAt: c.origem === 'oficial' ? c.expiresAt ?? null : null, status: c.status === 'expired' ? 'unverified' : c.status };
+  const cupom = { ...c, store: o.loja, productUrl: null, seller: null, expiresAt: null, status: c.status === 'expired' ? 'unverified' : c.status };
   const tot = finalTotals(offer, [cupom], profile, { ...finalCtx, now, stacking: 1 })[method];
   if (tot && (tot.couponDiscount > 0 || tot.coupons.some((x) => x.freeShipping))) {
     const notas = tot.notes.filter((n) => n !== 'frete não informado' && !/Pix não informado|cartão não informado/.test(n));
@@ -219,19 +209,19 @@ export function estimarPrecoFinal(o, { now = Date.now(), profile = {}, finalCtx 
 }
 
 // ---------------- montagem ----------------
-const ORIGEM_FONTE = { telegram: 'telegram_channel', cupom_oficial: 'official_api', api: 'official_api', extensao: 'browser_capture' };
+const ORIGEM_FONTE = { telegram: 'telegram_channel', api: 'official_api', extensao: 'browser_capture' };
 
 function montar(base, { now, deps = {}, textoCupom = '' }) {
   const rules = deps.rules ?? TECH_RULES;
-  const cls = base.tipo === 'cupom' ? classifyCoupon(base.titulo ?? textoCupom, base.loja, rules) : classifyTech(base.titulo, rules);
+  const cls = base.tipo !== 'produto' ? classifyCoupon(base.titulo ?? textoCupom, base.loja, rules) : classifyTech(base.titulo, rules);
   const cupom = rotular(base.cupom, now);
   const o = {
     id: null, tipo: base.tipo, origem: base.origem,
-    titulo: base.titulo ?? null, sig: base.titulo && base.tipo !== 'cupom' ? signatureKey(base.titulo) : null,
+    titulo: base.titulo ?? null, sig: base.titulo && base.tipo === 'produto' ? signatureKey(base.titulo) : null,
     categoria: cls.categoria, categoriaNome: cls.nome, catNota: cls.nota, tech: cls.tech,
     loja: base.loja ?? null, url: base.url ?? null, linkOriginal: base.linkOriginal ?? null, linkStatus: base.linkStatus ?? (base.url ? 'ok' : 'sem_link'),
     preco: base.preco ?? null, precoDe: base.precoDe ?? null, pagamento: base.pagamento ?? null, parcelas: base.parcelas ?? null,
-    cupom, precoJaComCupom: !!base.precoJaComCupom, precoFinal: null, precoFinalNota: null,
+    cupom, cupomNoAnuncio: !!base.cupomNoAnuncio, precoJaComCupom: !!base.precoJaComCupom, precoFinal: null, precoFinalNota: null,
     fontes: [base.fonte], vistoEm: 1, at: iso(now), ultimaVez: iso(now), checked: null, feedback: null,
     ...(base.trust ? { trust: base.trust } : {}), ...(base.seller ? { seller: base.seller } : {}), ...(base.suspeito ? { suspeito: true } : {}),
   };
@@ -250,7 +240,7 @@ const fonteDe = (meta, origem, now) => ({
 // ---------------- entradas ----------------
 // meta: { source: 'telegram_channel'|'telegram_group'|'telegram_forward', sourceName: '@canal', sourceUrl, at }
 // deps: { resolveLink(url) → { canonicalUrl, store } (opcional; sem ele, o link encurtado fica "a resolver"),
-//         cupons (lista de mergeCoupons, para reconhecer o cupom oficial), activeStores, profile, finalCtx, rules, now }
+//         activeStores, profile, finalCtx, rules, now }
 export async function fromPost(text, meta = {}, deps = {}) {
   const now = toMs(meta.at) ?? clockOf(deps.now);
   const texto = normalizarTexto(text);
@@ -264,55 +254,35 @@ export async function fromPost(text, meta = {}, deps = {}) {
 }
 
 async function ofertaDoTrecho(trecho, { parte, meta, deps, now }) {
-  const p = parsePromo(trecho);
-  const link = p.links.find(linkDeProduto) ?? null;
-  if (!link) return null;   // sem link de loja do escopo nem encurtador: conversa ou loja de fora
-  let loja = storeFromUrl(link);
-  let url = null, linkStatus = 'ok';
-  if (precisaResolver(link)) {
+  const r = lerPost(trecho);   // tipo, nome, preço, cupom e loja (src/post-oferta.js)
+  if (!r) return null;
+  const link = r.link;
+  let loja = r.loja;
+  let url = null, linkStatus = link ? 'ok' : 'sem_link';
+  if (link && (precisaResolver(link) || !storeFromUrl(link))) {
     linkStatus = 'a_resolver';
     if (typeof deps.resolveLink === 'function') {
       try {
-        const r = await deps.resolveLink(link);
-        const u = r?.canonicalUrl ?? (r?.finalUrl ? canonicalUrl(r.finalUrl) : null);
-        if (u) { url = u; loja = r.store ?? storeFromUrl(u) ?? loja; linkStatus = 'ok'; }
+        const res = await deps.resolveLink(link);
+        const u = res?.canonicalUrl ?? (res?.finalUrl ? canonicalUrl(res.finalUrl) : null);
+        if (u && !precisaResolver(u)) { url = u; loja = res.store ?? storeFromUrl(u) ?? loja; linkStatus = 'ok'; }
       } catch { /* fica "a resolver" */ }
     }
-  } else url = canonicalUrl(link);
+  } else if (link) url = canonicalUrl(link);
   if (loja === 'tiktokshop') return null;   // desligada (docs/tiktok-shop.md)
   if (loja && Array.isArray(deps.activeStores) && !deps.activeStores.includes(loja)) return null;
+  if (!loja && !link) return null;          // sem loja nem link: conversa
+  if (!loja && !precisaResolver(link)) return null;   // link de uma loja fora das acompanhadas
 
-  const pr = precosDe(trecho, p);
-  const titulo = produtoDe(trecho) ?? p.product ?? null;
+  const p = parsePromo(trecho);
   const fonte = fonteDe(meta, 'telegram', now);
-  const cupom = cupomDoPost(p, { loja, fonte, now, oficiais: deps.cupons ?? [] });
-  if (!titulo && pr.preco == null && !cupom) return null;
-  const tipo = pr.preco == null && cupom ? 'cupom' : 'oferta';
+  const cupom = cupomDoPost(r.codes, p, { loja, fonte, now });
   const jaComCupom = !!cupom && /pre[cç]o\s+(?:final\s+)?com\s+(?:o\s+)?cupom|com\s+(?:o\s+)?cupom\s*[:\-–]?\s*R\$/i.test(trecho);
   return montar({
-    tipo, origem: 'telegram', titulo: tipo === 'cupom' ? null : titulo, loja, url, linkOriginal: link, linkStatus,
-    ...pr, cupom, precoJaComCupom: jaComCupom, fonte, parte,
+    tipo: r.tipo, origem: 'telegram', titulo: r.titulo, loja, url, linkOriginal: link, linkStatus,
+    preco: r.preco, precoDe: r.precoDe, pagamento: r.pagamento, parcelas: r.parcelas,
+    cupom, cupomNoAnuncio: r.cupomNoAnuncio, precoJaComCupom: jaComCupom, fonte, parte,
   }, { now, deps, textoCupom: trecho.replace(URL_G, ' ') });
-}
-
-// Cupom oficial (src/coupon-feed.js, já no modelo de src/discounts.js). Promoção sem código não vira card.
-export function fromCoupon(c, deps = {}) {
-  if (!c || c.kind === 'promocao' || !(c.codes ?? []).length || !c.store) return [];
-  const now = clockOf(deps.now);
-  if (c.status === 'expired' || (c.expiresAt && toMs(c.expiresAt) <= now)) return [];
-  const at = toMs(c.divulgadoEm ?? c.lidoEm ?? c.seenAt) ?? now;
-  const cupom = {
-    codes: [...c.codes], type: c.type ?? 'unknown', value: c.value ?? null, maxDiscount: c.maxDiscount ?? null, minOrder: c.minOrder ?? null,
-    appliesTo: c.appliesTo ?? null, conditions: c.conditions ?? [], store: c.store,
-    origem: c.origem ?? 'oficial', rede: c.rede ?? null, startsAt: c.startsAt ?? null, expiresAt: c.expiresAt ?? null,
-    status: c.status ?? 'unverified', verificado: c.verificado === true, sourceName: c.rede ?? c.sourceName ?? null, seenAt: iso(at), divulgadoEm: c.divulgadoEm ?? null,
-  };
-  const link = c.productUrl ?? c.pageUrl ?? null;
-  return [montar({
-    tipo: 'cupom', origem: 'cupom_oficial', titulo: c.title ?? null, loja: c.store, url: link ? canonicalUrl(link) : null, linkOriginal: null,
-    linkStatus: link ? 'ok' : 'sem_link', preco: null, cupom, fonte: { source: 'official_api', sourceName: c.rede ?? c.sourceName ?? 'rede de afiliados', sourceUrl: null, at: iso(at) },
-    parte: c.id ?? c.codes.join(','),
-  }, { now, deps, textoCupom: [c.title, c.description].filter(Boolean).join(' ') })];
 }
 
 // Oferta normalizada (src/offer.js) → oferta da aba. precoDe em centavos inteiros: offer.precoDe ou offer.oldPrice.
@@ -331,7 +301,7 @@ function fromNormalized(offer, { origem, exigirDesconto, deps }) {
   const at = toMs(offer.fetchedAt ?? offer.capturedAt) ?? now;
   const fonteNome = deps.sourceName ?? (origem === 'extensao' ? 'seu navegador' : 'API oficial');
   return [montar({
-    tipo: 'oferta', origem, titulo: offer.title, loja, url, linkOriginal: null, linkStatus: url ? 'ok' : 'sem_link',
+    tipo: 'produto', origem, titulo: offer.title, loja, url, linkOriginal: null, linkStatus: url ? 'ok' : 'sem_link',
     preco, precoDe: de > preco ? de : null, pagamento: pr.pix != null ? 'pix' : pr.card != null ? 'cartao' : inst ? 'parcelado' : null,
     parcelas: inst ? { n: inst.n, valor: inst.value, semJuros: inst.interestFree ?? null } : null,
     cupom: null, fonte: { source: ORIGEM_FONTE[origem], sourceName: fonteNome, sourceUrl: null, at: iso(at) },
@@ -343,21 +313,22 @@ export const fromCapture = (offer, deps = {}) => fromNormalized(offer, { origem:
 
 // ---------------- duplicadas, validade, enriquecimento e ordem (funções puras) ----------------
 export function chaveDuplicada(o) {
-  if (o.tipo === 'cupom') return `cupom|${o.loja ?? ''}|${[...(o.cupom?.codes ?? [])].map(up).sort().join(',')}`;
+  if (o.tipo === 'cupom' && o.cupom?.codes?.length) return `cupom|${o.loja ?? ''}|${[...o.cupom.codes].map(up).sort().join(',')}`;
+  if (o.tipo !== 'produto') return `${o.tipo}|${o.loja ?? ''}|${normalize(o.titulo ?? '')}`;
   return `${o.sig ?? normalize(o.titulo ?? '')}|${o.loja ?? o.linkOriginal ?? ''}|${o.preco ?? ''}`;
 }
 // Mesma oferta: chave igual, ou mesma loja e preço com assinaturas do mesmo produto (sameProduct de src/compare.js),
 // para juntar o mesmo produto escrito de jeitos diferentes em cada canal.
 export function mesmaOferta(a, b) {
   if (chaveDuplicada(a) === chaveDuplicada(b)) return true;
-  if (a.tipo === 'cupom' || b.tipo === 'cupom' || !a.sig || !b.sig || !a.loja || a.loja !== b.loja) return false;
+  if (a.tipo !== 'produto' || b.tipo !== 'produto' || !a.sig || !b.sig || !a.loja || a.loja !== b.loja) return false;
   if (!Number.isInteger(a.preco) || a.preco !== b.preco) return false;
   return sameProduct(parseSignatureKey(a.sig), parseSignatureKey(b.sig));
 }
 const nomeFonte = (f) => f?.sourceName ?? f?.source ?? '?';
 
 // Junta uma oferta repetida a uma existente (devolve uma cópia): fontes, "visto em N", última vez vista,
-// cupom oficial no lugar do divulgado, link resolvido no lugar do "a resolver".
+// cupom do post mais completo, link resolvido no lugar do "a resolver".
 export function juntarOfertas(e, o) {
   const r = { ...e, fontes: [...(e.fontes ?? [])] };
   for (const f of o.fontes ?? []) {
@@ -366,7 +337,7 @@ export function juntarOfertas(e, o) {
   r.fontes = r.fontes.slice(-20);
   r.vistoEm = new Set(r.fontes.map(nomeFonte)).size;
   if ((toMs(o.ultimaVez) ?? 0) > (toMs(r.ultimaVez) ?? 0)) r.ultimaVez = o.ultimaVez;
-  if (o.cupom && (!r.cupom || (o.cupom.origem === 'oficial' && r.cupom.origem !== 'oficial'))) {
+  if (o.cupom && !r.cupom) {
     r.cupom = { ...o.cupom, ...(r.cupom?.status === 'confirmed_by_user' ? { status: 'confirmed_by_user', verificado: true } : {}) };
     r.cupom.rotulo = rotuloCupom(r.cupom);
     r.precoFinal = o.precoFinal; r.precoFinalNota = o.precoFinalNota; r.precoJaComCupom = o.precoJaComCupom;
@@ -421,12 +392,13 @@ export function enrichOffer(o, deps = {}, { rules = TECH_RULES } = {}) {
 
 // Ordem. Em todas, alto risco e suspeitos ficam depois (rankGroup de src/ranking.js); sem preço, por último
 // (o cupom de loja não tem preço, mas fica junto das ofertas). 'melhor' = desconto sobre o histórico × confiança.
+const semPrecoDeProduto = (o) => o.tipo === 'cupom' || o.tipo === 'desconto';
 export function ordenarOfertas(list, ordem = 'melhor') {
   const k = (o) => {
     const ref = precoRef(o);
     return {
-      g: rankGroup({ price: ref ?? (o.tipo === 'cupom' ? 0 : null), score: o.confianca ?? null, suspeito: !!o.suspeito }),
-      acabou: o.status === 'pode_ter_acabado' ? 1 : 0, ref: ref ?? Infinity, valor: o.valor ?? 0, t: toMs(o.ultimaVez ?? o.at) ?? 0, cupom: o.tipo === 'cupom' ? 1 : 0,
+      g: rankGroup({ price: ref ?? (semPrecoDeProduto(o) ? 0 : null), score: o.confianca ?? null, suspeito: !!o.suspeito }),
+      acabou: o.status === 'pode_ter_acabado' ? 1 : 0, ref: ref ?? Infinity, valor: o.valor ?? 0, t: toMs(o.ultimaVez ?? o.at) ?? 0, cupom: semPrecoDeProduto(o) ? 1 : 0,
     };
   };
   const cmp = {
@@ -458,7 +430,8 @@ export function createOffersStore({ file, now = Date.now, rules = TECH_RULES, fs
   async function load() {
     try {
       const j = JSON.parse(await fs.readFile(file, 'utf8'));
-      ofertas = Array.isArray(j?.ofertas) ? j.ofertas.filter((o) => o && o.id) : [];
+      // cupons das redes de afiliados foram retirados: ofertas antigas deles saem ao carregar
+      ofertas = Array.isArray(j?.ofertas) ? j.ofertas.filter((o) => o && o.id && o.origem !== 'cupom_oficial') : [];
     } catch (e) {
       if (e?.code !== 'ENOENT') onError(e);
       ofertas = [];
@@ -512,7 +485,7 @@ export function createOffersStore({ file, now = Date.now, rules = TECH_RULES, fs
     const o = { ...ofertas[i], feedback: { voto, at: iso(clock()) } };
     if (o.cupom) {
       o.cupom = { ...o.cupom, status: voto === 'ok' ? 'confirmed_by_user' : 'expired', verificado: voto === 'ok' };
-      o.cupom.rotulo = voto === 'no' ? 'cupom não funcionou para você' : o.cupom.origem === 'oficial' ? 'cupom oficial · funcionou para você' : rotuloCupom(o.cupom);
+      o.cupom.rotulo = voto === 'no' ? 'cupom não funcionou para você' : rotuloCupom(o.cupom);
     }
     ofertas[i] = o;
     dirty = true;

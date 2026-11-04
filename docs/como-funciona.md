@@ -7,7 +7,7 @@ navegador ──SSE──▶ server.js ──▶ src/stores.js ──▶ fontes 
                        │              │                 API pública → página → navegador) ──▶ lojas
                        │              └─ src/extract.js (extrator genérico + filtros)
                        ├─ fixados: confere a cada N min ─▶ histórico (data/history/) ─▶ alertas ─▶ src/telegram.js
-                       ├─ Telegram (canais, grupos, encaminhados) + cupons oficiais ─▶ aba Ofertas (src/offers.js)
+                       ├─ Telegram (canais, grupos, encaminhados) ─▶ aba Ofertas (src/offers.js)  
                        └─ data/*.json (tudo local)
 ```
 
@@ -107,7 +107,7 @@ TOTAL               R$ 547,20          R$ 629,10    10x R$ 62,91 sem juros
 
 - **Fontes, em ordem:**
   - posts **encaminhados ao bot** ou colados na aba Cupons;
-  - **canais públicos** do Telegram (opt-in, lidos pela prévia `t.me/s/<canal>` a cada 30 min; as promoções aparecem na aba 📣 Promoções, veja `docs/telegram.md`);
+  - **canais públicos** do Telegram (opt-in, lidos pela prévia `t.me/s/<canal>` a cada 30 min; as promoções aparecem na aba 🛒 Ofertas, veja `docs/telegram.md`);
   - **cadastro manual**.
 - **Como cada fonte foi escolhida:** a pesquisa de fontes está em [cupons.md](cupons.md).
 - **O parser lê:**
@@ -196,7 +196,7 @@ Ao lado de Comparativo e Lista, o modo **Por loja** mostra uma seção por loja 
 
 ## Aba Ofertas
 
-Posts dos canais e grupos do Telegram, posts encaminhados, cupons oficiais e páginas com desconto enviadas pela extensão viram uma lista **só de tecnologia**, com o preço final estimado com cupom. Detalhes em [ofertas.md](ofertas.md).
+Posts dos canais e grupos do Telegram, posts encaminhados e páginas com desconto enviadas pela extensão viram uma lista **só de tecnologia**, separada em **produtos com preço baixo**, **cupons de desconto** e **ofertas de desconto**, com o preço final estimado com cupom. A leitura do post (`src/post-oferta.js`) pula as chamadas do canal e os avisos para achar o nome certo do produto e o preço certo. Detalhes em [ofertas.md](ofertas.md).
 
 ## API local
 
@@ -210,8 +210,7 @@ Posts dos canais e grupos do Telegram, posts encaminhados, cupons oficiais e pá
 | `POST /api/settings` · `POST /api/telegram/test` | configurações |
 | `GET /api/health` | saúde do servidor |
 | `POST /api/promo` | processa um post de promoção (link, página, cupom e totais) |
-| `POST /api/coupons` · `PATCH/DELETE /api/coupons/:id` | cadastro manual e "Funcionou" / "Não funcionou" (cupom oficial não se apaga) |
-| `GET /api/coupons/feed` · `POST /api/coupons/feed/refresh` | cupons oficiais das redes de afiliados |
+| `POST /api/coupons` · `PATCH/DELETE /api/coupons/:id` | cadastro manual e "Funcionou" / "Não funcionou" |
 | `GET /api/offers` · `PATCH /api/offers/:id` | aba Ofertas e o voto ✅/❌ |
 | `GET /api/extensao/loja?url=&titulo=&pix=` | cupons ativos e histórico da loja aberta, para a extensão |
 | `POST /api/diagnostico` | diagnóstico das lojas, das fontes oficiais e do Telegram |
@@ -265,10 +264,10 @@ Em 04/11/2026, um diagnóstico real foi feito num servidor em casa (`docs/diagno
 | Dados do vendedor | os adaptadores leem nome, loja oficial e origem do envio. Idade da loja, vendas e avaliações do vendedor ainda não são lidas | ler esses campos onde a página mostrar e preencher `sellerInfo` |
 | Impostos | a regra de US$ 50,01 a US$ 3.000 e o ICMS de 17 UFs estão marcados `"verificar": true` em `data/taxes.json` | conferir nas fontes citadas no arquivo e trocar para `false` |
 | TikTok Shop | só pesquisa, sem nenhum teste de acesso | os passos estão em `docs/tiktok-shop.md` |
-| Awin, Lomadee e Amazon Creators API (produtos e cupons) | testadas com respostas simuladas, no formato da documentação de 04/11/2026; nenhuma conta foi usada | cadastrar as credenciais ([credenciais.md](credenciais.md)) e rodar o diagnóstico |
+| Awin, Lomadee e Amazon Creators API (produtos) | testadas com respostas simuladas, no formato da documentação de 04/11/2026; nenhuma conta foi usada | cadastrar as credenciais ([credenciais.md](credenciais.md)) e rodar o diagnóstico |
 | Identificação honesta (`SetupSniper/<versão>`) | trocada na versão 3.0.0, depois do diagnóstico | rodar o diagnóstico de novo: lojas que respondiam podem passar a recusar; aí valem as fontes oficiais e a extensão |
 | Grupos e canais com o bot, privacy mode | testados com atualizações simuladas do Bot API | seguir o passo a passo de [telegram.md](telegram.md) e mandar `/grupo_add` num grupo seu |
-| Aba Ofertas | testada com 34 posts escritos no estilo dos canais | conferir com posts reais; formatos novos viram fixtures |
+| Aba Ofertas | testada com 34 posts de exemplo e 23 posts reais de 4 canais (lidos em 04/11/2026) | posts de formato novo que saírem com nome ou preço errado viram fixtures |
 | Extensão: cupons e histórico | testada no Chromium com um servidor falso | testar numa loja real e no Firefox (PC e Android) |
 | Keepa | testado só com uma resposta salva | só se você tiver a chave paga |
 

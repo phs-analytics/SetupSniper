@@ -161,14 +161,14 @@ A KaBuM! tem programa de afiliados na **Awin** \[não verificado: confira no dir
 
 O SetupSniper acha o programa da KaBuM! sozinho, pelo domínio, entre os programas em que você foi aprovado. Se quiser fixar o número do anunciante, preencha `afiliado.awin.advertiserId` na KaBuM! em `data/stores.json`.
 
-O feed é o catálogo inteiro da loja (formato Google, JSON Lines). Ele é baixado no máximo a cada 6 horas e a busca é feita nele, sem chamar a Awin a cada pesquisa. A **Offers API** da Awin (promoções e cupons do anunciante) também está pronta no código, para a etapa de cupons; os cupons dela aparecem sempre como "divulgado pela Awin, não verificado" e nunca são testados nem aplicados.
+O feed é o catálogo inteiro da loja (formato Google, JSON Lines). Ele é baixado no máximo a cada 6 horas e a busca é feita nele, sem chamar a Awin a cada pesquisa.
 
 \[não verificado\]: se a KaBuM! publica o feed no formato Google com o idioma `pt_BR`, e o nome do campo com o link rastreado.
 
 ## Terabyte: busca de produtos da Lomadee
 
 1. Crie uma conta de afiliado na **Lomadee** (https://www.lomadee.com.br) e peça a entrada no programa da **Terabyte** \[não verificado: confira se a Terabyte está na Lomadee\].
-2. No painel, abra o menu do usuário → **Credenciais de API** e crie uma chave com os escopos `products:read` (produtos) e `campaigns:read` (cupons oficiais, veja `docs/cupons.md`).
+2. No painel, abra o menu do usuário → **Credenciais de API** e crie uma chave com o escopo `products:read`.
 3. No `.env`:
    ```
    LOMADEE_API_KEY=...
@@ -208,4 +208,4 @@ As redes de afiliados e a Amazon devolvem **links rastreados**. O SetupSniper gu
 1. **Rode o servidor em casa.** Internet residencial (Wi-Fi ou 4G) é bloqueada bem menos que servidores na nuvem ou VPNs.
 2. **Use a extensão ou o favorito.** Quando a loja recusa, o que você abrir no seu navegador continua chegando ao SetupSniper. O servidor não abre navegador nenhum para ler lojas.
 3. **Fixe o link do produto.** A página de um produto costuma ser menos protegida que a busca, e os Fixados conferem o preço direto nela.
-4. **Encaminhe posts de promoção para o bot** e ative os canais na aba 📣 Promoções: o preço vem do post, e o link é conferido quando possível.
+4. **Encaminhe posts de promoção para o bot** e ative os canais na aba 🛒 Ofertas: o preço vem do post, e o link é conferido quando possível.

@@ -6,7 +6,7 @@ import { toCents } from './offer.js';
 // Loja pelo domínio do link (inclui encurtadores de afiliado). Fora do escopo → null.
 const HOSTS = [
   [/(^|\.)meli\.la$|mercadoli(vre|bre)\.com/i, 'mercadolivre'],
-  [/(^|\.)amzn\.to$|(^|\.)a\.co$|amazon\.com\.br$/i, 'amazon'],
+  [/(^|\.)amzn\.to$|(^|\.)a\.co$|amazon\.com\.br$|(^|\.)link\.amazon$/i, 'amazon'],
   [/(^|\.)shp\.ee$|(^|\.)shopee\.ee$|shopee\.com\.br$/i, 'shopee'],
   [/aliexpress\.(com|us)$|(^|\.)aliexpress\.com\.br$/i, 'aliexpress'],
   [/magazineluiza\.com\.br$|magazinevoce\.com\.br$|magalu\.com(\.br)?$|(^|\.)mglu\.(com|me)$/i, 'magalu'],
@@ -18,8 +18,28 @@ const HOSTS = [
 // Encurtadores genéricos de afiliados: a loja só aparece depois de seguir o link (src/link-resolver.js)
 const GENERIC_SHORTENERS = /^(tidd\.ly|bit\.ly|tinyurl\.com|cutt\.ly|rebrand\.ly)$/i;
 export const isGenericShortener = (u) => { try { return GENERIC_SHORTENERS.test(new URL(u).hostname); } catch { return false; } };
+// Encurtadores de canais que guardam a loja no caminho: ofertou.ai/XXXX-Kabum, pcdofafa.com.br/p/kabum/xxxx
+const PATH_HOSTS = /(^|\.)(ofertou\.ai|pcdofafa\.com\.br)$/i;
+const NOMES = [
+  [/kabum/i, 'kabum'], [/pichau/i, 'pichau'], [/terabyte/i, 'terabyte'], [/amazon|amzn/i, 'amazon'],
+  [/mercado[\s_-]*livre|mercadolivre|\bmeli\b/i, 'mercadolivre'], [/magalu|magazine[\s_-]*luiza/i, 'magalu'],
+  [/shopee/i, 'shopee'], [/aliexpress|\bali\s*express/i, 'aliexpress'],
+];
 export function storeFromUrl(u) {
-  try { const h = new URL(u).hostname; return HOSTS.find(([re]) => re.test(h))?.[1] ?? null; } catch { return null; }
+  try {
+    const { hostname: h, pathname } = new URL(u);
+    const direta = HOSTS.find(([re]) => re.test(h))?.[1];
+    if (direta) return direta;
+    if (PATH_HOSTS.test(h)) return NOMES.find(([re]) => re.test(pathname))?.[1] ?? null;
+    return null;
+  } catch { return null; }
+}
+// Loja citada no texto do post ("Novo Cupom KABUM", "AMAZON SOLTOU CUPOM", "Cupom Magalu"), a primeira que aparece.
+export function storeFromText(text) {
+  const t = String(text ?? '').replace(/https?:\/\/\S+/g, ' ');
+  let melhor = null;
+  for (const [re, id] of NOMES) { const m = t.match(re); if (m && (melhor == null || m.index < melhor.i)) melhor = { i: m.index, id }; }
+  return melhor?.id ?? null;
 }
 
 const MONEY = String.raw`R\$\s*([\d.]+(?:,\d{1,2})?)`;

@@ -8,10 +8,12 @@ import { UA } from './http.js';
 // identificação honesta, a mesma de src/http.js
 
 // Domínios pelos quais o resolvedor aceita passar (lojas + encurtadores de afiliado)
-const ALLOWED = /(^|\.)(meli\.la|mercadolivre\.com\.br|mercadolibre\.com|amzn\.to|a\.co|amazon\.com\.br|shp\.ee|shopee\.com\.br|aliexpress\.com|aliexpress\.us|magazineluiza\.com\.br|magalu\.com|magalu\.com\.br|mglu\.me|kabum\.com\.br|pichau\.com\.br|terabyteshop\.com\.br|tiktok\.com|vm\.tiktok\.com|shopee\.ee|magazinevoce\.com\.br|tidd\.ly|bit\.ly|tinyurl\.com|cutt\.ly|rebrand\.ly)$/i;
+const ALLOWED = /(^|\.)(meli\.la|mercadolivre\.com\.br|mercadolibre\.com|amzn\.to|a\.co|amazon\.com\.br|shp\.ee|shopee\.com\.br|aliexpress\.com|aliexpress\.us|magazineluiza\.com\.br|magalu\.com|magalu\.com\.br|mglu\.me|kabum\.com\.br|pichau\.com\.br|terabyteshop\.com\.br|tiktok\.com|vm\.tiktok\.com|shopee\.ee|magazinevoce\.com\.br|link\.amazon|ofertou\.ai|pcdofafa\.com\.br|tidd\.ly|bit\.ly|tinyurl\.com|cutt\.ly|rebrand\.ly)$/i;
 export const isAllowedHost = (u) => { try { return ALLOWED.test(new URL(u).hostname); } catch { return false; } };
 // Encurtadores de afiliado: a página deles não é a do produto, então o redirecionamento em HTML é seguido.
-const SHORTENER = /^(meli\.la|amzn\.to|a\.co|shp\.ee|s\.shopee\.com\.br|a\.aliexpress\.com|s\.click\.aliexpress\.com|mglu\.me|divulgador\.magalu\.com|vm\.tiktok\.com|shopee\.ee|tidd\.ly|bit\.ly|tinyurl\.com|cutt\.ly|rebrand\.ly)$/i;
+// link.amazon, ofertou.ai e pcdofafa.com.br: vistos em posts reais de canais (04/11/2026); se redirecionam por HTTP
+// ou por HTML [não verificado] — se não levarem à loja, o link fica "a resolver".
+const SHORTENER = /^(meli\.la|amzn\.to|a\.co|link\.amazon|ofertou\.ai|(www\.)?pcdofafa\.com\.br|shp\.ee|s\.shopee\.com\.br|a\.aliexpress\.com|s\.click\.aliexpress\.com|mglu\.me|divulgador\.magalu\.com|vm\.tiktok\.com|shopee\.ee|tidd\.ly|bit\.ly|tinyurl\.com|cutt\.ly|rebrand\.ly)$/i;
 export const isShortener = (u) => { try { return SHORTENER.test(new URL(u).hostname); } catch { return false; } };
 
 // Redirecionamentos feitos no HTML (meta refresh ou location simples em script)
@@ -38,6 +40,7 @@ export async function resolveLink(url, { maxHops = 8, timeoutMs = 15000, fetchIm
       const html = await res.text();
       const prox = htmlRedirect(html, atual);
       if (prox && prox !== atual && isShortener(atual)) { atual = prox; continue; }   // encurtador com redirecionamento em HTML
+      if (isShortener(atual)) throw new Error('o encurtador não levou até a página da loja');   // nunca devolve o encurtador como link do produto
       return { finalUrl: atual, canonicalUrl: canonicalUrl(atual), store: storeFromUrl(atual), chain, html };
     }
     throw new Error(`HTTP ${res.status} ao abrir o link${[403, 429, 503].includes(res.status) ? ' (bloqueio anti-bot)' : ''}`);

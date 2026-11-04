@@ -59,6 +59,9 @@ export function classifyTech(title, rules = TECH_RULES) {
 
 // Cupom de loja inteira (sem produto): conta como tecnologia nas lojas de tecnologia do JSON; nas outras, pelo texto.
 export function classifyCoupon(texto, store, rules = TECH_RULES) {
+  const t = normalize(texto ?? '');
+  const fora = (rules.cuponsForaDeTecnologia ?? []).find((w) => new RegExp(`\\b${w}\\b`).test(t));
+  if (fora) return { categoria: null, grupo: null, nome: null, nota: 0, tech: false, motivos: [`cupom de ${fora}`] };
   if ((rules.lojasDeTecnologia ?? []).includes(store)) return { categoria: 'cupons', grupo: 'cupons', nome: 'Cupons de loja', nota: 100, tech: true, motivos: ['loja de tecnologia'] };
   const c = classifyTech(texto, rules);
   return c.tech ? { ...c, categoria: 'cupons', grupo: 'cupons', nome: 'Cupons de loja' } : c;
