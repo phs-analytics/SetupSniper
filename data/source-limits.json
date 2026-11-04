@@ -1,0 +1,42 @@
+{
+  "_ajuda": "Limites de chamadas das fontes oficiais e pausa após bloqueio. Cada valor tem fonte e data. 'porMinuto' é o máximo de chamadas em qualquer janela de 60 s; 'porDia', quando existe, é o teto diário. 'esperaMaximaSegundos' é quanto uma busca aceita esperar pela vez; passando disso, a fonte falha com mensagem clara e a busca segue para a próxima fonte.",
+  "atualizadoEm": "2026-11-04",
+  "esperaMaximaSegundos": {
+    "valor": 20,
+    "fonte": "decisão do projeto (a busca não pode ficar presa esperando a vez)",
+    "data": "2026-11-04"
+  },
+  "pausaAposBloqueioHoras": {
+    "valor": 6,
+    "fonte": "decisão do projeto (SetupSniper 3.0)",
+    "data": "2026-11-04"
+  },
+  "fontes": {
+    "awin": {
+      "nome": "Awin (API)",
+      "porMinuto": 20,
+      "fonte": "https://help.awin.com/apis/apidocs/introduction-1 (\"20 API calls per minute per user\")",
+      "data": "2026-11-04"
+    },
+    "awin-feed": {
+      "nome": "Awin (download do feed de produtos)",
+      "porMinuto": 5,
+      "cacheHoras": 6,
+      "fonte": "https://help.awin.com/apidocs/retail-publisher-productapidocumentation-1 (\"no more than 5 requests per minute\"); cacheHoras é decisão do SetupSniper: o feed é o catálogo inteiro da loja e não muda a cada minuto",
+      "data": "2026-11-04"
+    },
+    "lomadee": {
+      "nome": "Lomadee",
+      "porMinuto": 10,
+      "fonte": "https://ce-docs.keywordrush.com/modules/affiliate/lomadeeproducts (\"10 requests per minute\"). A documentação oficial (https://docs.lomadee.com.br/api-reference/introduction) fala em 60 por 60 s por chave e IP; fica o valor menor, por segurança",
+      "data": "2026-11-04"
+    },
+    "amazon-creators": {
+      "nome": "Amazon Creators API",
+      "porMinuto": 30,
+      "porDia": 8640,
+      "fonte": "https://affiliate-program.amazon.com/creatorsapi/docs/en-us/concepts/api-rates (no início: 1 por segundo e 8640 por dia; depois varia com as vendas). 30 por minuto é metade do permitido, por segurança. [não verificado ao vivo]",
+      "data": "2026-11-04"
+    }
+  }
+}

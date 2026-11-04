@@ -792,7 +792,9 @@ function diagText(d) {
   const L = [`SetupSniper ${d.versao}${d.commit ? ' (' + d.commit + ')' : ''} · Node ${d.node} · ${d.sistema}${d.demo ? ' · DEMO' : ''}`,
     `navegador headless: ${d.navegador ? 'sim' : 'não'} · plano B navegador: ${d.browserFallback ? 'ligado' : 'desligado'}`,
     `APIs oficiais: ML ${d.apisOficiais.mercadolivre ? 'sim' : 'não'} · Shopee ${d.apisOficiais.shopee ? 'sim' : 'não'} · AliExpress ${d.apisOficiais.aliexpress ? 'sim' : 'não'}`,
-    `busca de teste: "${d.busca}" · ${d.quando}`, ''];
+    `busca de teste: "${d.busca}" · ${d.quando}`,
+    ...(d.fontesOficiais ?? []).map(f => `fonte oficial ${store(f.loja).name} (${f.nome}): ${f.configurada ? 'configurada' : 'falta ' + f.faltam.join(', ')}`),
+    ...Object.entries(d.pausas ?? {}).map(([id, p]) => `pausa após bloqueio: ${store(id).name} até ${new Date(p.until).toLocaleString('pt-BR')}`), ''];
   for (const l of d.lojas) {
     L.push(`${l.ok ? '✓' : l.bloqueado ? '⛔' : '✕'} ${l.nome}: ${l.ok ? `${l.itens} itens via ${l.fonte}` : l.erro ?? 'nenhum item'} (${l.ms} ms)`);
     for (const t of l.tentativas ?? []) L.push(`    - ${t.via}: ${t.ok ? `${t.n} itens${t.bytes ? `, ${Math.round(t.bytes / 1024)} KB` : ''}` : t.error}`);
@@ -809,6 +811,7 @@ $('#diag-go').onclick = async () => {
       <div class="dl ${l.ok ? 'ok' : l.bloqueado ? 'blk' : 'err'}"><b>${esc(l.nome)}</b>
         <span>${l.ok ? `${l.itens} itens via ${esc(l.fonte)}` : l.bloqueado ? 'bloqueado' : 'falhou'} · ${l.ms} ms</span>
         ${(l.tentativas ?? []).map(t => `<small>${t.ok ? '✓' : '✕'} ${esc(t.via)}: ${t.ok ? t.n + ' itens' : esc(t.error)}</small>`).join('')}</div>`).join('')}</div>
+      ${(d.fontesOficiais ?? []).length ? `<ul class="howto">${d.fontesOficiais.map(f => `<li><b>${esc(store(f.loja).name)}</b> · ${esc(f.nome)}: ${f.configurada ? '✓ configurada' : `falta no .env: <code>${f.faltam.map(esc).join('</code>, <code>')}</code>`}</li>`).join('')}</ul>` : ''}
       <p class="muted">Navegador headless neste aparelho: <b>${d.navegador ? 'sim' : 'não'}</b> · APIs oficiais configuradas: ${Object.entries(d.apisOficiais).filter(([, v]) => v).map(([k]) => store(k).name).join(', ') || 'nenhuma'}</p>`;
     $('#diag-copy').hidden = false;
   } catch { toast('O diagnóstico falhou'); }

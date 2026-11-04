@@ -1,0 +1,40 @@
+{
+  "data": [
+    {
+      "_id": "6851c116cd2fe4fb974f9351", "organizationId": "00000000-0000-4000-8000-0000000000a1", "id": "22841", "available": true,
+      "createdAt": "2026-06-17T19:25:06.152Z", "updatedAt": "2026-11-03T12:26:02.179Z",
+      "name": "SSD Kingston NV2 1TB M.2 NVMe PCIe 4.0, SNV2S/1000G",
+      "url": "https://www.terabyteshop.com.br/produto/22841/ssd-kingston-nv2-1tb?utm_source=lomadee",
+      "images": [{ "url": "https://img.terabyteshop.com.br/produto/g/ssd-kingston-nv2-1tb_1.jpg" }],
+      "options": [
+        { "id": "22841", "ean": "0740617329889", "name": "SSD Kingston NV2 1TB", "available": true, "seller": "terabyteshop",
+          "images": [], "categories": [], "brands": [], "pricing": [{ "listPrice": 59990, "price": 42990, "metadata": [] }], "stocks": [{ "value": 12, "metadata": [] }], "metadata": [] }
+      ],
+      "metadata": []
+    },
+    {
+      "_id": "6851c116cd2fe4fb974f9352", "organizationId": "00000000-0000-4000-8000-0000000000a1", "id": "30111", "available": true,
+      "name": "SSD WD Blue SN580 1TB M.2 NVMe",
+      "url": "https://www.terabyteshop.com.br/produto/30111/ssd-wd-blue-sn580-1tb",
+      "images": [{ "url": "https://img.terabyteshop.com.br/produto/g/ssd-wd-blue_1.jpg" }],
+      "options": [
+        { "id": "30111-a", "name": "SSD WD Blue SN580 1TB", "available": false, "pricing": [{ "listPrice": 60000, "price": 55000 }] },
+        { "id": "30111-b", "name": "SSD WD Blue SN580 1TB", "available": true, "pricing": [{ "listPrice": 56990, "price": 51990 }] }
+      ]
+    },
+    {
+      "_id": "6851c116cd2fe4fb974f9353", "organizationId": "00000000-0000-4000-8000-0000000000b2", "id": "9988", "available": true,
+      "name": "SSD 1TB de outra loja da rede",
+      "url": "https://www.outraloja.com.br/ssd-1tb/p",
+      "images": [],
+      "options": [{ "id": "9988", "available": true, "pricing": [{ "listPrice": 39900, "price": 39900 }] }]
+    },
+    {
+      "_id": "6851c116cd2fe4fb974f9354", "organizationId": "00000000-0000-4000-8000-0000000000a1", "id": "40404", "available": true,
+      "name": "SSD 1TB sem preço",
+      "url": "https://www.terabyteshop.com.br/produto/40404/ssd-sem-preco",
+      "options": [{ "id": "40404", "available": true, "pricing": [] }]
+    }
+  ],
+  "count": 4
+}

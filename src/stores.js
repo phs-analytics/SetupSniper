@@ -3,7 +3,12 @@ import { fetchText } from './http.js';
 import { collectJsonBlobs, extractFromJson, extractFromHtmlCards, pricesFromText, decode } from './extract.js';
 import { parseBRL } from './scraper.js';
 import { browserAvailable, renderPage } from './browser.js';
-import { OFFICIAL } from './official-apis.js';
+import { providerFor, storeSources } from './sources/index.js';
+import { blockPause, startBlockPause, clearBlockPause } from './rate-limit.js';
+
+// Para o servidor consultar e limpar a pausa após bloqueio (estado em memória).
+export { blockPause, clearBlockPause, listBlockPauses } from './rate-limit.js';
+export { officialSourcesStatus, storeSources, SOURCE_IDS, SOURCE_LABELS } from './sources/index.js';
 
 const enc = encodeURIComponent;
 const slug = (q) => q.trim().toLowerCase().replace(/\s+/g, '-');
@@ -23,7 +28,7 @@ export const ADAPTERS = {
     url: (q, p) => `https://www.kabum.com.br/busca/${enc(slug(q))}?page_number=${p}&page_size=40`,
     // 1ª tentativa: o catálogo público em JSON que a própria página de busca carrega (sem login).
     // [não verificado ao vivo nesta versão] Se mudar ou recusar, cai para o HTML.
-    api: async (q, p) => kabumItems(await fetchText(`https://servicespub.prod.api.aws.grupokabum.com.br/catalog/v2/products?query=${enc(q)}&page_number=${p}&page_size=40&facet_filters=&sort=most_searched`,
+    api: async (q, p, ft = fetchText) => kabumItems(await ft(`https://servicespub.prod.api.aws.grupokabum.com.br/catalog/v2/products?query=${enc(q)}&page_number=${p}&page_size=40&facet_filters=&sort=most_searched`,
       { json: true, headers: { Origin: 'https://www.kabum.com.br', Referer: 'https://www.kabum.com.br/' } })),
     parse: (html, a) => generic(html, a.base, {
       linkOf: (o) => o.code && o.friendlyName ? `/produto/${o.code}/${o.friendlyName}` : null,
@@ -73,8 +78,8 @@ export const ADAPTERS = {
     base: 'https://www.mercadolivre.com.br',
     url: (q, p) => `https://lista.mercadolivre.com.br/${enc(slug(q))}${p > 1 ? `_Desde_${(p - 1) * 48 + 1}` : ''}_NoIndex_True`,
     // 1ª tentativa: API pública (traz reputação do vendedor); se recusar, cai para o HTML.
-    api: async (q, p) => {
-      const j = await fetchText(`https://api.mercadolibre.com/sites/MLB/search?q=${enc(q)}&offset=${(p - 1) * 50}&limit=50`, { json: true });
+    api: async (q, p, ft = fetchText) => {
+      const j = await ft(`https://api.mercadolibre.com/sites/MLB/search?q=${enc(q)}&offset=${(p - 1) * 50}&limit=50`, { json: true });
       // A API de busca não traz o preço no Pix: "price" é o preço no crédito (1x).
       return (j.results ?? []).map(r => ({
         title: r.title, card: r.price, url: r.permalink, image: r.thumbnail?.replace(/^http:/, 'https:'),
@@ -123,8 +128,8 @@ export const ADAPTERS = {
   shopee: {
     base: 'https://shopee.com.br',
     url: (q, p) => `https://shopee.com.br/search?keyword=${enc(q)}&page=${p - 1}`,
-    api: async (q, p) => {
-      const j = await fetchText(`https://shopee.com.br/api/v4/search/search_items?by=relevancy&keyword=${enc(q)}&limit=60&newest=${(p - 1) * 60}&order=desc&page_type=search&scenario=PAGE_GLOBAL_SEARCH&version=2`,
+    api: async (q, p, ft = fetchText) => {
+      const j = await ft(`https://shopee.com.br/api/v4/search/search_items?by=relevancy&keyword=${enc(q)}&limit=60&newest=${(p - 1) * 60}&order=desc&page_type=search&scenario=PAGE_GLOBAL_SEARCH&version=2`,
         { json: true, headers: { Referer: 'https://shopee.com.br/', 'X-Api-Source': 'pc', 'X-Shopee-Language': 'pt-BR' } });
       return shopeeItems(j);
     },
@@ -177,50 +182,90 @@ function shopeeItems(j) {
   }));
 }
 
-// Busca numa loja: API → HTML → navegador headless (busca profunda, ou quando a loja recusar e o navegador existir).
+// Busca numa loja, percorrendo as fontes de data/stores.json ("sources"), da mais oficial para a menos oficial:
+//   api-oficial → feed-afiliado → api-publica → pagina → navegador (veja src/sources/index.js).
+// Fontes sem credencial no .env são puladas. Para na primeira fonte que devolver itens.
 // page: página da loja (o scroll infinito pede 2, 3...). A busca profunda lê `pages` páginas de uma vez.
-// Retorna { items, searchUrl, page, hasMore, blocked }.
-// Ordem das tentativas: API OFICIAL (se o usuário cadastrou as credenciais) → API pública → HTML → navegador.
-// trace: o que cada tentativa devolveu (usado no diagnóstico das lojas).
-export async function searchStore(storeId, query, { deep = false, page = 1, browserFallback = false, noCache = false } = {}) {
+// Retorna { items, searchUrl, page, hasMore, source, sourceLegacy, trace }.
+//   source: id da fonte que respondeu ('api-oficial', 'feed-afiliado', 'api-publica', 'pagina', 'navegador');
+//   sourceLegacy: o mesmo no formato da 2.x ('oficial', 'afiliado', 'api', 'html', 'navegador');
+//   trace: o que cada tentativa devolveu, com { via, fonte, ok, n | error } (usado no diagnóstico das lojas).
+// Pausa após bloqueio: se a página bloquear (captcha ou HTTP 401/403/429/503), a loja fica
+// pausaAposBloqueioHoras (data/source-limits.json) sem tentar a página nem o navegador headless.
+// noCache: true (diagnóstico pedido pelo usuário) ignora a pausa e tenta de novo.
+// deps: só para testes (fetchText, browserAvailable, renderPage, providerFor, sources, now).
+const LEGACY = { 'api-oficial': 'oficial', 'feed-afiliado': 'afiliado', 'api-publica': 'api', pagina: 'html', navegador: 'navegador' };
+const BLOCK_RE = /HTTP (401|403|429|503)|verifica/;
+const hhmm = (iso) => new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+export async function searchStore(storeId, query, { deep = false, page = 1, browserFallback = false, noCache = false, deps = {} } = {}) {
   const a = ADAPTERS[storeId];
   if (!a) throw new Error('loja desconhecida');
+  const d = { fetchText, browserAvailable, renderPage, providerFor, now: Date.now, ...deps };
   const maxPages = a.pages ?? 10;
   if (page > maxPages) return { items: [], searchUrl: a.url(query, 1), page, hasMore: false };
   const last = deep ? Math.min(maxPages, page + (a.pages ?? 2) - 1) : page;
+  const order = deps.sources ?? storeSources(storeId, { hasPublicApi: !!a.api });
   const errors = [];
-  let items = [], lastGot = 0, blocked = false, source = null;
+  let items = [], lastGot = 0, blocked = false, source = null, pausa = null;
   const trace = [];
-  const off = OFFICIAL[storeId];
+  // Pausa que já existia antes desta busca (a que começar agora não impede o navegador de tentar).
+  const pausaAntes = noCache ? null : blockPause(storeId, { now: d.now() });
+  const pausadaMsg = (p) => `pausada após bloqueio até ${hhmm(p.until)}${p.reason ? ` (${p.reason})` : ''}; sem nova tentativa antes disso`;
   for (let p = page; p <= last; p++) {
     let got = [];
-    if (off?.configured()) {
-      try { got = await off.search(query, p); trace.push({ via: off.nome, ok: true, n: got.length }); if (got.length) source = 'oficial'; }
-      catch (e) { errors.push(`${off.nome}: ${e.message}`); trace.push({ via: off.nome, ok: false, error: e.message }); }
+    for (const fonte of order) {
+      if (got.length) break;
+      if (fonte === 'api-oficial' || fonte === 'feed-afiliado') {
+        const prov = d.providerFor(storeId, fonte);
+        if (!prov?.configured()) continue;
+        try { got = await prov.search(query, p); trace.push({ via: prov.nome, fonte, ok: true, n: got.length }); if (got.length) source = fonte; }
+        catch (e) { errors.push(e.message.startsWith(prov.nome) ? e.message : `${prov.nome}: ${e.message}`); trace.push({ via: prov.nome, fonte, ok: false, error: e.message }); }
+      } else if (fonte === 'api-publica') {
+        if (!a.api) continue;
+        try { got = await a.api(query, p, d.fetchText); trace.push({ via: 'API pública', fonte, ok: true, n: got.length }); if (got.length) source = fonte; }
+        catch (e) { errors.push('API: ' + e.message); trace.push({ via: 'API pública', fonte, ok: false, error: e.message }); }
+      } else if (fonte === 'pagina') {
+        if (pausaAntes) {
+          blocked = true; pausa = pausaAntes;
+          errors.push(pausadaMsg(pausaAntes));
+          trace.push({ via: 'página da loja', fonte, ok: false, skipped: true, pausadaAte: pausaAntes.until, error: pausadaMsg(pausaAntes) });
+          continue;
+        }
+        try {
+          const html = await d.fetchText(a.url(query, p), { headers: a.headers, useCache: !noCache });
+          if (isChallenge(html)) { blocked = true; throw new Error('a loja pediu verificação (captcha/anti-bot)'); }
+          got = a.parse(html, a);
+          trace.push({ via: 'página da loja', fonte, ok: true, n: got.length, bytes: html.length });
+          clearBlockPause(storeId);   // a página respondeu: nada de pausa
+          if (got.length) source = fonte;
+        } catch (e) {
+          errors.push(e.message);
+          const t = { via: 'página da loja', fonte, ok: false, error: e.message };
+          if (BLOCK_RE.test(e.message)) {
+            blocked = true;
+            pausa = startBlockPause(storeId, { now: d.now(), reason: e.message });
+            t.pausadaAte = pausa.until;
+          }
+          trace.push(t);
+        }
+      } else if (fonte === 'navegador') {
+        if (pausaAntes) {
+          trace.push({ via: 'navegador', fonte, ok: false, skipped: true, pausadaAte: pausaAntes.until, error: pausadaMsg(pausaAntes) });
+          continue;
+        }
+        if ((deep || (browserFallback && blocked)) && d.browserAvailable()) {
+          try {
+            const r = await d.renderPage(a.url(query, p), { capture: a.browserCapture, cookies: a.browserCookies });
+            if (isChallenge(r.html)) throw new Error('a loja pediu verificação também no navegador');
+            got = a.fromCaptured?.(r.captured) ?? [];
+            if (!got.length) got = a.parse(r.html, a);
+            if (got.length) { blocked = false; source = fonte; pausa = null; clearBlockPause(storeId); }
+            trace.push({ via: 'navegador', fonte, ok: true, n: got.length });
+          } catch (e) { errors.push('navegador: ' + e.message); trace.push({ via: 'navegador', fonte, ok: false, error: e.message }); }
+        } else if (blocked) trace.push({ via: 'navegador', fonte, ok: false, error: d.browserAvailable() ? 'desligado (browserFallback)' : 'Playwright não instalado neste aparelho' });
+      }
     }
-    if (!got.length && a.api) {
-      try { got = await a.api(query, p); trace.push({ via: 'API pública', ok: true, n: got.length }); if (got.length) source = 'api'; }
-      catch (e) { errors.push('API: ' + e.message); trace.push({ via: 'API pública', ok: false, error: e.message }); }
-    }
-    if (!got.length) {
-      try {
-        const html = await fetchText(a.url(query, p), { headers: a.headers, useCache: !noCache });
-        if (isChallenge(html)) { blocked = true; throw new Error('a loja pediu verificação (captcha/anti-bot)'); }
-        got = a.parse(html, a);
-        trace.push({ via: 'página da loja', ok: true, n: got.length, bytes: html.length });
-        if (got.length) source = 'html';
-      } catch (e) { errors.push(e.message); if (/HTTP (401|403|429|503)|verifica/.test(e.message)) blocked = true; trace.push({ via: 'página da loja', ok: false, error: e.message }); }
-    }
-    if (!got.length && (deep || (browserFallback && blocked)) && browserAvailable()) {
-      try {
-        const r = await renderPage(a.url(query, p), { capture: a.browserCapture, cookies: a.browserCookies });
-        if (isChallenge(r.html)) throw new Error('a loja pediu verificação também no navegador');
-        got = a.fromCaptured?.(r.captured) ?? [];
-        if (!got.length) got = a.parse(r.html, a);
-        if (got.length) { blocked = false; source = 'navegador'; }
-        trace.push({ via: 'navegador', ok: true, n: got.length });
-      } catch (e) { errors.push('navegador: ' + e.message); trace.push({ via: 'navegador', ok: false, error: e.message }); }
-    } else if (!got.length && blocked) trace.push({ via: 'navegador', ok: false, error: browserAvailable() ? 'desligado (browserFallback)' : 'Playwright não instalado neste aparelho' });
     items.push(...got);
     lastGot = got.length;
     if (!got.length) break;
@@ -228,9 +273,11 @@ export async function searchStore(storeId, query, { deep = false, page = 1, brow
   if (!items.length && errors.length) {
     const err = new Error(errors.at(-1));
     err.blocked = blocked; err.trace = trace;
+    if (pausa) err.pausa = pausa;
     throw err;
   }
-  return { items, searchUrl: a.url(query, 1), page: last, hasMore: lastGot > 0 && last < maxPages, source, trace };
+  return { items, searchUrl: a.url(query, 1), page: last, hasMore: lastGot > 0 && last < maxPages,
+    source, sourceLegacy: source ? LEGACY[source] : null, trace, ...(pausa ? { pausa } : {}) };
 }
 
 // Página de verificação (captcha, "confirme que você é humano", desafio do Cloudflare/Akamai/PerimeterX).

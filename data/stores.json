@@ -1,5 +1,5 @@
 {
-  "_ajuda": "Valores de referência INICIAIS e aproximados — confira em reclameaqui.com.br e nas próprias lojas e ajuste. Se 'reclameAquiSlug' estiver preenchido, o servidor tenta atualizar os dados do Reclame Aqui sozinho (melhor esforço). \"enabled\": true coloca a loja no escopo padrão; para mudar só na sua máquina, use \"enabledStores\" em data/settings.json.",
+  "_ajuda": "Valores de referência INICIAIS e aproximados — confira em reclameaqui.com.br e nas próprias lojas e ajuste. Se 'reclameAquiSlug' estiver preenchido, o servidor tenta atualizar os dados do Reclame Aqui sozinho (melhor esforço). \"enabled\": true coloca a loja no escopo padrão; para mudar só na sua máquina, use \"enabledStores\" em data/settings.json. \"sources\": ordem das fontes de preço, da mais oficial para a menos oficial (api-oficial, feed-afiliado, api-publica, pagina, navegador); as que precisam de credencial são puladas enquanto ela não estiver no .env. Veja docs/fontes-oficiais.md.",
   "stores": [
     {
       "id": "kabum",
@@ -21,7 +21,23 @@
       "vendas": 10000000,
       "reviewsPositivas": 82,
       "atualizadoEm": "2026-11-02",
-      "fonte": "estimativa inicial"
+      "fonte": "estimativa inicial",
+      "sources": [
+        "api-publica",
+        "feed-afiliado",
+        "pagina",
+        "navegador"
+      ],
+      "sourcesFonte": "SetupSniper 3.0 e diagnóstico real de 04/11/2026 (docs/diagnostico-2026-11.md)",
+      "sourcesAtualizadoEm": "2026-11-04",
+      "afiliado": {
+        "awin": {
+          "_ajuda": "advertiserId: número do programa da KaBuM! na Awin. Vazio (null) = descobre sozinho pelo domínio, entre os programas em que a sua conta foi aprovada. [não verificado]",
+          "advertiserId": null,
+          "dominio": "kabum.com.br",
+          "locale": "pt_BR"
+        }
+      }
     },
     {
       "id": "pichau",
@@ -43,7 +59,13 @@
       "vendas": 3000000,
       "reviewsPositivas": 78,
       "atualizadoEm": "2026-11-02",
-      "fonte": "estimativa inicial"
+      "fonte": "estimativa inicial",
+      "sources": [
+        "pagina",
+        "navegador"
+      ],
+      "sourcesFonte": "SetupSniper 3.0 e diagnóstico real de 04/11/2026 (docs/diagnostico-2026-11.md)",
+      "sourcesAtualizadoEm": "2026-11-04"
     },
     {
       "id": "terabyte",
@@ -65,7 +87,21 @@
       "vendas": 2000000,
       "reviewsPositivas": 84,
       "atualizadoEm": "2026-11-02",
-      "fonte": "estimativa inicial"
+      "fonte": "estimativa inicial",
+      "sources": [
+        "feed-afiliado",
+        "pagina",
+        "navegador"
+      ],
+      "sourcesFonte": "SetupSniper 3.0 e diagnóstico real de 04/11/2026 (docs/diagnostico-2026-11.md)",
+      "sourcesAtualizadoEm": "2026-11-04",
+      "afiliado": {
+        "lomadee": {
+          "_ajuda": "organizationId: UUID da Terabyte na Lomadee, para a busca trazer só ela. Vazio (null) = busca na rede toda e filtra pelo domínio. [não verificado]",
+          "organizationId": null,
+          "dominio": "terabyteshop.com.br"
+        }
+      }
     },
     {
       "id": "amazon",
@@ -87,7 +123,14 @@
       "vendas": 50000000,
       "reviewsPositivas": 85,
       "atualizadoEm": "2026-11-02",
-      "fonte": "estimativa inicial"
+      "fonte": "estimativa inicial",
+      "sources": [
+        "api-oficial",
+        "pagina",
+        "navegador"
+      ],
+      "sourcesFonte": "SetupSniper 3.0 e diagnóstico real de 04/11/2026 (docs/diagnostico-2026-11.md)",
+      "sourcesAtualizadoEm": "2026-11-04"
     },
     {
       "id": "mercadolivre",
@@ -110,7 +153,15 @@
       "reviewsPositivas": 76,
       "atualizadoEm": "2026-11-02",
       "fonte": "estimativa inicial",
-      "observacao": "Marketplace: confira a reputação do vendedor específico (prefira Loja Oficial)."
+      "observacao": "Marketplace: confira a reputação do vendedor específico (prefira Loja Oficial).",
+      "sources": [
+        "api-oficial",
+        "api-publica",
+        "pagina",
+        "navegador"
+      ],
+      "sourcesFonte": "SetupSniper 3.0 e diagnóstico real de 04/11/2026 (docs/diagnostico-2026-11.md)",
+      "sourcesAtualizadoEm": "2026-11-04"
     },
     {
       "id": "magalu",
@@ -133,7 +184,13 @@
       "reviewsPositivas": 78,
       "atualizadoEm": "2026-11-02",
       "fonte": "estimativa inicial",
-      "observacao": "Marketplace: verifique se é vendido e entregue pela Magalu."
+      "observacao": "Marketplace: verifique se é vendido e entregue pela Magalu.",
+      "sources": [
+        "pagina",
+        "navegador"
+      ],
+      "sourcesFonte": "SetupSniper 3.0 e diagnóstico real de 04/11/2026 (docs/diagnostico-2026-11.md)",
+      "sourcesAtualizadoEm": "2026-11-04"
     },
     {
       "id": "aliexpress",
@@ -156,7 +213,14 @@
       "reviewsPositivas": 70,
       "atualizadoEm": "2026-11-03",
       "fonte": "estimativa inicial",
-      "observacao": "Importação: prazo longo e possível taxa. Prefira vendedores 'Choice' e com nota alta; desconfie de preços muito abaixo da média."
+      "observacao": "Importação: prazo longo e possível taxa. Prefira vendedores 'Choice' e com nota alta; desconfie de preços muito abaixo da média.",
+      "sources": [
+        "api-oficial",
+        "pagina",
+        "navegador"
+      ],
+      "sourcesFonte": "SetupSniper 3.0 e diagnóstico real de 04/11/2026 (docs/diagnostico-2026-11.md)",
+      "sourcesAtualizadoEm": "2026-11-04"
     },
     {
       "id": "shopee",
@@ -179,7 +243,15 @@
       "reviewsPositivas": 72,
       "atualizadoEm": "2026-11-03",
       "fonte": "estimativa inicial",
-      "observacao": "Marketplace: prefira 'Loja Oficial' ou 'Indicado'; hardware barato demais costuma ser golpe ou usado."
+      "observacao": "Marketplace: prefira 'Loja Oficial' ou 'Indicado'; hardware barato demais costuma ser golpe ou usado.",
+      "sources": [
+        "api-oficial",
+        "api-publica",
+        "pagina",
+        "navegador"
+      ],
+      "sourcesFonte": "SetupSniper 3.0 e diagnóstico real de 04/11/2026 (docs/diagnostico-2026-11.md)",
+      "sourcesAtualizadoEm": "2026-11-04"
     },
     {
       "id": "buscape",

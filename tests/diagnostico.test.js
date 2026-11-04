@@ -10,13 +10,19 @@ import { netError } from '../src/http.js';
 test('diagnóstico: uma linha por loja, com as tentativas, e sem CEP, token ou chat', async (t) => {
   const dataDir = mkdtempSync(path.join(tmpdir(), 'setupsniper-'));
   t.after(() => rmSync(dataDir, { recursive: true, force: true }));
-  const { base } = await startDemoServer(t, dataDir);
+  // credenciais vazias: o teste não depende do .env real (loadEnvFile não sobrescreve o que já existe)
+  const semCredenciais = Object.fromEntries(['LOMADEE_API_KEY', 'AWIN_TOKEN', 'AWIN_PUBLISHER_ID', 'AMAZON_CREATORS_CLIENT_ID', 'AMAZON_CREATORS_CLIENT_SECRET', 'AMAZON_PARTNER_TAG', 'ML_CLIENT_ID', 'ML_CLIENT_SECRET', 'SHOPEE_AFFILIATE_APP_ID', 'SHOPEE_AFFILIATE_SECRET', 'ALIEXPRESS_APP_KEY', 'ALIEXPRESS_APP_SECRET'].map(k => [k, '']));
+  const { base } = await startDemoServer(t, dataDir, semCredenciais);
   await fetch(`${base}/api/settings`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cep: '01310-100' }) });
   const d = await (await fetch(`${base}/api/diagnostico`, { method: 'POST' })).json();
   assert.equal(d.lojas.length, 8);
   assert.ok(d.lojas.every(l => Array.isArray(l.tentativas) && typeof l.ms === 'number'));
   assert.deepEqual(Object.keys(d.apisOficiais).sort(), ['aliexpress', 'mercadolivre', 'shopee']);
-  const txt = JSON.stringify(d);
+  // fontes oficiais: só os NOMES das variáveis que faltam (ex.: AWIN_TOKEN), nunca valores
+  assert.ok(d.fontesOficiais.length >= 6);
+  assert.ok(d.fontesOficiais.every(f => typeof f.configurada === 'boolean' && f.faltam.every(v => /^[A-Z][A-Z0-9_]+$/.test(v))));
+  assert.ok(d.fontesOficiais.find(f => f.loja === 'terabyte').faltam.includes('LOMADEE_API_KEY'));
+  const txt = JSON.stringify({ ...d, fontesOficiais: d.fontesOficiais.map(({ faltam, ...f }) => f) });
   assert.doesNotMatch(txt, /01310|cep|token|chatId/i);
 });
 
