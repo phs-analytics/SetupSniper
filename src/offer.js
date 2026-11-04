@@ -113,6 +113,8 @@ export function normalizeOffer(raw, store, { now = new Date() } = {}) {
     // dados públicos do vendedor lidos pelo adaptador (idade, vendas, reputação), para a nota de confiança
     ...(raw.sellerInfo && typeof raw.sellerInfo === 'object' ? { sellerInfo: raw.sellerInfo } : {}),
     ...(raw.catalogId ? { catalogId: String(raw.catalogId) } : {}),
+    // link rastreado da rede de afiliados: guardado à parte; "Ver na loja" usa a URL limpa (opção desligada por padrão)
+    ...(safeHttp(raw.affiliateUrl) ? { affiliateUrl: safeHttp(raw.affiliateUrl) } : {}),
     fetchedAt: now.toISOString(),
   };
 }
