@@ -108,6 +108,17 @@ function parseProduct(text) {
   return null;
 }
 
+// Filtro de privacidade dos grupos e canais lidos pelo bot: só passa o que parece oferta.
+// Oferta = link de loja do escopo (ou encurtador de afiliado a resolver), ou preço junto de um link que não é de rede social.
+// Conversa solta, mesmo com um "R$" no meio, é descartada antes de qualquer processamento.
+const SOCIAL = /^(www\.)?(t\.me|telegram\.me|youtube\.com|youtu\.be|instagram\.com|twitter\.com|x\.com|facebook\.com|discord\.gg|wa\.me|chat\.whatsapp\.com)$/i;
+export function looksLikeOffer(text) {
+  const p = parsePromo(text);
+  if (p.store || p.needsResolution) return true;
+  if (p.announcedPrice == null) return false;
+  return p.links.some((u) => { try { return !SOCIAL.test(new URL(u).hostname); } catch { return false; } });
+}
+
 export function parsePromo(text) {
   const t = String(text ?? '');
   const links = [...t.matchAll(/https?:\/\/[^\s<>"')]+/gi)].map((m) => m[0].replace(/[.,;!?]+$/, ''));
