@@ -513,3 +513,41 @@ dialog .btn.ghost { color: var(--ink); border-color: var(--ink); }
 .receber { max-width: 900px; }
 .rc-items { display: grid; gap: 0; background: var(--paper); color: var(--ink); border: 3px solid var(--ink); border-radius: 12px; overflow: hidden; }
 .rc-items:empty { display: none; }
+
+/* histórico próprio nos Fixados (minigráfico + selos) */
+.hist-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 6px 14px 2px; color: var(--ink2); font: 12px var(--mono); min-width: 0; }
+.hist-spark { color: var(--ink); max-width: 100%; height: auto; flex: 0 1 120px; }
+.hist-spark-min { fill: var(--good); }
+.hist-vazio, .hist-fonte { color: var(--ink2); font-style: italic; }
+.hist-min90 { color: var(--ink); font-weight: 700; }
+.hist-badge { display: inline-block; font: 700 10px var(--mono); padding: 2px 7px; border-radius: 3px; text-transform: uppercase; letter-spacing: .04em; border: 1.5px solid currentColor; }
+.hist-menor { color: var(--good); }
+.hist-inflado { color: #9a6b00; background: rgba(255, 214, 10, .35); transform: rotate(-1.5deg); cursor: help; }
+.hist-comecando { color: var(--ink2); }
+
+/* modo "Por loja" (uma seção recolhível por loja) */
+.psort { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 0 0 12px; }
+.psort .btn.on { background: var(--yellow); color: var(--ink); }
+.pfiltro { display: inline-flex; gap: 6px; align-items: center; color: var(--fg2); font-size: 14px; }
+.ploja { margin: 0 0 14px; }
+.ploja > details { background: var(--paper); color: var(--ink); border: 2px dashed var(--rule); border-radius: 6px; padding: 8px 10px; box-shadow: var(--shadow-sm); }
+.ploja > details > summary { cursor: pointer; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 15px; }
+.ploja .chip.sm { width: 22px; height: 22px; font-size: 12px; display: inline-grid; place-items: center; border-radius: 4px; color: #fff; }
+.presumo { color: var(--ink2); font: 12px var(--mono); }
+.pcard { border-top: 1.5px solid var(--rule); padding: 8px 0; min-width: 0; }
+.ptitle { font-weight: 700; font-size: 14px; overflow-wrap: anywhere; margin-bottom: 4px; }
+.prow { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 4px 10px; align-items: center; padding: 4px 0; }
+.prow.pbest .pprice b { color: var(--good); }
+.prow.risky { opacity: .7; }
+.pwho { font-size: 13px; color: var(--ink2); overflow-wrap: anywhere; min-width: 0; }
+.pnota { font: 12px var(--mono); white-space: nowrap; } .pnota.na { color: var(--ink2); }
+.pprice { font: 14px var(--mono); white-space: nowrap; }
+.pact { grid-column: 1 / -1; display: flex; gap: 6px; flex-wrap: wrap; }
+.pmore, .psemdados, .pocultos { margin-top: 6px; } .pmore > summary, .psemdados > summary, .pocultos > summary { cursor: pointer; font-size: 13px; font-weight: 700; }
+.poculto { border-top: 1px dotted var(--rule); padding: 6px 0; } .pmotivo { color: #9a6b00; font: 12px var(--mono); }
+.pvazio { color: var(--ink2); }
+@media (min-width: 640px) { .prow { grid-template-columns: minmax(0, 1fr) auto auto auto; } .pact { grid-column: auto; } }
+
+/* cupons oficiais x divulgados */
+.cupom-oficial { border-left: 4px solid var(--good); padding-left: 8px; }
+.cupom-divulgado { border-left: 4px dashed var(--warn); padding-left: 8px; }

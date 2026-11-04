@@ -38,8 +38,8 @@ test('página de outra loja ou de verificação é recusada com explicação', (
 
 test('/api/capture aceita página grande e devolve as ofertas com totais e nota', async (t) => {
   const dataDir = mkdtempSync(path.join(tmpdir(), 'setupsniper-'));
-  t.after(() => rmSync(dataDir, { recursive: true, force: true }));
   const { base } = await startDemoServer(t, dataDir);
+  t.after(() => rmSync(dataDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }));
   const html = fx('kabum-produto.html') + '<!--' + 'x'.repeat(300000) + '-->';
   const r = await (await fetch(`${base}/api/capture`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ url: 'https://www.kabum.com.br/produto/426262', html }) })).json();
@@ -51,8 +51,8 @@ test('/api/capture aceita página grande e devolve as ofertas com totais e nota'
 
 test('preço enviado pelo navegador entra na busca da loja', async (t) => {
   const dataDir = mkdtempSync(path.join(tmpdir(), 'setupsniper-'));
-  t.after(() => rmSync(dataDir, { recursive: true, force: true }));
   const { base } = await startDemoServer(t, dataDir);
+  t.after(() => rmSync(dataDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }));
   await fetch(`${base}/api/capture`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ url: 'https://www.kabum.com.br/produto/426262', html: fx('kabum-produto.html'), source: 'extensao' }) });
   const body = await (await fetch(`${base}/api/search?q=${encodeURIComponent('ryzen 7 7800x3d')}&stores=kabum`)).text();

@@ -25,3 +25,9 @@ data/promos.json
 # login da conta do Mercado Livre (tokens)
 data/ml-auth.json
 
+# grupos e canais do Telegram conectados ao bot (lista de permissão)
+data/telegram-groups.json
+# histórico próprio de preços (um arquivo por mês)
+data/history/
+# cupons oficiais lidos das redes de afiliados
+data/coupons-feed.json

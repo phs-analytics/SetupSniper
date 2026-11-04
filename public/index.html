@@ -65,6 +65,7 @@
         <div class="seg" id="view" aria-label="Como mostrar">
           <button type="button" data-view="compare" class="on" title="Agrupa o mesmo produto: todas as lojas e todos os vendedores lado a lado">Comparativo</button>
           <button type="button" data-view="list">Lista</button>
+          <button type="button" data-view="porloja" title="Uma seção por loja, com vários produtos e só vendedores bem avaliados (os outros ficam em Mostrar ocultos)">Por loja</button>
         </div>
         <div class="seg" id="sort">
           <button type="button" data-sort="balance" class="on" title="Padrão: menor preço entre os vendedores mais confiáveis. A nota de confiança menor recebe penalidade de até 25% no preço; alto risco e suspeitos ficam por último.">Melhor escolha</button>
@@ -148,6 +149,7 @@
       </div>
       <div class="panel">
         <div class="panel-head"><h2>Cupons salvos</h2><p class="muted">Cupom de post ou canal vale por 24 h e aparece como "não verificado" até você marcar se funcionou.</p></div>
+        <p class="muted" id="coupon-feed-status"></p>
         <div id="coupon-list" class="alert-log"></div>
         <details class="addc"><summary>Cadastrar cupom manualmente</summary>
           <form id="coupon-form" class="form-grid">
@@ -197,6 +199,13 @@
         <div class="panel-head"><h2>Conta do Mercado Livre</h2>
           <p class="muted">Login oficial (OAuth) na <b>sua</b> conta, só para leitura: a API passa a trazer todos os vendedores de cada produto. O SetupSniper não compra, não vê seus pedidos e não guarda a sua senha.</p></div>
         <div id="ml-box"></div>
+      </div>
+      <div class="panel" id="pl-panel">
+        <div class="panel-head"><h2>Busca por loja e vendedores</h2>
+          <p class="muted">No modo <b>Por loja</b>, só aparecem vendedores com nota igual ou acima da mínima ("bom" é 70). Os outros ficam em <b>Mostrar ocultos</b>, com o motivo. A nota é uma estimativa do SetupSniper, não uma certificação.</p></div>
+        <p><label class="check">Nota mínima <input type="number" id="pl-nota" min="0" max="100" step="5" style="width:5em"></label>
+          <label class="check">Produtos por loja <input type="number" id="pl-n" min="1" max="30" style="width:4em"></label></p>
+        <label class="check"><input type="checkbox" id="pl-alerta"> Alertas dos Fixados só para vendedor acima da nota mínima</label>
       </div>
       <div class="panel" id="aff-panel">
         <div class="panel-head"><h2>Links de afiliado</h2>

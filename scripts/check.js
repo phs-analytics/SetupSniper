@@ -12,10 +12,11 @@ for (const f of sh('git ls-files "*.js"').split('\n').filter(Boolean)) {
 }
 
 // 2) arquivos pessoais nunca podem estar versionados
-const PRIVATE = ['.env', 'data/settings.json', 'data/watchlist.json', 'data/history.json', 'data/alerts.json', 'data/coupons.json', 'data/channels-state.json', 'data/promos.json', 'data/ml-auth.json'];
+const PRIVATE = ['.env', 'data/settings.json', 'data/watchlist.json', 'data/history.json', 'data/alerts.json', 'data/coupons.json', 'data/channels-state.json', 'data/promos.json', 'data/ml-auth.json', 'data/telegram-groups.json', 'data/coupons-feed.json'];
 const tracked = new Set(sh('git ls-files').split('\n'));
 for (const f of PRIVATE) if (tracked.has(f)) bad(`${f} está no git — remova com: git rm --cached ${f}`);
 if ([...tracked].some(f => f.startsWith('logs/'))) bad('a pasta logs/ está no git');
+if ([...tracked].some(f => f.startsWith('data/history/'))) bad('a pasta data/history/ (histórico de preços) está no git');
 
 // 3) padrões de segredo (token do Telegram, tokens do GitHub, chaves privadas)
 const PATTERNS = ['[0-9]{8,10}:[A-Za-z0-9_-]{35}', 'gh[pousr]_[A-Za-z0-9]{36}', 'BEGIN [A-Z ]*PRIVATE KEY', 'xox[baprs]-[A-Za-z0-9-]{10,}'];

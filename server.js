@@ -17,7 +17,12 @@ import { rankOffers } from './src/ranking.js';
 import { parsePromo, storeFromUrl } from './src/promo-parser.js';
 import { resolveLink } from './src/link-resolver.js';
 import { inferCouponRule, defaultExpiry, isCouponActive, SOURCE_LABEL } from './src/discounts.js';
-import { parseChannelPage, channelUrl, validChannel } from './src/telegram-channels.js';
+import { parseChannelPage, channelUrl, validChannel, channelConfigs, planChannelReads, nextState, postsAfterCursor, DEFAULT_SCHEDULE } from './src/telegram-channels.js';
+import { normalizeGroups } from './src/telegram-groups.js';
+import { createPriceHistory, keepaConfigured, fetchKeepa } from './src/price-history.js';
+import { dailyMin } from './public/historico.js';
+import { createCouponFeed, mergeCoupons } from './src/coupon-feed.js';
+import { normalizeRules, buscarAteCompletar, produtosBons, vendedorAprovado } from './src/por-loja.js';
 import { channelStatus, promoFromPost, addPromos, queryPromos, watchMatches } from './src/promo-feed.js';
 import { fetchPtax } from './src/ptax.js';
 import { parseProductPage } from './src/scraper.js';
@@ -26,7 +31,7 @@ import { browserAvailable } from './src/browser.js';
 import { configured as officialConfigured, setMlUserTokenProvider } from './src/official-apis.js';
 import { authUrl as mlAuthUrl, newState, codeFromInput, exchangeCode, validToken } from './src/ml-oauth.js';
 import { parseCapture } from './src/capture.js';
-import { startBot, sendMessage, escHtml } from './src/telegram.js';
+import { startBot, sendMessage, escHtml, telegramStatus } from './src/telegram.js';
 import { VERSION, selfUpdate } from './src/update.js';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
@@ -64,17 +69,32 @@ const alertState = await readJson('alerts.json', { last: {}, log: [] });
 
 // Preço de referência para ordenar, comparar metas e alertar: Pix (padrão) ou crédito.
 settings.priceReference ??= 'pix';
-settings.affiliateLinks ??= false;                               // "Ver na loja" com link de afiliado: só se o dono ligar (aviso visível)
+settings.affiliateLinks ??= false;
+settings.porLoja ??= {};                                        // { soVendedorBom, notaMinima, produtosPorLoja, ordem, alertasSoVendedorBom }                               // "Ver na loja" com link de afiliado: só se o dono ligar (aviso visível)
 
 // ---------- Fases 2 e 3: cupons, perfil, CEP, cotação e regras configuráveis ----------
 const taxesCfg = await readConfig('taxes.json', { importTaxStores: [] });
 const cepUf = await readConfig('cep-uf.json', { faixas: [] });
 const couponRules = await readConfig('coupon-rules.json', { channelTtlHours: 24, stacking: { default: 1 } });
 const couponsDb = await readJson('coupons.json', { coupons: [] });
+// cupons OFICIAIS das redes de afiliados (Awin, Lomadee), lidos a cada 6 h, em data/coupons-feed.json (fora do git).
+// Juntos com os divulgados (Telegram, manuais): mesmo código nas duas origens fica com o rótulo oficial.
+const couponFeed = createCouponFeed({ file: DATA('coupons-feed.json') });
+await couponFeed.load().catch(e => console.error('[cupons] ' + e.message));
+const allCoupons = () => mergeCoupons(couponFeed.active(), couponsDb.coupons);
 const channelsState = await readJson('channels-state.json', { seen: {} });
 channelsState.status ??= {};                                    // canal -> { ok, at, posts, error, noPreview }
 channelsState.alerted ??= [];                                   // posts que já geraram aviso de produto fixado
-const suggestedChannels = (await readConfig('telegram-channels.json', { canais: [] })).canais ?? [];
+const searchRulesCfg = await readConfig('search-rules.json', {});
+const porLojaRules = () => normalizeRules(searchRulesCfg, settings.porLoja ?? {});
+const channelsCfg = await readConfig('telegram-channels.json', { canais: [] });
+const suggestedChannels = channelsCfg.canais ?? [];
+// cada canal tem o seu intervalo (3 a 30 min), recua quando a prévia falha e lê só depois do último post visto.
+const channelSchedule = () => ({ ...DEFAULT_SCHEDULE, ...(channelsCfg.agendamento ?? {}), intervaloPadraoMin: settings.channelIntervalMin ?? channelsCfg.agendamento?.intervaloPadraoMin ?? 30 });
+const channelCfgs = () => channelConfigs(settings.channels ?? [], suggestedChannels, channelSchedule());
+// Grupos e canais onde o bot está (lista de permissão, fora do git) e o que o getMe disse do privacy mode.
+let tgGroups = normalizeGroups(await readJson('telegram-groups.json', { groups: [] }));
+let tgBotInfo = null, tgLastPost = null;
 const promosDb = await readJson('promos.json', { promos: [] }); // feed de promoções lidas dos canais (dado do usuário)
 settings.cep ??= '';                                            // fica só em data/settings.json (fora do git), nunca em logs ou no Telegram
 settings.fx ??= { usdBrl: null, mode: 'manual', updatedAt: null };
@@ -97,7 +117,7 @@ function sellerData(o) {
   };
 }
 const trustOf = (o) => finalScore({ platformScore: scoreOf(o.store), seller: sellerData(o), offer: { suspeito: !!o.suspeito, title: o.title } }, sellerScoreCfg, { now: new Date() });
-const withTotals = (o) => ({ ...o, totals: finalTotals(o, couponsDb.coupons, settings.profile, totalsCtx(o.store)) });
+const withTotals = (o) => ({ ...o, totals: finalTotals(o, allCoupons(), settings.profile, totalsCtx(o.store)) });
 const withTrust = (o) => ({ ...o, trust: trustOf(o) });
 const trustScore = (o) => o?.trust?.score ?? scoreOf(o?.store ?? o?.storeId);
 const refKind = () => (settings.priceReference === 'card' ? 'card' : 'pix');
@@ -116,6 +136,13 @@ if (history.__schema !== 2) {
   history.__schema = 2;
   if (existsSync(DATA('history.json'))) writeJson('history.json', history);
 }
+// histórico próprio de preços (JSONL por mês em data/history/, fora do git). O history.json continua
+// alimentando os minigráficos por loja; os pontos antigos são copiados uma vez para o formato novo.
+const priceHist = createPriceHistory({ dir: process.env.DATA_DIR || path.join(ROOT, 'data'), onError: (e) => console.error('[histórico]', e?.message ?? e) });
+priceHist.migrateLegacy(history, watch.items).catch(e => console.error('[histórico] migração:', e.message));
+const histCache = {};        // itemId -> { ind, points } (indicadores e minigráfico dos Fixados)
+const keepaAt = {};          // itemId -> última consulta ao Keepa (ms)
+const pixOf = (o) => o?.price?.pix ?? o?.price?.card ?? null;
 if (alertState.schema !== 2) {
   for (const e of alertState.log) e.price = reaisParaCentavos(e.price);
   for (const v of Object.values(alertState.last)) v.price = reaisParaCentavos(v.price);
@@ -157,11 +184,13 @@ function state() {
     alerts: alertState.log.slice(0, 30),
     ml: mlStatus(),
     channels: { suggested: suggestedChannels, status: channelsState.status, reading: readingChannels, promos: promosDb.promos.length },
-    coupons: couponsDb.coupons.filter(c => isCouponActive(c) || Date.now() - Date.parse(c.seenAt ?? 0) < 7 * 864e5).slice(0, 200),
+    coupons: mergeCoupons(couponFeed.active(), couponsDb.coupons.filter(c => isCouponActive(c) || Date.now() - Date.parse(c.seenAt ?? 0) < 7 * 864e5)).slice(0, 250),
+    couponFeed: (({ atualizadoEm, proximaEm, intervaloHoras, redes, historico }) => ({ atualizadoEm, proximaEm, intervaloHoras, redes, historico: (historico ?? []).slice(0, 50) }))(couponFeed.state()),
     taxes: { importTaxStores: taxesCfg.importTaxStores, atualizadoEm: taxesCfg.atualizadoEm },
     items: watch.items.map(it => ({
       ...it, checking: checking.has(it.id),
       bestHistory: (history[`${it.id}:__best`] ?? []).slice(-60),
+      hist: histCache[it.id] ?? null,
       offers: monitorIds().map(sid => ({ storeId: sid, pin: it.pins?.[sid] ?? null, searchUrl: ADAPTERS[sid]?.url(it.query, 1), ...offers[it.id]?.[sid], history: (history[`${it.id}:${sid}`] ?? []).slice(-40) })),
     })),
   };
@@ -219,21 +248,27 @@ async function demoSearch(storeId, q, page = 1) {
 }
 
 // ---------- busca ----------
-async function searchOne(storeId, q, deep, page = 1) {
-  const r = DEMO ? await demoSearch(storeId, q, page)
-    : await searchStore(storeId, q, { deep, page, browserFallback: settings.browserFallback !== false });
+async function searchOne(storeId, q, deep, page = 1, { porLoja = false } = {}) {
+  const one = (id, qq, { page: pg }) => DEMO ? demoSearch(id, qq, pg) : searchStore(id, qq, { deep, page: pg, browserFallback: settings.browserFallback !== false });
+  let r;
+  if (porLoja && page === 1 && !deep) {
+    const rules = porLojaRules();
+    const contar = (raw) => produtosBons(cleanResults(raw.map(x => normalizeOffer(x, storeId)), q).map(x => withTrust(withTotals({ ...x, storeId }))), q, { rules, refOf });
+    r = await buscarAteCompletar(storeId, q, { search: one, maxPages: rules.maxPages, needed: rules.resultsPerStore, contar });
+  } else r = await one(storeId, q, { page });
   const offersRaw = r.items.map(x => normalizeOffer(x, storeId));
   let items = cleanResults(offersRaw, q), approx = false;
   // Nenhum título com TODOS os termos: mostra os parecidos (≥ 60% dos termos), marcados como tal,
   // em vez de "nenhum resultado" (ex.: a loja escreve "RX7600" e a busca foi "rx 7600 xt 8gb").
   if (!items.length && offersRaw.length) { items = cleanResults(offersRaw, q, { minRel: 0.6 }).map(x => ({ ...x, approx: true })); approx = items.length > 0; }
   items = items.map(x => withTotals({ ...x, storeId }));
+  if (!DEMO && !approx) priceHist.recordMany(items.filter(x => x.price?.pix && x.title).map(x => ({ title: x.title, store: storeId, seller: x.seller?.name ?? null, pix: x.price.pix, origem: r.source === 'api-oficial' || r.source === 'feed-afiliado' ? 'api' : 'busca' }))).catch(() => {});
   // + preços que o seu navegador enviou desta loja nas últimas 24 h (se não vieram de novo agora)
   if (page === 1) { const urls = new Set(items.map(x => x.canonicalUrl ?? x.url)); items.push(...capturedFor(storeId, q).filter(x => !urls.has(x.canonicalUrl ?? x.url))); }
   return { items, searchUrl: r.searchUrl, raw: r.items.length, approx, hasMore: !!r.hasMore, page: r.page ?? page };
 }
 
-async function runSearch(q, { deep = false, stores, onStore, page = 1 } = {}) {
+async function runSearch(q, { deep = false, stores, onStore, page = 1, porLoja = false } = {}) {
   const ativos = activeIds();
   const ids = (stores?.length ? stores : ativos)
     .filter(id => ativos.includes(id) && ADAPTERS[id] && (deep || !ADAPTERS[id].deepOnly));
@@ -241,7 +276,7 @@ async function runSearch(q, { deep = false, stores, onStore, page = 1 } = {}) {
   await Promise.all(ids.map(async (id) => {
     const t0 = Date.now();
     try {
-      const r = await searchOne(id, q, deep, page);
+      const r = await searchOne(id, q, deep, page, { porLoja });
       r.items = r.items.map(withTrust);
       all.push(...r.items);
       // Sem itens: diz por quê ("a loja não achou nada" é diferente de "achou, mas nenhum era o produto")
@@ -284,6 +319,7 @@ async function diagnostico(q = 'ssd 1tb') {
       // fontes oficiais por loja: configurada ou não e QUAIS variáveis faltam (só os nomes, nunca os valores)
       fontesOficiais: officialSourcesStatus(activeIds()).map(f => ({ loja: f.loja, nome: f.nome, configurada: f.configurada, faltam: f.faltam })),
       pausas: listBlockPauses(),
+      telegram: (({ channels, groups, privacyMode, lastPost }) => ({ canais: channels, grupos: groups.length, privacyMode, ultimoPost: lastPost?.at ?? null }))(telegramStatus({ channelsState, groups: tgGroups, privacyMode: tgBotInfo ?? undefined, lastPost: tgLastPost ?? undefined })),
     };
   })();
   try { return await diagRunning; } finally { diagRunning = null; }
@@ -337,14 +373,35 @@ async function checkItem(it) {
         title: o?.title ?? res[sid]?.title ?? null, url: o?.url ?? res[sid]?.url ?? null, image: o?.image ?? null,
         suspeito: !!o?.suspeito, pinned: !!o?.pinned, official: !!o?.seller?.official, count: st.count ?? 0,
       };
-      if (st.status === 'ok') record(`${it.id}:${sid}`, st.price);
+      if (st.status === 'ok') {
+        record(`${it.id}:${sid}`, st.price);
+        if (pixOf(o)) priceHist.record({ title: o.title ?? it.name, store: sid, seller: o.seller?.name ?? null, pix: pixOf(o), origem: 'fixado', key: `${it.id}:${sid}` });
+      }
     }
     const valid = Object.entries(res).filter(([sid, o]) => o.status === 'ok' && !o.suspeito && (trustScore(o.offer) ?? 0) >= settings.alerts.minScore);
     if (valid.length) record(`${it.id}:__best`, Math.min(...valid.map(([, o]) => o.price)));
     await evaluateAlerts(it);
+    await refreshItemHistory(it, valid.length ? Math.min(...valid.map(([, o]) => pixOf(o.offer) ?? o.price)) : null).catch(e => log('[histórico] ' + e.message));
   } finally {
     checking.delete(it.id); broadcast();
   }
+}
+
+// Indicadores e minigráfico do fixado (todas as lojas, pelo nome do produto). Com KEEPA_API_KEY, os produtos da
+// Amazon puxam o histórico de lá no máximo 1x por dia, marcado "fonte: Keepa".
+async function refreshItemHistory(it, atual) {
+  if (!DEMO && keepaConfigured() && Date.now() - (keepaAt[it.id] ?? 0) > 24 * 3600e3) {
+    const asin = String(offers[it.id]?.amazon?.url ?? it.pins?.amazon ?? '').match(/\/(?:dp|gp\/product)\/([A-Z0-9]{10})/i)?.[1];
+    if (asin) {
+      keepaAt[it.id] = Date.now();
+      try { const k = await fetchKeepa(asin); await priceHist.recordMany(k.points.map(p => ({ ...p, key: `${it.id}:amazon` }))); }
+      catch (e) { log('[keepa] ' + e.message); }
+    }
+  }
+  await priceHist.flush();
+  const pts = await priceHist.series({ title: it.name, days: 90 });
+  const ind = await priceHist.indicators(pts, { atual: atual ?? undefined });
+  histCache[it.id] = { ind, points: dailyMin(pts).slice(-90), fonte: pts.some(p => p.origem === 'keepa') ? 'Keepa' : null };
 }
 
 async function refreshAll() {
@@ -372,6 +429,7 @@ async function evaluateAlerts(it) {
     if (o.status !== 'ok' || !o.price || (o.suspeito && !a.allowSuspicious)) continue;
     const sc = trustScore(o.offer) ?? scoreOf(sid);
     if (sc != null && sc < a.minScore) continue;
+    if (settings.porLoja?.alertasSoVendedorBom !== false && o.offer && !vendedorAprovado(o.offer, porLojaRules().minScore)) continue;
     const reasons = [];
     if (it.target && o.price <= it.target) reasons.push(`total final (${refKind() === 'pix' ? 'Pix' : 'cartão'}) caiu abaixo da sua meta de ${brl(it.target)}`);
     if (avg && o.price <= avg * (1 - a.dropPct / 100)) reasons.push(`${Math.round((1 - o.price / avg) * 100)}% abaixo da média de 30 dias (${brl(avg)})`);
@@ -571,20 +629,27 @@ let readingChannels = false;
 // Lê cada canal ativado pela prévia pública t.me/s/<canal>, um de cada vez, com pausa entre eles.
 // Toda promoção com link de loja do escopo entra no feed (aba Promoções). Posts com cupom também passam
 // pelo fluxo dos posts encaminhados (resolve o link, lê o preço na loja e salva o cupom), no máximo 3 por canal.
-async function readChannels() {
+async function readChannels({ only } = {}) {
   if (readingChannels) return;
   readingChannels = true; broadcast();
   const novos = [];
+  const cfgs = channelCfgs();
+  const quero = only ? new Set(only.map(n => n.toLowerCase())) : null;
   try {
     for (const canal of (settings.channels ?? []).filter(validChannel)) {
       const nome = canal.replace(/^@/, '');
+      if (quero && !quero.has(nome.toLowerCase())) continue;
+      const cfg = cfgs.find(c => c.canal === nome.toLowerCase()) ?? nome;
+      const cursor = channelsState.sched?.[nome.toLowerCase()]?.cursor;
       try {
-        const html = DEMO ? demoChannelPage(nome) : await fetchText(channelUrl(nome), { useCache: false });
+        const html = DEMO ? demoChannelPage(nome) : await fetchText(channelUrl(nome, { after: cursor }), { useCache: false });
         const posts = parseChannelPage(html);
-        channelsState.status[nome] = { ...channelStatus(html, posts), at: new Date().toISOString() };
+        const st = channelStatus(html, posts);
+        channelsState.status[nome] = { ...st, at: new Date().toISOString() };
+        channelsState.sched = nextState(channelsState.sched ?? {}, cfg, st.ok ? { ok: true, posts } : { ok: false, error: st.error, noPreview: !!st.noPreview }, Date.now(), channelSchedule());
         const seen = new Set(channelsState.seen[nome] ?? []);
         let comCupom = 0;
-        for (const post of posts.filter(x => !seen.has(x.id))) {
+        for (const post of postsAfterCursor(posts, cursor).filter(x => !seen.has(x.id))) {
           seen.add(post.id);
           const p = parsePromo(post.text);
           const promo = promoFromPost(post, nome, p, { activeStores: activeIds() });
@@ -598,18 +663,41 @@ async function readChannels() {
         channelsState.seen[nome] = [...seen].slice(-300);
       } catch (e) {
         channelsState.status[nome] = { ok: false, error: e.message, at: new Date().toISOString() };
+        channelsState.sched = nextState(channelsState.sched ?? {}, cfg, { ok: false, error: e.message }, Date.now(), channelSchedule());
         log(`[canal ${nome}] ${e.message}`);
       }
       if (!DEMO) await sleep(2500);   // educado: um canal de cada vez
     }
-    promosDb.promos = addPromos(promosDb.promos, novos);
-    await writeJson('promos.json', promosDb);
-    await alertPromoMatches(novos);
+    await newPromos(novos);
   } finally {
     readingChannels = false;
     await writeJson('channels-state.json', channelsState);
     broadcast();
   }
+}
+
+// Saída única de todo post novo (canal, grupo, canal com o bot admin): feed, aviso de Fixado e página aberta (SSE).
+async function newPromos(novos) {
+  if (!novos.length) return;
+  promosDb.promos = addPromos(promosDb.promos, novos);
+  await writeJson('promos.json', promosDb);
+  if (!DEMO) priceHist.recordMany(novos.filter(p => p.store && p.product && Number.isInteger(p.price) && p.price > 0).map(p => ({ title: p.product, store: p.store, pix: p.price, origem: 'telegram' }))).catch(() => {});
+  await alertPromoMatches(novos);
+  broadcast();
+}
+const promoVia = (promo) => promo.via ?? '@' + promo.channel;
+
+// Post de grupo ou de canal onde o bot está. Não guarda autor: só o nome do grupo/canal.
+async function ingestBotPost(text, meta) {
+  const nome = meta.sourceName ?? meta.chatTitle ?? 'grupo';
+  const post = { id: `${meta.source}:${Date.now()}`, url: meta.sourceUrl ?? null, date: new Date().toISOString(), text };
+  tgLastPost = { at: post.date, source: meta.source, sourceName: nome };
+  const p = parsePromo(text);
+  const promo = promoFromPost(post, nome, p, { activeStores: activeIds() });
+  if (!promo) return;
+  promo.via = nome;
+  await newPromos([promo]);
+  if (!DEMO && p.coupons.length && p.store) await processPromo(text, { source: 'telegram_channel', sourceName: nome, sourceUrl: meta.sourceUrl ?? null }).catch(e => log(`[grupo] ${e.message}`));
 }
 
 // Promoção de canal que bate com um produto fixado e está dentro da meta: avisa no Telegram.
@@ -623,13 +711,13 @@ async function alertPromoMatches(novos) {
     if (!its.length) continue;
     channelsState.alerted = [...channelsState.alerted, promo.id].slice(-500);
     const entry = { t: Date.now(), itemId: its[0].id, item: its[0].name, storeId: promo.store, store: promo.store ? storeName(promo.store) : 'loja a confirmar',
-      price: promo.price, url: promo.postUrl, reasons: [`divulgado no canal @${promo.channel}, não verificado`], fromChannel: true, sent: false };
+      price: promo.price, url: promo.postUrl, reasons: [`divulgado por ${promoVia(promo)}, não verificado`], fromChannel: true, sent: false };
     if (tgc.token && tgc.chatId) {
       try {
         await sendMessage(tgc.token, tgc.chatId,
           `📣 <b>Promoção num canal</b> para <b>${escHtml(its[0].name)}</b>\n\n${escHtml(promo.product ?? '')}\n💰 <b>${brl(promo.price)}</b>${promo.store ? ` na ${escHtml(storeName(promo.store))}` : ''}` +
           (promo.coupons.length ? `\n🎟️ ${escHtml(promo.coupons.join(' ou '))}` : '') +
-          `\n\n<i>Divulgado por @${escHtml(promo.channel)}, não verificado. Confira o total na loja.</i>\n<a href="${escHtml(promo.postUrl)}">Ver o post</a>` + (DEMO ? '\n\n(modo demo)' : ''));
+          `\n\n<i>Divulgado por ${escHtml(promoVia(promo))}, não verificado. Confira o total na loja.</i>\n<a href="${escHtml(promo.postUrl)}">Ver o post</a>` + (DEMO ? '\n\n(modo demo)' : ''));
         entry.sent = true;
       } catch (e) { entry.error = e.message; }
     }
@@ -673,7 +761,11 @@ const botHandlers = {
       (d.fontesOficiais.some(f => !f.configurada) ? '\n\n🔑 <b>Credenciais que faltam</b>\n' + d.fontesOficiais.filter(f => !f.configurada).map(f => `${escHtml(storeName(f.loja))} (${escHtml(f.nome)}): ${f.faltam.map(escHtml).join(', ')}`).join('\n') : '') +
       `\n\nNavegador headless: ${d.navegador ? 'sim' : 'não'}. Relatório completo: aba Lojas → Diagnóstico.`;
   },
-  post: async (text) => processPromo(text, { source: 'telegram_forward' }),
+  post: async (text, meta = {}) => {
+    if (meta.source === 'telegram_group' || meta.source === 'telegram_bot_channel') return ingestBotPost(text, meta);
+    tgLastPost = { at: new Date().toISOString(), source: 'telegram_forward', sourceName: meta.sourceName ?? null };
+    return processPromo(text, { source: 'telegram_forward', ...(meta.sourceName ? { sourceName: meta.sourceName, sourceUrl: meta.sourceUrl ?? null } : {}) });
+  },
   async callback(data) {
     const [acao, id] = String(data).split(':');
     if (acao === 'ok') { const c = setCouponStatus(id, 'confirmed_by_user'); return `✅ Anotado: o cupom ${escHtml(c.codes[0])} funcionou.`; }
@@ -687,7 +779,7 @@ const botHandlers = {
     return 'Ação desconhecida.';
   },
   async cupons() {
-    const ativos = couponsDb.coupons.filter(c => isCouponActive(c));
+    const ativos = allCoupons().filter(c => isCouponActive(c));
     if (!ativos.length) return 'Nenhum cupom ativo. Encaminhe um post de promoção para eu salvar o cupom.';
     return '🎟️ <b>Cupons ativos</b>\n\n' + ativos.slice(0, 15).map(c => `<code>${c.codes.map(escHtml).join(' / ')}</code> · ${escHtml(storeName(c.store))} · ${c.status === 'confirmed_by_user' ? 'funcionou' : 'não verificado'}${c.expiresAt ? ` · até ${new Date(c.expiresAt).toLocaleString('pt-BR')}` : ''}`).join('\n');
   },
@@ -788,11 +880,12 @@ const server = http.createServer(async (req, res) => {
       const deep = url.searchParams.get('deep') === '1';
       const stores = (url.searchParams.get('stores') ?? '').split(',').filter(Boolean);
       const page = Math.max(1, Math.min(20, Number(url.searchParams.get('page')) || 1));   // scroll infinito
+      const porLoja = url.searchParams.get('modo') === 'porloja';
       res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });
       let closed = false; req.on('close', () => { closed = true; });
       const send = (o) => !closed && res.write(`data: ${JSON.stringify(o)}\n\n`);
       log(`[busca] "${q}"${deep ? ' (profunda)' : ''}${page > 1 ? ` · página ${page}` : ''}`);
-      await runSearch(q, { deep, stores, page, onStore: (r) => send({ type: 'store', ...r }) });
+      await runSearch(q, { deep, stores, page, porLoja, onStore: (r) => send({ type: 'store', ...r }) });
       send({ type: 'done' }); return res.end();
     }
 
@@ -814,6 +907,7 @@ const server = http.createServer(async (req, res) => {
       if (!r.items.length) return json(res, 422, { store: r.store, kind: r.kind, items: [], error: r.error ?? 'nenhum preço encontrado' });
       const items = flagOutliers(r.items.map(x => withTotals({ ...normalizeOffer(x, r.store), storeId: r.store, captured: true, capturedAt: Date.now() })), refOf).map(withTrust);
       rememberCaptures(items);
+      priceHist.recordMany(items.filter(x => x.price?.pix && x.title).map(x => ({ title: x.title, store: r.store, seller: x.seller?.name ?? null, pix: x.price.pix, origem: 'extensao' }))).catch(() => {});
       // Produto fixado com este link: atualiza o preço agora, como se a verificação tivesse rodado
       let atualizados = 0;
       if (r.kind === 'product') {
@@ -911,6 +1005,14 @@ const server = http.createServer(async (req, res) => {
       }
       if ('priceReference' in b) settings.priceReference = b.priceReference === 'card' ? 'card' : 'pix';
       if ('affiliateLinks' in b) settings.affiliateLinks = !!b.affiliateLinks;
+      if (b.porLoja && typeof b.porLoja === 'object') {
+        const pl = b.porLoja, cur = settings.porLoja;
+        if ('soVendedorBom' in pl) cur.soVendedorBom = !!pl.soVendedorBom;
+        if ('alertasSoVendedorBom' in pl) cur.alertasSoVendedorBom = !!pl.alertasSoVendedorBom;
+        if ('notaMinima' in pl) cur.notaMinima = Math.min(100, Math.max(0, Math.round(Number(pl.notaMinima) || 0)));
+        if ('produtosPorLoja' in pl) cur.produtosPorLoja = Math.min(30, Math.max(1, Math.round(Number(pl.produtosPorLoja) || 10)));
+        if ('ordem' in pl && ['melhor', 'preco', 'nota'].includes(pl.ordem)) cur.ordem = pl.ordem;
+      }
       if (Array.isArray(b.monitorStores)) settings.monitorStores = b.monitorStores.filter(id => activeIds().includes(id));
       if (b.intervalMin) { settings.intervalMin = Math.max(5, Math.min(720, Number(b.intervalMin))); schedule(); }
       // Fase 3: CEP (só 8 dígitos), cotação do dólar, perfil e canais
@@ -968,13 +1070,20 @@ const server = http.createServer(async (req, res) => {
       await saveCoupons(); broadcast();
       return json(res, 201, c);
     }
+    if (pathname === '/api/coupons/feed' && req.method === 'GET') return json(res, 200, couponFeed.state());
+    if (pathname === '/api/coupons/feed/refresh' && req.method === 'POST') {
+      const r = await couponFeed.refresh({ force: true }); broadcast();
+      return json(res, 200, { ok: r.ok ?? true, redes: r.redes, ativos: (r.ativos ?? []).length });
+    }
     const cm = pathname.match(/^\/api\/coupons\/([\w-]+)$/);
     if (cm && req.method === 'PATCH') {
       const b = await body(req);
       if (!['confirmed_by_user', 'expired', 'unverified'].includes(b.status)) return json(res, 400, { error: 'Status inválido' });
+      if (couponFeed.isOfficialId(cm[1])) { try { const c = couponFeed.setStatus(cm[1], b.status); broadcast(); return json(res, 200, c); } catch (e) { return json(res, 404, { error: e.message }); } }
       try { return json(res, 200, setCouponStatus(cm[1], b.status)); } catch (e) { return json(res, 404, { error: e.message }); }
     }
     if (cm && req.method === 'DELETE') {
+      if (couponFeed.isOfficialId(cm[1])) return json(res, 400, { error: 'Cupom oficial não se apaga: ele voltaria na próxima consulta. Marque ❌ Não funcionou.' });
       couponsDb.coupons = couponsDb.coupons.filter(c => c.id !== cm[1]);
       await saveCoupons(); broadcast();
       return json(res, 200, { ok: true });
@@ -988,7 +1097,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     // Módulos puros compartilhados com a interface (a mesma regra de agrupar e ordenar nos dois lados)
-    const lib = pathname.match(/^\/lib\/(compare|extract|ranking|offer)\.js$/);
+    const lib = pathname.match(/^\/lib\/(compare|extract|ranking|offer|por-loja)\.js$/);
     const file = lib ? path.join(ROOT, 'src', lib[1] + '.js') : path.join(ROOT, 'public', pathname === '/' ? 'index.html' : pathname);
     if (!lib && (!file.startsWith(path.join(ROOT, 'public')) || !existsSync(file))) { res.writeHead(404); return res.end('não encontrado'); }
     // no-cache: depois de atualizar o servidor, o navegador confere se há versão nova (sem precisar limpar o cache)
@@ -1020,12 +1129,25 @@ server.listen(PORT, HOST, () => {
   refreshAll();
   schedule();
   setInterval(refreshReclameAqui, 24 * 3600e3);
+  // cupons oficiais (confere a cada 10 min se já passaram 6 h desde a última leitura)
+  if (!DEMO) couponFeed.start({ onUpdate: () => broadcast(), onError: (e) => log(`[cupons] ${e.message}`) });
+  // histórico: pontos com mais de 180 dias viram 1 por dia (o menor)
+  const compactHist = () => priceHist.compact().catch(e => log('[histórico] ' + e.message));
+  setTimeout(compactHist, 10 * 60e3); setInterval(compactHist, 24 * 3600e3);
   // Fase 2 e 3: canais públicos do Telegram (opt-in, intervalo longo) e PTAX (opt-in, 1x por dia)
-  // A cada `channelIntervalMin` (padrão 30 min, mínimo 15). O intervalo é relido a cada rodada.
-  const nextChannels = () => setTimeout(async () => { await readChannels().catch(e => log('[canais] ' + e.message)); nextChannels(); }, Math.max(15, settings.channelIntervalMin ?? 30) * 60e3);
-  setTimeout(() => readChannels().catch(e => log('[canais] ' + e.message)), DEMO ? 1500 : 60e3); nextChannels();
+  // a cada minuto, lê só os canais cujo horário chegou (cada um com o seu intervalo e recuo).
+  const channelTick = () => {
+    if (readingChannels) return;
+    const due = planChannelReads(channelCfgs(), channelsState.sched ??= {}, Date.now(), { schedule: channelSchedule(), limit: 5 });
+    if (due.length) readChannels({ only: due }).catch(e => log('[canais] ' + e.message));
+  };
+  setTimeout(() => readChannels().catch(e => log('[canais] ' + e.message)), DEMO ? 1500 : 60e3);
+  setInterval(channelTick, 60e3);
   refreshPtax(); setInterval(refreshPtax, 24 * 3600e3);
   const t = settings.telegram;
   if (!DEMO && t.token && t.chatId) sendMessage(t.token, t.chatId, `🟢 <b>SetupSniper</b> ligado (v${VERSION.version}). Acompanhando ${watch.items.length} produto(s) fixado(s).`).catch(e => log('[telegram] ' + e.message));
-  startBot({ getSettings: () => settings, saveChatId: async (id) => { settings.telegram.chatId = id; await writeJson('settings.json', settings); broadcast(); }, handlers: botHandlers, log });
+  startBot({ getSettings: () => settings, saveChatId: async (id) => { settings.telegram.chatId = id; await writeJson('settings.json', settings); broadcast(); }, handlers: botHandlers, log,
+    getGroups: () => tgGroups,
+    saveGroups: async (db) => { tgGroups = db; await writeJson('telegram-groups.json', db); broadcast(); },
+    onBotInfo: (info) => { tgBotInfo = info; broadcast(); } });
 });

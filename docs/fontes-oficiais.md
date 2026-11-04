@@ -169,7 +169,7 @@ O feed é o catálogo inteiro da loja (formato Google, JSON Lines). Ele é baixa
 ## Terabyte: busca de produtos da Lomadee
 
 1. Crie uma conta de afiliado na **Lomadee** (https://www.lomadee.com.br) e peça a entrada no programa da **Terabyte** \[não verificado: confira se a Terabyte está na Lomadee\].
-2. No painel, abra o menu do usuário → **Credenciais de API** e crie uma chave com o escopo `products:read`.
+2. No painel, abra o menu do usuário → **Credenciais de API** e crie uma chave com os escopos `products:read` (produtos) e `campaigns:read` (cupons oficiais, veja `docs/cupons.md`).
 3. No `.env`:
    ```
    LOMADEE_API_KEY=...
