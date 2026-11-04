@@ -21,11 +21,12 @@ Roda no seu PC ou num **celular Android antigo** usado como servidor pessoal, qu
 
 | | |
 |---|---|
-| 🔎 **Busca livre** | Digite qualquer produto e os resultados de cada loja aparecem conforme ela responde. |
+| 🔎 **Busca livre** | Digite qualquer produto e os resultados de cada loja aparecem conforme ela responde. O scroll infinito traz mais páginas de cada loja, com as ofertas mais baratas dos vendedores mais confiáveis primeiro. |
 | 🛒 **8 lojas** | KaBuM!, Pichau, Terabyte, Amazon, Mercado Livre, Magalu, Shopee e AliExpress. A **busca profunda** lê mais páginas de cada loja e, no PC, pode usar um navegador headless. O conjunto de lojas é configurável. |
 | 🛡️ **Nota de confiança** | De 0 a 100 por oferta: junta a nota da loja (Reclame Aqui, avaliação, vendas, reviews), os **sinais de risco do vendedor** e os da própria oferta, com motivos e nível de confiança. É uma estimativa do projeto, não uma certificação. |
 | 🧹 **Filtro de lixo** | Descarta acessórios e marca como **suspeito** o preço bom demais para ser verdade. |
 | 💳 **Total Pix e Total Crédito** | Cada oferta mostra os dois totais finais, com cupom, frete e, nos importados de Amazon, AliExpress e Shopee, imposto de importação e ICMS da sua UF. |
+| 📣 **Canais de promoção** | Lê os canais públicos de promoções e cupons do Telegram (26 sugeridos), mostra tudo num feed com scroll infinito e avisa quando um post bate com um produto fixado. |
 | 🎟️ **Cupons** | Encaminhe ao bot um post de promoção: ele resolve o link, lê o preço na loja, salva o cupom e calcula os totais. |
 | 📌 **Fixar produtos** | Fixe uma oferta com **meta de preço**. O servidor confere de tempos em tempos e guarda o histórico. |
 | 🔔 **Alertas no Telegram** | Avisa quando o preço atinge a meta ou cai abaixo da média. Também dá para fixar produtos pelo próprio bot. |

@@ -91,3 +91,19 @@ test('preços muito abaixo da mediana viram suspeitos ou somem', () => {
   assert.equal(out.find(r => r.price.pix === 70000).suspeito, true);
   assert.equal(out.find(r => r.price.pix === 185000).suspeito, false);
 });
+
+test('produto que só MENCIONA um acessório no título não é descartado', () => {
+  const items = [
+    { title: 'Processador AMD Ryzen 7 7800X3D, 4.2GHz, Cooler não incluso', price: 1800 },
+    { title: 'Processador AMD Ryzen 7 7800X3D Box com Cooler Wraith', price: 1850 },
+    { title: 'Kit Ryzen 7 7800X3D sem cabo', price: 1900 },
+    { title: 'Suporte para Ryzen 7 7800X3D', price: 50 },
+    { title: 'Pasta Térmica ideal para Ryzen 7 7800X3D', price: 30 },
+    { title: 'Ryzen 7 7800X3D compatível com placa mãe AM5', price: 1700 },
+  ].map((x, i) => normalizeOffer({ ...x, url: `https://x.com/${i}` }, 'kabum'));
+  const titles = cleanResults(items, Q).map(r => r.title);
+  assert.ok(titles.some(t => /Cooler não incluso/.test(t)));
+  assert.ok(titles.some(t => /Cooler Wraith/.test(t)));
+  assert.ok(titles.some(t => /sem cabo/.test(t)));
+  assert.ok(!titles.some(t => /^Suporte|^Pasta/.test(t)));
+});

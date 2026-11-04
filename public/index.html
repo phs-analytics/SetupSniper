@@ -47,6 +47,7 @@
     <nav class="tabs" role="tablist">
       <a href="#busca" data-tab="busca">Busca</a>
       <a href="#fixados" data-tab="fixados">📌 Fixados <span class="count" id="count-mon">0</span></a>
+      <a href="#promos" data-tab="promos">📣 Promoções <span class="count" id="count-promo">0</span></a>
       <a href="#cupons" data-tab="cupons">🎟️ Cupons <span class="count" id="count-cup">0</span></a>
       <a href="#lojas" data-tab="lojas">Lojas</a>
       <a href="#alertas" data-tab="alertas">Alertas <span class="dot" id="tg-dot" hidden></span></a>
@@ -58,8 +59,8 @@
       <div id="progress" class="progress" hidden></div>
       <div id="results-tools" class="controls" hidden>
         <div class="seg" id="sort">
-          <button type="button" data-sort="price" class="on">Menor preço</button>
-          <button type="button" data-sort="balance" title="Preço ajustado ao risco: score menor recebe penalidade de até 25%">Custo × confiança</button>
+          <button type="button" data-sort="balance" class="on" title="Padrão: menor preço entre os vendedores mais confiáveis. A nota de confiança menor recebe penalidade de até 25% no preço; alto risco e suspeitos ficam por último.">Melhor escolha</button>
+          <button type="button" data-sort="price">Menor preço</button>
           <button type="button" data-sort="score">Mais confiável</button>
         </div>
         <div class="tools-right">
@@ -94,6 +95,21 @@
 
     <!-- LOJAS -->
     <!-- CUPONS E TOTAIS (Fases 2 e 3) -->
+    <!-- PROMOÇÕES DOS CANAIS DO TELEGRAM -->
+    <section id="tab-promos" class="tab" hidden>
+      <div class="panel">
+        <div class="panel-head"><h2>Promoções dos canais do Telegram</h2>
+          <p class="muted">Posts lidos da prévia pública dos canais (<code>t.me/s</code>), sem login. O preço é o <b>divulgado no post</b>, não verificado: toque em <b>📌 Fixar</b> para o SetupSniper conferir na loja.</p></div>
+        <div id="ch-summary" class="ch-summary"></div>
+        <div class="promo-tools">
+          <select id="pf-store" aria-label="Filtrar por loja"><option value="">Todas as lojas</option></select>
+          <input id="pf-q" type="search" placeholder="Filtrar: rtx 4060, ryzen…" aria-label="Filtrar promoções">
+        </div>
+      </div>
+      <div id="promo-feed" class="promo-feed"></div>
+      <details class="panel ch-details"><summary>Situação de cada canal</summary><div id="ch-list" class="ch-list"></div></details>
+    </section>
+
     <section id="tab-cupons" class="tab" hidden>
       <div class="alert-grid">
         <div class="panel">
@@ -115,8 +131,9 @@
             <div class="field">Já comprei em <small class="muted-i">esconde cupons de "primeira compra"</small><div class="chips" id="cfg-bought"></div></div>
             <div class="field">Assinaturas<div class="chips" id="cfg-subs">
               <button type="button" class="fchip" data-sub="meli+">Meli+</button><button type="button" class="fchip" data-sub="prime">Amazon Prime</button></div></div>
-            <label class="field" for="cfg-channels">Canais públicos do Telegram <small class="muted-i">opcional: lidos a cada 6 h pela prévia pública t.me/s, um por linha</small>
-              <textarea id="cfg-channels" rows="3" placeholder="canal_de_promocoes"></textarea></label>
+            <label class="field" for="cfg-channels">Canais públicos do Telegram <small class="muted-i">opcional: lidos a cada 30 min pela prévia pública t.me/s, um por linha (até 40). As promoções aparecem na aba 📣 Promoções.</small>
+              <textarea id="cfg-channels" rows="4" placeholder="canal_de_promocoes"></textarea>
+              <button type="button" class="btn small" id="cfg-suggested">Usar os canais sugeridos</button></label>
             <button type="button" class="btn primary" id="cfg-save">Salvar</button>
           </div>
         </div>

@@ -64,8 +64,8 @@ const lget = (k, d) => { try { const v = localStorage.getItem('radar.' + k); ret
 const lset = (k, v) => { try { localStorage.setItem('radar.' + k, JSON.stringify(v)); } catch {} };
 
 let S = null;                                   // estado do servidor (SSE)
-const ui = { sort: lget('sort', 'price'), min: lget('min', 0), hideSus: lget('hideSus', true), deep: lget('deep', false), stores: lget('stores', null), shown: 40 };
-const search = { q: '', es: null, status: {}, results: [], running: false };
+const ui = { sort: lget('ordem', 'balance'), min: lget('min', 0), hideSus: lget('hideSus', true), deep: lget('deep', false), stores: lget('stores', null), shown: 40 };
+const search = { q: '', es: null, status: {}, results: [], running: false, more: [], loadingMore: false };
 
 const store = (id) => S?.stores.find(s => s.id === id) ?? { id, name: id, color: '#666' };
 const scoreOf = (id) => store(id).reliability?.score ?? null;
@@ -114,9 +114,10 @@ function sparkline(hist) {
 // ================= ABAS =================
 function showTab() {
   const tab = (location.hash.slice(1) || 'busca');
-  const valid = tab === 'monitorados' ? 'fixados' : ['busca', 'fixados', 'cupons', 'lojas', 'alertas'].includes(tab) ? tab : 'busca';
+  const valid = tab === 'monitorados' ? 'fixados' : ['busca', 'fixados', 'promos', 'cupons', 'lojas', 'alertas'].includes(tab) ? tab : 'busca';
   $$('.tab').forEach(t => t.hidden = t.id !== 'tab-' + valid);
   $$('.tabs a').forEach(a => a.classList.toggle('on', a.dataset.tab === valid));
+  if (valid === 'promos' && !promo.loaded) loadPromos(true);
 }
 addEventListener('hashchange', showTab);
 
@@ -145,7 +146,8 @@ $('#deep').onchange = (e) => { ui.deep = e.target.checked; lset('deep', ui.deep)
 function startSearch(q) {
   q = q.trim(); if (q.length < 2) return toast('Digite pelo menos 2 letras');
   search.es?.close();
-  Object.assign(search, { q, status: {}, results: [], running: true });
+  search.more.forEach(x => x.close());
+  Object.assign(search, { q, status: {}, results: [], running: true, more: [], loadingMore: false, seen: new Set() });
   ui.shown = 40;
   const ids = storeFilterIds();
   for (const id of ids) search.status[id] = { state: 'loading' };
@@ -156,14 +158,58 @@ function startSearch(q) {
   es.onmessage = (ev) => {
     const m = JSON.parse(ev.data);
     if (m.type === 'store') {
-      search.status[m.storeId] = { state: m.status, n: m.items.length, error: m.error, url: m.searchUrl, ms: m.ms };
-      search.results.push(...m.items);
+      search.status[m.storeId] = { state: m.status, n: m.items.length, error: m.error, blocked: m.blocked, reason: m.reason, approx: m.approx, url: m.searchUrl, ms: m.ms, page: m.page ?? 1, hasMore: !!m.hasMore };
+      addResults(m.items);
     } else if (m.type === 'done') { search.running = false; es.close(); }
     renderSearch();
   };
   es.onerror = () => { if (search.running) { search.running = false; es.close(); toast('A busca foi interrompida'); renderSearch(); } };
 }
 $('#search').onsubmit = (e) => { e.preventDefault(); startSearch($('#q').value); };
+
+// Sem repetir a mesma oferta quando a loja devolve o produto de novo numa página seguinte
+function addResults(items) {
+  for (const it of items) {
+    const k = `${it.storeId}|${it.url ?? it.title}`;
+    if (search.seen.has(k)) continue;
+    search.seen.add(k); search.results.push(it);
+  }
+}
+
+// Scroll infinito: quando a lista na tela acaba, pede a próxima página das lojas que ainda têm mais.
+function loadMore() {
+  if (!search.q || search.running || search.loadingMore) return;
+  const byPage = {};
+  for (const [id, st] of Object.entries(search.status)) if (st.state === 'ok' && st.hasMore) (byPage[st.page + 1] ??= []).push(id);
+  const pages = Object.entries(byPage);
+  if (!pages.length) return;
+  search.loadingMore = true; renderSearch();
+  let open = pages.length;
+  const q = search.q;
+  for (const [page, ids] of pages) {
+    for (const id of ids) search.status[id].loadingMore = true;
+    const es = new EventSource(`/api/search?q=${encodeURIComponent(q)}&deep=${ui.deep ? 1 : 0}&page=${page}&stores=${ids.join(',')}`);
+    search.more.push(es);
+    const finish = () => { es.close(); if (--open === 0) search.loadingMore = false; renderSearch(); };
+    es.onmessage = (ev) => {
+      if (search.q !== q) return es.close();
+      const m = JSON.parse(ev.data);
+      if (m.type === 'store') {
+        const st = search.status[m.storeId] ?? {};
+        // Erro numa página seguinte não apaga o que já veio: só para de pedir mais daquela loja.
+        Object.assign(st, { loadingMore: false, hasMore: m.status === 'ok' && !!m.hasMore, page: m.page ?? Number(page), n: (st.n ?? 0) + m.items.length });
+        addResults(m.items);
+        renderSearch();
+      } else if (m.type === 'done') finish();
+    };
+    es.onerror = () => { for (const id of ids) Object.assign(search.status[id], { loadingMore: false, hasMore: false }); finish(); };
+  }
+}
+const moreObserver = 'IntersectionObserver' in window ? new IntersectionObserver((entries) => {
+  if (!entries.some(e => e.isIntersecting)) return;
+  if (search.view && search.view.length > ui.shown) { ui.shown += 40; renderSearch(); }
+  else loadMore();
+}, { rootMargin: '600px 0px' }) : null;
 
 function flagged(list) {   // mesmo critério do servidor (src/extract.js flagOutliers)
   const ps = list.map(refOf).filter(v => v != null).sort((a, b) => a - b);
@@ -172,8 +218,12 @@ function flagged(list) {   // mesmo critério do servidor (src/extract.js flagOu
   return list.filter(r => refOf(r) == null || refOf(r) >= med * 0.25).map(r => ({ ...r, suspeito: refOf(r) != null && refOf(r) < med * 0.55 }));
 }
 function sortList(list, priceOf = (o) => refOf(o) ?? Infinity) {
-  const key = { price: (o) => priceOf(o), score: (o) => -(trustOf(o.offer ?? o) ?? -1), balance: (o) => adjusted(priceOf(o), trustOf(o.offer ?? o)) }[ui.sort];
-  return list.sort((a, b) => key(a) - key(b) || priceOf(a) - priceOf(b));
+  const key = { price: (o) => priceOf(o), score: (o) => -(trustOf(o.offer ?? o) ?? -1), balance: (o) => adjusted(priceOf(o), trustOf(o.offer ?? o)) }[ui.sort] ?? ((o) => priceOf(o));
+  // Em qualquer ordem, "Alto risco" (nota < 40) e preço suspeito ficam depois das ofertas confiáveis,
+  // e sem preço/indisponível por último (mesma regra de src/ranking.js no servidor).
+  const group = (o) => { const p = priceOf(o), sc = trustOf(o.offer ?? o);
+    return p == null || p === Infinity || o.available === false || o.status === 'unavailable' ? 2 : o.suspeito || (sc != null && sc < 40) ? 1 : 0; };
+  return list.sort((a, b) => group(a) - group(b) || key(a) - key(b) || priceOf(a) - priceOf(b));
 }
 
 function renderSearch() {
@@ -185,8 +235,9 @@ function renderSearch() {
   $('#progress').innerHTML = Object.entries(search.status).map(([id, s]) => {
     const n = store(id).name;
     if (s.state === 'loading') return `<span class="pchip loading">${esc(n)}</span>`;
-    if (s.state === 'ok') return `<span class="pchip ok">${esc(n)} <b>${s.n}</b></span>`;
-    return `<span class="pchip err" title="${esc(s.error)}"><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(n)}: ${esc(shortErr(s.error))} ↗</a></span>`;
+    if (s.state === 'ok' && s.n) return `<span class="pchip ok${s.loadingMore ? ' loading' : ''}" title="${s.approx ? 'Nenhum título tinha todos os termos: mostrando os parecidos' : ''}">${esc(n)} <b>${s.n}</b>${s.approx ? ' ≈' : ''}${s.hasMore ? '+' : ''}</span>`;
+    if (s.state === 'ok') return `<span class="pchip none" title="${esc(s.reason ?? '')}"><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(n)}: ${s.reason && /mostrou \d/.test(s.reason) ? 'nada parecido' : 'sem resultados'} ↗</a></span>`;
+    return `<span class="pchip err" title="${esc(errHelp(s))}"><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(n)}: ${esc(s.blocked ? 'bloqueado' : shortErr(s.error))} ↗</a></span>`;
   }).join('');
 
   let list = flagged(search.results);
@@ -195,24 +246,27 @@ function renderSearch() {
   // Ofertas sem preço legível ou sem estoque vão para o fim, mas continuam visíveis.
   list = sortList(list).sort((a, b) => (refOf(a) == null || a.available === false) - (refOf(b) == null || b.available === false));
   const eligible = list.filter(r => (trustOf(r) ?? 100) >= ui.min && refOf(r) != null && r.available !== false);
-  const best = [...eligible].sort((a, b) => refOf(a) - refOf(b))[0];
+  const cheapest = [...eligible].sort((a, b) => refOf(a) - refOf(b))[0];
+  // Destaque: em "Melhor escolha", a 1ª oferta confiável da lista (preço + confiança); em "Menor preço", a mais barata.
+  const best = ui.sort === 'price' ? cheapest : eligible.find(r => !r.suspeito && (trustOf(r) ?? 100) >= 40) ?? cheapest;
   const storesN = new Set(list.map(r => r.storeId)).size;
   const prices = list.map(refOf).filter(v => v != null).sort((a, b) => a - b);
   const med = prices[Math.floor(prices.length / 2)];
   $('#results-summary').innerHTML = total
-    ? `<b>${list.length}</b> ofertas de <b>${storesN}</b> lojas para “${esc(search.q)}” · menor <b>${brl(best ? refOf(best) : null)}</b>${refKind() === 'pix' ? ' (Pix)' : ' (cartão)'} · mediana <b>${brl(med)}</b>${sus ? ` · ${sus} suspeita(s) ${ui.hideSus ? 'ocultas' : 'marcadas'}` : ''}${search.running ? ' · buscando…' : ''}`
+    ? `<b>${list.length}</b> ofertas de <b>${storesN}</b> lojas para “${esc(search.q)}” · menor <b>${brl(cheapest ? refOf(cheapest) : null)}</b>${refKind() === 'pix' ? ' (Pix)' : ' (cartão)'} · mediana <b>${brl(med)}</b>${sus ? ` · ${sus} suspeita(s) ${ui.hideSus ? 'ocultas' : 'marcadas'}` : ''}${search.running ? ' · buscando…' : ''}`
     : search.running ? 'Buscando nas lojas…' : `Nenhuma oferta encontrada para “${esc(search.q)}”. Tente termos mais simples (ex.: marca + modelo) ou ative a busca profunda.`;
 
   $('#results').innerHTML = list.slice(0, ui.shown).map((r, i) => {
     const s = store(r.storeId), sc = trustOf(r), below = sc != null && sc < ui.min;
     const tags = [
-      r === best ? '<span class="sticker lime">MELHOR PREÇO.</span>' : '',
+      r === best ? `<span class="sticker lime">${ui.sort === 'price' || best === cheapest ? 'MELHOR PREÇO.' : 'MELHOR ESCOLHA.'}</span>` : '',
       r.suspeito ? '<span class="tag warn" title="Muito abaixo da mediana: pode ser golpe, usado ou outro produto">Suspeito</span>' : '',
+      r.approx ? '<span class="tag info" title="O título não tem todos os termos da busca: confira se é o produto certo">Parecido</span>' : '',
       r.seller?.official ? '<span class="tag info">Oficial</span>' : '',
       s.agregador ? '<span class="tag info">Comparador</span>' : '',
     ].join('');
     const rp = refOf(r);
-    const diff = best && r !== best && rp != null && rp > refOf(best) ? `<div class="diff">+${brl(rp - refOf(best))}</div>` : '';
+    const diff = cheapest && r !== cheapest && rp != null && rp > refOf(cheapest) ? `<div class="diff">+${brl(rp - refOf(cheapest))} que o menor</div>` : '';
     // "Preço não encontrado nesta página" (falha de leitura) é diferente de "Indisponível" (sem estoque)
     const priceHtml = rp == null
       ? `<span class="tag err" title="A loja mostrou o produto, mas o preço não foi lido da página">Preço não encontrado nesta página</span>`
@@ -230,8 +284,10 @@ function renderSearch() {
         ${pinnedItem(r) ? `<a class="btn small pinned-btn" href="#fixados" title="Já está nos fixados">✓ Fixado</a>` : `<button type="button" class="btn small" data-watch="${i}">📌 Fixar</button>`}
         ${storeLink(r.url, s, search.status[r.storeId]?.url)}
       </div></div>`;
-  }).join('') + (list.length > ui.shown ? `<div class="more"><button type="button" class="btn" id="more">Mostrar mais ${list.length - ui.shown}</button></div>` : '');
+  }).join('') + moreFooter(list);
   search.view = list;
+  const sentinel = $('#more-sentinel');
+  if (sentinel && moreObserver) { moreObserver.disconnect(); moreObserver.observe(sentinel); }
 }
 // Botão que leva direto à página do produto na loja (ou, sem link direto, à busca da loja)
 function storeLink(url, s, fallbackUrl) {
@@ -243,17 +299,31 @@ function storeLink(url, s, fallbackUrl) {
   if (f) return `<a class="btn small" href="${esc(f)}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer" title="Sem link direto: abre a busca da loja">Buscar na loja ↗</a>`;
   return '';
 }
+// Rodapé da lista: carrega mais sozinho ao chegar perto (o botão fica para quem preferir tocar)
+function moreFooter(list) {
+  const remote = Object.values(search.status).some(s => s.state === 'ok' && s.hasMore);
+  if (list.length > ui.shown) return `<div class="more" id="more-sentinel"><button type="button" class="btn" id="more">Mostrar mais ${list.length - ui.shown}</button></div>`;
+  if (search.loadingMore) return `<div class="more" id="more-sentinel"><span class="muted">Buscando mais produtos nas lojas…</span></div>`;
+  if (remote && !search.running) return `<div class="more" id="more-sentinel"><button type="button" class="btn" id="more-remote">Buscar mais produtos nas lojas</button></div>`;
+  return list.length && !search.running ? '<div class="more"><span class="muted">Fim dos resultados.</span></div>' : '';
+}
+// Explicação do erro, no toque/mouse
+function errHelp(s) {
+  if (s.blocked) return `A loja recusou o acesso automático (${s.error}). O SetupSniper não tenta burlar a proteção. Toque para abrir a busca na loja. Dicas: rode o servidor em casa (internet residencial), ative a busca profunda se o PC tiver o navegador headless, ou fixe o link do produto.`;
+  return s.error ?? '';
+}
 const shortErr = (e = '') => /bloqueio/.test(e) ? 'bloqueado' : /Playwright/.test(e) ? 'precisa navegador' : /abort|timeout/i.test(e) ? 'sem resposta' : e.length > 22 ? e.slice(0, 20) + '…' : e;
 
 $('#results').addEventListener('click', (e) => {
   if (e.target.id === 'more') { ui.shown += 40; return renderSearch(); }
+  if (e.target.id === 'more-remote') return loadMore();
   const b = e.target.closest('[data-watch]'); if (!b) return;
   const r = search.view[Number(b.dataset.watch)];
   openWatchDialog({ name: r.title.slice(0, 80), query: search.q, refPrice: refOf(r), pin: r.url && !store(r.storeId).agregador ? { storeId: r.storeId, url: r.url } : null });
 });
 for (const b of $$('#sort button')) {
   b.classList.toggle('on', b.dataset.sort === ui.sort);
-  b.onclick = () => { ui.sort = b.dataset.sort; lset('sort', ui.sort); $$('#sort button').forEach(x => x.classList.toggle('on', x === b)); renderSearch(); renderWatch(); };
+  b.onclick = () => { ui.sort = b.dataset.sort; lset('ordem', ui.sort); $$('#sort button').forEach(x => x.classList.toggle('on', x === b)); renderSearch(); renderWatch(); };
 }
 $('#min').value = ui.min; $('#min-val').textContent = ui.min;
 $('#min').oninput = (e) => { ui.min = Number(e.target.value); $('#min-val').textContent = ui.min; lset('min', ui.min); renderSearch(); };
@@ -422,7 +492,7 @@ $('#al-save').onclick = async () => {
 // ================= GERAL =================
 function renderStatus() {
   $('#live').className = 'live ' + (S.refreshing ? 'busy' : 'on');
-  $('#live-text').textContent = S.refreshing ? 'Verificando preços…' : `Ao vivo · ${ago(S.lastRefresh)}`;
+  $('#live-text').textContent = S.refreshing ? 'Verificando…' : `Ao vivo · ${ago(S.lastRefresh)}`;
   $('#demo-banner').hidden = !S.demo;
 }
 let first = true;
@@ -447,7 +517,10 @@ function renderPinned() {
 }
 function render() {
   if (!S) return;
-  renderStatus(); renderWatch(); renderPinned(); renderCoupons(); if (search.q && !search.running) renderSearch(); renderStores(); renderAlerts();
+  renderStatus(); renderWatch(); renderPinned(); renderCoupons(); if (search.q && !search.running) renderSearch(); renderStores(); renderAlerts(); renderPromos();
+  // Promoções novas chegaram e a pessoa está no topo da aba: atualiza a lista sozinha
+  const nPromo = S.channels?.promos ?? 0;
+  if (nPromo !== ui.lastPromos) { const was = ui.lastPromos; ui.lastPromos = nPromo; if (was != null && promo.loaded && promo.offset <= 30 && !$('#tab-promos').hidden) loadPromos(true); }
   if (first) { renderStoreFilter(); renderSearch(); first = false;
     const sugg = [...new Set([...S.items.map(i => i.query), 'RTX 4060', 'SSD 2TB NVMe', 'Ryzen 5 7600'])].slice(0, 6);
     $('#suggest').innerHTML = sugg.map(q => `<button type="button" class="fchip on" data-q="${esc(q)}">${esc(q)}</button>`).join('');
@@ -549,3 +622,90 @@ $('#coupon-form').onsubmit = async (e) => {
     e.target.reset(); toast('Cupom salvo');
   } catch (err) { toast(err.message); }
 };
+
+// ================= PROMOÇÕES DOS CANAIS (scroll infinito) =================
+const promo = { items: [], offset: 0, hasMore: true, loading: false, loaded: false, total: 0, seq: 0 };
+async function loadPromos(reset = false) {
+  if (promo.loading && !reset) return;
+  if (reset) Object.assign(promo, { items: [], offset: 0, hasMore: true, loaded: true });
+  if (!promo.hasMore) return;
+  const seq = ++promo.seq;
+  promo.loading = true; renderPromos();
+  const qs = new URLSearchParams({ offset: promo.offset, limit: 30, store: $('#pf-store').value, q: $('#pf-q').value.trim() });
+  try {
+    const r = await (await fetch('/api/promos?' + qs)).json();
+    if (seq !== promo.seq) return;
+    promo.items.push(...r.items); promo.offset += r.items.length; promo.hasMore = r.hasMore; promo.total = r.total;
+  } catch { toast('Não consegui carregar as promoções'); promo.hasMore = false; }
+  finally { if (seq === promo.seq) { promo.loading = false; renderPromos(); } }
+}
+const promoObserver = 'IntersectionObserver' in window ? new IntersectionObserver((es) => { if (es.some(e => e.isIntersecting)) loadPromos(); }, { rootMargin: '600px 0px' }) : null;
+const safeHref = (u) => /^https:\/\//i.test(u ?? '') ? esc(u) : null;
+
+function renderPromos() {
+  if (!S) return;
+  const ch = S.channels ?? { suggested: [], status: {} };
+  const ativos = S.settings?.channels ?? [];
+  const st = Object.entries(ch.status ?? {}).filter(([k]) => ativos.includes(k));
+  const ok = st.filter(([, v]) => v.ok).length;
+  const last = Math.max(0, ...st.map(([, v]) => Date.parse(v.at) || 0));
+  $('#count-promo').textContent = ch.promos ?? 0;
+  const sel = $('#pf-store');
+  if (sel.options.length <= 1) for (const s of S.stores) sel.add(new Option(s.name, s.id));
+  $('#ch-summary').innerHTML = !ativos.length
+    ? `<p>Nenhum canal ativado.</p><button type="button" class="btn primary" id="ch-enable">Ativar os ${ch.suggested.length} canais sugeridos</button> <small class="muted-i">dá para editar a lista na aba 🎟️ Cupons</small>`
+    : `<span><b>${ok}</b> de <b>${ativos.length}</b> canais lidos${last ? ' · última leitura ' + ago(last) : ''}${ch.reading ? ' · <b>lendo agora…</b>' : ''}</span>
+       <button type="button" class="btn small" id="ch-read" ${ch.reading ? 'disabled' : ''}>Ler agora</button>`;
+  $('#ch-list').innerHTML = ativos.map(c => {
+    const v = ch.status?.[c];
+    const cls = !v ? 'wait' : v.ok ? 'ok' : v.noPreview ? 'warn' : 'err';
+    const txt = !v ? 'aguardando a primeira leitura' : v.ok ? `${v.posts} posts na prévia · ${ago(Date.parse(v.at))}` : v.error;
+    return `<div class="ch ${cls}"><a href="https://t.me/${esc(c)}" target="_blank" rel="noopener noreferrer">@${esc(c)}</a><span>${esc(txt)}</span></div>`;
+  }).join('') || '<p class="muted">Ative canais para ver a situação de cada um.</p>';
+
+  const card = (p) => {
+    const s = p.store ? store(p.store) : null;
+    const link = safeHref(p.link), post = safeHref(p.postUrl);
+    const kind = p.kind === 'promo' ? 'promoção' : p.kind === 'cupom' ? 'cupom' : 'promoção + cupom';
+    return `<article class="promo-card">
+      <div class="pc-top"><span class="sdot" style="background:${s?.color ?? 'var(--fg2)'}"></span><b>${esc(s?.name ?? 'loja a confirmar')}</b>
+        <span class="muted">@${esc(p.channel)} · ${ago(Date.parse(p.date ?? p.seenAt))}</span>
+        <span class="tag ${p.kind === 'promo' ? 'info' : 'warn'}">${kind}</span></div>
+      ${p.product ? `<div class="pc-title">${esc(p.product)}</div>` : ''}
+      <div class="pc-price">${p.price != null ? `<b>${brl(p.price)}</b>` : ''}${p.oldPrice ? ` <s>${brl(p.oldPrice)}</s>` : ''}${p.price != null ? ' <small class="muted-i">divulgado, não verificado</small>' : ''}</div>
+      ${p.coupons?.length ? `<div class="pc-coupons">🎟️ ${p.coupons.map(c => `<code>${esc(c)}</code>`).join(' ou ')}</div>` : ''}
+      <div class="pc-actions">
+        ${p.product ? `<button type="button" class="btn small" data-pfix="${esc(p.id)}">📌 Fixar</button>` : ''}
+        ${link ? `<a class="btn small" href="${link}" target="_blank" rel="noopener noreferrer nofollow">Abrir link ↗</a>` : ''}
+        ${post ? `<a class="btn small ghost" href="${post}" target="_blank" rel="noopener noreferrer">Ver post ↗</a>` : ''}
+      </div></article>`;
+  };
+  const filtro = $('#pf-q').value || $('#pf-store').value;
+  const empty = !promo.items.length && !promo.loading
+    ? `<div class="empty"><h2>Nenhuma promoção ${filtro ? 'com esse filtro' : 'ainda'}</h2><p class="muted">${ativos.length ? 'Os canais são lidos a cada 30 min. Toque em "Ler agora" para buscar já.' : 'Ative os canais sugeridos acima.'}</p></div>` : '';
+  $('#promo-feed').innerHTML = promo.items.map(card).join('') + empty +
+    (promo.items.length ? `<div class="more" id="promo-sentinel">${promo.loading ? '<span class="muted">Carregando…</span>' : promo.hasMore ? '<button type="button" class="btn" id="promo-more">Mostrar mais</button>' : '<span class="muted">Fim das promoções.</span>'}</div>` : '');
+  const sent = $('#promo-sentinel');
+  if (sent && promoObserver) { promoObserver.disconnect(); if (promo.hasMore) promoObserver.observe(sent); }
+}
+{
+  let tmr;
+  $('#pf-store').onchange = () => loadPromos(true);
+  $('#pf-q').oninput = () => { clearTimeout(tmr); tmr = setTimeout(() => loadPromos(true), 350); };
+  const enable = async (list) => {
+    const r = await fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ channels: list }) });
+    if (!r.ok) return toast((await r.json()).error ?? 'Erro ao salvar');
+    toast(`${list.length} canais ativados: lendo agora…`); setTimeout(() => loadPromos(true), 4000);
+  };
+  document.addEventListener('click', async (e) => {
+    if (e.target.id === 'ch-enable') return enable((S.channels?.suggested ?? []).map(c => c.canal));
+    if (e.target.id === 'cfg-suggested') { $('#cfg-channels').value = (S.channels?.suggested ?? []).map(c => c.canal).join('\n'); return toast('Lista preenchida: toque em Salvar'); }
+    if (e.target.id === 'ch-read') { await fetch('/api/channels/read', { method: 'POST' }); toast('Lendo os canais…'); setTimeout(() => loadPromos(true), 5000); return; }
+    if (e.target.id === 'promo-more') return loadPromos();
+    const f = e.target.closest('[data-pfix]');
+    if (f) {
+      const p = promo.items.find(x => x.id === f.dataset.pfix);
+      if (p) openWatchDialog({ name: p.product.slice(0, 80), query: p.product.split(/\s+/).slice(0, 6).join(' '), refPrice: p.price, pin: null });
+    }
+  });
+}

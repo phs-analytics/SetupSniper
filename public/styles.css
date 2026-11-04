@@ -143,6 +143,10 @@ main > *, .tab > *, .search > *, .search-opts > *, .switch > span:last-child { m
 .pchip.ok::before { content: '✓'; color: var(--lime); font-weight: 700; }
 .pchip.err { color: var(--yellow); border-color: rgba(255, 214, 10, .4); }
 .pchip.err::before { content: '!'; font-weight: 700; }
+.pchip.ok.loading::before { content: ''; }
+.pchip.none { color: var(--fg2); }
+.pchip.none::before { content: '–'; font-weight: 700; }
+.pchip a { color: inherit; text-decoration: none; }
 
 .controls { display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; }
 .tools-right { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
@@ -379,3 +383,74 @@ dialog .btn.ghost { color: var(--ink); border-color: var(--ink); }
 .alog.dim { opacity: .55; }
 .alog .actions { display: flex; gap: 6px; flex-wrap: wrap; }
 @media (max-width: 900px) { .totals { min-width: 0; } .res > .price { grid-column: 1 / -1; } }
+
+/* ---- Promoções dos canais do Telegram ---- */
+.ch-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 6px 0 12px; }
+.promo-tools { display: flex; flex-wrap: wrap; gap: 8px; }
+.promo-tools select, .promo-tools input { flex: 1 1 180px; min-width: 0; }
+.promo-feed { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 12px; margin: 14px 0; }
+.promo-feed > .more, .promo-feed > .empty { grid-column: 1 / -1; }
+.promo-card { background: var(--bg2); border: 1.5px solid rgba(243, 236, 223, .15); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.pc-top { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 13px; }
+.pc-top .tag { margin-left: auto; }
+.pc-title { font-weight: 600; overflow-wrap: anywhere; }
+.pc-price b { font-size: 20px; }
+.pc-price s { color: var(--fg2); margin-left: 4px; }
+.pc-coupons code { overflow-wrap: anywhere; }
+.pc-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; }
+.ch-details summary { cursor: pointer; font-weight: 600; }
+.ch-list { display: grid; gap: 6px; margin-top: 10px; }
+.ch { display: grid; grid-template-columns: minmax(0, 12em) minmax(0, 1fr); gap: 8px; font-size: 13px; padding: 4px 0; border-bottom: 1px dashed rgba(243, 236, 223, .12); }
+.ch a { overflow-wrap: anywhere; }
+.ch span { color: var(--fg2); overflow-wrap: anywhere; }
+.ch.ok a::before { content: '✓ '; color: var(--lime); }
+.ch.warn a::before { content: '! '; color: var(--yellow); }
+.ch.err a::before { content: '✕ '; color: var(--orange); }
+@media (max-width: 520px) { .ch { grid-template-columns: 1fr; gap: 2px; } }
+
+/* ---- Celular: nada cortado nos Fixados ---- */
+@media (max-width: 900px) {
+  .row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "store store" "price price" "score actions" "spark spark"; }
+  .row .pcell { text-align: left; min-width: 0; }
+  .totals, .totals.compact { min-width: 0; }
+  .store .t { max-width: none; }
+}
+.calc { width: 100%; table-layout: fixed; }
+.calc th, .calc td { overflow-wrap: anywhere; }
+.cnotas, .cfonte, .pdetail, .economia { overflow-wrap: anywhere; }
+@media (max-width: 380px) {
+  .tot b { font-size: 16px; }
+  .totals { gap: 6px; }
+}
+.totals { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.tot { min-width: 0; }
+.tot b { overflow-wrap: anywhere; }
+.alog { grid-template-columns: auto minmax(0, 1fr) auto; }
+.alog > * { min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 360px) {
+  .tot b { font-size: 15px; }
+  .tot { padding: 5px 6px; }
+  .alog { grid-template-columns: minmax(0, 1fr) auto; }
+  .alog > :first-child { grid-column: 1 / -1; }
+}
+/* Celular: cabeçalho fixo compacto (uma linha), para não cobrir o conteúdo ao rolar */
+@media (max-width: 560px) {
+  .top { flex-wrap: nowrap; padding: 8px 16px; gap: 10px; }
+  .top .sub, .top .tagline { display: none; }
+  .top .logo { transform: scale(.7); transform-origin: left center; margin-right: -14px; }
+  .top h1 { font-size: 22px; }
+  .top-actions { flex: 0 1 auto; min-width: 0; }
+  .live { padding: 4px 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 42vw; }
+}
+.promo-card .tag.warn { background: transparent; color: var(--yellow); border-color: rgba(255, 214, 10, .55); transform: none; }
+/* Celular: na busca, nota de confiança e botões numa linha própria, abaixo dos totais (nada sobreposto) */
+@media (max-width: 900px) {
+  .res { grid-template-columns: 68px minmax(0, 1fr); grid-template-areas: "img info" "price price" "score act"; }
+  .res > .price { grid-area: price; grid-column: 1 / -1; }
+  .res .rscore { grid-area: score; justify-self: start; }
+  .res .actions { grid-area: act; align-self: center; flex-wrap: wrap; }
+}
+.tot span { white-space: normal; overflow-wrap: anywhere; }
+.live i { flex: none; }
+@media (max-width: 560px) { .live { max-width: 46vw; } }
+.live #live-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

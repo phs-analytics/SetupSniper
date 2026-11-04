@@ -20,6 +20,10 @@ export const ADAPTERS = {
   kabum: {
     base: 'https://www.kabum.com.br',
     url: (q, p) => `https://www.kabum.com.br/busca/${enc(slug(q))}?page_number=${p}&page_size=40`,
+    // 1ª tentativa: o catálogo público em JSON que a própria página de busca carrega (sem login).
+    // [não verificado ao vivo nesta versão] Se mudar ou recusar, cai para o HTML.
+    api: async (q, p) => kabumItems(await fetchText(`https://servicespub.prod.api.aws.grupokabum.com.br/catalog/v2/products?query=${enc(q)}&page_number=${p}&page_size=40&facet_filters=&sort=most_searched`,
+      { json: true, headers: { Origin: 'https://www.kabum.com.br', Referer: 'https://www.kabum.com.br/' } })),
     parse: (html, a) => generic(html, a.base, {
       linkOf: (o) => o.code && o.friendlyName ? `/produto/${o.code}/${o.friendlyName}` : null,
       productPath: /\/produto\/\d+/,
@@ -140,6 +144,25 @@ export const ADAPTERS = {
   },
 };
 
+// Catálogo da KaBuM: { data: [{ id, attributes: { title, price, price_with_discount, offer?, available, images, friendly_name } }] }
+export function kabumItems(j) {
+  return (j?.data ?? []).map(d => ({ id: d.id, ...(d.attributes ?? d) })).filter(x => x.title).map(x => {
+    const o = x.offer ?? {};
+    const pix = o.price_with_discount ?? x.price_with_discount ?? null;
+    const card = o.price ?? x.price ?? null;
+    const slugName = x.friendly_name ?? x.friendlyName ?? null;
+    return {
+      title: x.title, pix: pix > 0 ? pix : null, card: card > 0 ? card : null,
+      installments: x.max_installment ? { n: Number(String(x.max_installment).match(/\d+/)?.[0]), value: null } : null,
+      url: x.id ? `https://www.kabum.com.br/produto/${x.id}${slugName ? '/' + slugName : ''}` : null,
+      image: [].concat(x.images ?? x.image ?? [])[0] ?? null,
+      available: x.available !== false && x.stock !== 0,
+      // Vendido por parceiro do marketplace KaBuM: o vendedor não é a loja (muda a nota de confiança).
+      seller: x.marketplace ? { id: x.marketplace.seller_id ?? x.marketplace.seller_name ?? 'marketplace', name: x.marketplace.seller_name ?? null, official: null } : null,
+    };
+  }).map(i => (i.installments && !(i.installments.n >= 2 && i.installments.value) ? { ...i, installments: null } : i));
+}
+
 function shopeeItems(j) {
   // Preços da Shopee vêm multiplicados por 100.000. O mesmo valor vale no Pix e no cartão.
   return (j?.items ?? []).map(x => x.item_basic ?? x).filter(b => b?.name).map(b => ({
@@ -153,30 +176,51 @@ function shopeeItems(j) {
   }));
 }
 
-// Busca numa loja: API → HTML → (busca profunda) navegador headless.
-export async function searchStore(storeId, query, { deep = false } = {}) {
+// Busca numa loja: API → HTML → navegador headless (busca profunda, ou quando a loja recusar e o navegador existir).
+// page: página da loja (o scroll infinito pede 2, 3...). A busca profunda lê `pages` páginas de uma vez.
+// Retorna { items, searchUrl, page, hasMore, blocked }.
+export async function searchStore(storeId, query, { deep = false, page = 1, browserFallback = false } = {}) {
   const a = ADAPTERS[storeId];
   if (!a) throw new Error('loja desconhecida');
-  const pages = deep ? (a.pages ?? 2) : 1;
+  const maxPages = a.pages ?? 10;
+  if (page > maxPages) return { items: [], searchUrl: a.url(query, 1), page, hasMore: false };
+  const last = deep ? Math.min(maxPages, page + (a.pages ?? 2) - 1) : page;
   const errors = [];
-  let items = [];
-  for (let p = 1; p <= pages; p++) {
+  let items = [], lastGot = 0, blocked = false;
+  for (let p = page; p <= last; p++) {
     let got = [];
     if (a.api) { try { got = await a.api(query, p); } catch (e) { errors.push('API: ' + e.message); } }
     if (!got.length) {
-      try { got = a.parse(await fetchText(a.url(query, p), { headers: a.headers }), a); }
-      catch (e) { errors.push(e.message); }
+      try {
+        const html = await fetchText(a.url(query, p), { headers: a.headers });
+        if (isChallenge(html)) { blocked = true; throw new Error('a loja pediu verificação (captcha/anti-bot)'); }
+        got = a.parse(html, a);
+      } catch (e) { errors.push(e.message); if (/HTTP (401|403|429|503)|verifica/.test(e.message)) blocked = true; }
     }
-    if (!got.length && deep && browserAvailable()) {
+    if (!got.length && (deep || (browserFallback && blocked)) && browserAvailable()) {
       try {
         const r = await renderPage(a.url(query, p), { capture: a.browserCapture, cookies: a.browserCookies });
+        if (isChallenge(r.html)) throw new Error('a loja pediu verificação também no navegador');
         got = a.fromCaptured?.(r.captured) ?? [];
         if (!got.length) got = a.parse(r.html, a);
+        if (got.length) blocked = false;
       } catch (e) { errors.push('navegador: ' + e.message); }
     }
     items.push(...got);
+    lastGot = got.length;
     if (!got.length) break;
   }
-  if (!items.length && errors.length) throw new Error(errors.at(-1));
-  return { items, searchUrl: a.url(query, 1) };
+  if (!items.length && errors.length) {
+    const err = new Error(errors.at(-1));
+    err.blocked = blocked;
+    throw err;
+  }
+  return { items, searchUrl: a.url(query, 1), page: last, hasMore: lastGot > 0 && last < maxPages };
+}
+
+// Página de verificação (captcha, "confirme que você é humano", desafio do Cloudflare/Akamai/PerimeterX).
+// O SetupSniper não tenta resolver: só reconhece, para mostrar "bloqueado" em vez de "nenhum resultado".
+export function isChallenge(html) {
+  const h = String(html ?? '').slice(0, 60000);
+  return /cf-chl-|challenge-platform|cf_chl_opt|<title>\s*(Just a moment|Um momento|Attention Required)|captcha-delivery|px-captcha|_Incapsula_Resource|validatecaptcha|\/errors\/validateCaptcha|Robot Check|Digite os caracteres que você vê|verifique que você é humano|confirme que você não é um robô|punish\?x5secdata|baxia-punish/i.test(h);
 }
