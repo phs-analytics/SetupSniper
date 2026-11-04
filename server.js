@@ -1,5 +1,5 @@
 import http from 'node:http';
-import { readFile, writeFile } from 'node:fs/promises';
+import { readFile, writeFile, rm } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -14,7 +14,7 @@ import { storeState } from './src/monitor.js';
 import { finalTotals } from './src/final-price.js';
 import { finalScore } from './src/seller-score.js';
 import { rankOffers } from './src/ranking.js';
-import { parsePromo } from './src/promo-parser.js';
+import { parsePromo, storeFromUrl } from './src/promo-parser.js';
 import { resolveLink } from './src/link-resolver.js';
 import { inferCouponRule, defaultExpiry, isCouponActive, SOURCE_LABEL } from './src/discounts.js';
 import { parseChannelPage, channelUrl, validChannel } from './src/telegram-channels.js';
@@ -23,7 +23,9 @@ import { fetchPtax } from './src/ptax.js';
 import { parseProductPage } from './src/scraper.js';
 import { fetchText } from './src/http.js';
 import { browserAvailable } from './src/browser.js';
-import { configured as officialConfigured } from './src/official-apis.js';
+import { configured as officialConfigured, setMlUserTokenProvider } from './src/official-apis.js';
+import { authUrl as mlAuthUrl, newState, codeFromInput, exchangeCode, validToken } from './src/ml-oauth.js';
+import { parseCapture } from './src/capture.js';
 import { startBot, sendMessage, escHtml } from './src/telegram.js';
 import { VERSION, selfUpdate } from './src/update.js';
 
@@ -152,6 +154,7 @@ function state() {
     settings: publicSettings(),
     stores: storesWithScore(),
     alerts: alertState.log.slice(0, 30),
+    ml: mlStatus(),
     channels: { suggested: suggestedChannels, status: channelsState.status, reading: readingChannels, promos: promosDb.promos.length },
     coupons: couponsDb.coupons.filter(c => isCouponActive(c) || Date.now() - Date.parse(c.seenAt ?? 0) < 7 * 864e5).slice(0, 200),
     taxes: { importTaxStores: taxesCfg.importTaxStores, atualizadoEm: taxesCfg.atualizadoEm },
@@ -414,13 +417,54 @@ function totalsText(t) {
 
 // Processa um post de promoção: lê o link, a página do produto e o cupom, e calcula os totais.
 // opts: { source: 'telegram_forward'|'telegram_channel'|'manual', sourceName, sourceUrl }
+// Nome do produto a partir do endereço (".../produto/426262/placa-de-video-rtx-4060-msi" → "placa de video rtx 4060 msi")
+function titleFromUrl(u) {
+  try {
+    const parts = new URL(u).pathname.split('/').filter(x => /[a-z]-[a-z0-9]/i.test(x) && !/^(MLB|dp|p|produto|item)$/i.test(x));
+    const slug = parts.sort((a, b) => b.length - a.length)[0];
+    return slug ? decodeURIComponent(slug).replace(/\.html?$/, '').replace(/[-_]+/g, ' ').replace(/\bMLB ?\d+\b/i, '').trim().slice(0, 120) || null : null;
+  } catch { return null; }
+}
+
+// ---------- conta do Mercado Livre (login oficial, OAuth) ----------
+let mlAuthData = await readJson('ml-auth.json', null);
+const mlPending = new Map();   // state → criado em
+const mlRedirect = () => process.env.ML_REDIRECT_URI || 'https://localhost/setupsniper-ml';
+const mlApp = () => ({ clientId: process.env.ML_CLIENT_ID ?? '', clientSecret: process.env.ML_CLIENT_SECRET ?? '' });
+const saveMlAuth = async (d) => { mlAuthData = d; await writeJson('ml-auth.json', d); };
+setMlUserTokenProvider(() => mlAuthData ? validToken(mlAuthData, { ...mlApp(), save: saveMlAuth }) : null);
+function mlStatus() {
+  return { app: officialConfigured.mercadolivre(), connected: !!mlAuthData?.accessToken, nickname: mlAuthData?.nickname ?? null,
+    renewable: !!mlAuthData?.refreshToken, expiresAt: mlAuthData?.expiresAt ?? null, redirectUri: mlRedirect() };
+}
+async function mlConnect(input, { checkState = true } = {}) {
+  const { code, state, error } = codeFromInput(input);
+  if (error) throw new Error(`o Mercado Livre não autorizou: ${error}`);
+  if (!code) throw new Error('não achei o código: cole o endereço inteiro para onde o Mercado Livre levou o navegador');
+  if (checkState && state && !mlPending.has(state)) throw new Error('esse pedido de login expirou: toque em "Conectar" de novo');
+  mlPending.delete(state);
+  const st = await exchangeCode({ ...mlApp(), redirectUri: mlRedirect(), code });
+  try {
+    const me = await (await fetch('https://api.mercadolibre.com/users/me', { headers: { Authorization: `Bearer ${st.accessToken}` }, signal: AbortSignal.timeout(15000) })).json();
+    st.nickname = me.nickname ?? null;
+  } catch { /* sem apelido: tudo bem */ }
+  await saveMlAuth(st); broadcast();
+  return mlStatus();
+}
+
 async function processPromo(text, opts = {}) {
   const p = parsePromo(text);
   if (!p.links.length) return { text: 'Não encontrei link de loja nesse post. Encaminhe o post completo, com o link.' };
   let r;
   try {
     r = DEMO ? { finalUrl: p.links[0], canonicalUrl: p.links[0], store: p.store, html: '' } : await resolveLink(p.links[0]);
-  } catch (e) { return { text: `❌ Não consegui abrir o link: ${escHtml(e.message)}` }; }
+  } catch (e) {
+    // Link direto de loja (compartilhado do app, por exemplo) que não abriu agora: dá para fixar mesmo assim,
+    // e os Fixados tentam de novo depois. Encurtador que não abriu não diz a loja: aí não tem jeito.
+    const direta = storeFromUrl(p.links[0]);
+    if (!direta) return { text: `❌ Não consegui abrir o link: ${escHtml(e.message)}` };
+    r = { finalUrl: p.links[0], canonicalUrl: canonicalUrlOf(p.links[0]), store: direta, html: '', erro: e.message };
+  }
   if (r.store === 'tiktokshop' && !activeIds().includes(r.store)) return { text: 'TikTok Shop ainda não é suportada: fica desligada até ser testada com a rede liberada (veja docs/tiktok-shop.md). Post descartado.' };
   if (!r.store || !activeIds().includes(r.store)) return { text: `Loja fora do escopo do SetupSniper${r.store ? ` (${escHtml(storeName(r.store))})` : ''}. Post descartado.` };
 
@@ -430,9 +474,10 @@ async function processPromo(text, opts = {}) {
     const base = (p.announcedPrice ?? 50000) / 100 * 1.11;
     raw = ['amazon', 'shopee', 'aliexpress'].includes(r.store) ? { price: base, samePrice: true } : { pix: base, card: Math.round(base * 1.15 * 100) / 100 };
   } else {
-    try { raw = parseProductPage(r.html, r.store, r.finalUrl); } catch (e) { erroPagina = e.message; }
+    if (r.erro) erroPagina = r.erro;
+    else { try { raw = parseProductPage(r.html, r.store, r.finalUrl); } catch (e) { erroPagina = e.message; } }
   }
-  const offer = withTotals({ ...normalizeOffer({ ...(raw ?? {}), title: raw?.title ?? p.product, url: r.canonicalUrl ?? r.finalUrl }, r.store), storeId: r.store });
+  const offer = withTotals({ ...normalizeOffer({ ...(raw ?? {}), title: raw?.title ?? p.product ?? titleFromUrl(r.finalUrl), url: r.canonicalUrl ?? r.finalUrl }, r.store), storeId: r.store });
 
   // Cupom: regra do post ou inferida do preço anunciado × preço da página
   let coupon = null;
@@ -462,7 +507,7 @@ async function processPromo(text, opts = {}) {
     + (coupon.minOrder ? ` acima de ${brl(coupon.minOrder)}` : '') + (coupon.maxDiscount ? ` (até ${brl(coupon.maxDiscount)})` : '') + (coupon.inferred ? ' · inferida pelo preço anunciado' : '') : '';
   const html = [
     `🛒 <b>${escHtml(o.title ?? p.product ?? 'Produto')}</b> · ${escHtml(storeName(r.store))}`,
-    erroPagina ? `⚠️ Não consegui ler o preço na página da loja (${escHtml(erroPagina)}).` : `Na página: Pix ${brl(pr.pix)} · Cartão ${brl(pr.card)}`,
+    erroPagina ? `⚠️ Não consegui ler o preço na página da loja agora (${escHtml(erroPagina)}).\nToque em 📌 Fixar: eu tento de novo nas próximas verificações. Ou abra a página no navegador e use o favorito "Enviar para o SetupSniper".` : `Na página: Pix ${brl(pr.pix)} · Cartão ${brl(pr.card)}`,
     p.announcedPrice ? `Anunciado no post: ${brl(p.announcedPrice)}` : '',
     coupon ? `🎟️ Cupom: <code>${coupon.codes.map(escHtml).join('</code> ou <code>')}</code> — ${escHtml(regraTxt)}\n<i>divulgado por ${escHtml(coupon.sourceName)} em ${new Date(coupon.seenAt).toLocaleString('pt-BR')}, não verificado</i>` : 'Nenhum cupom no post.',
     '',
@@ -654,7 +699,7 @@ const botHandlers = {
 
 // ---------- HTTP ----------
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml' };
-async function body(req) { let b = ''; for await (const c of req) { b += c; if (b.length > 1e5) throw new Error('payload grande'); } return b ? JSON.parse(b) : {}; }
+async function body(req, limit = 1e5) { let b = ''; for await (const c of req) { b += c; if (b.length > limit) throw new Error('payload grande'); } return b ? JSON.parse(b) : {}; }
 const json = (res, code, v) => { res.writeHead(code, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(v)); };
 const STORE_HOSTS = Object.values(ADAPTERS).map(a => new URL(a.base).hostname.replace(/^(www|pt|lista)\./, ''));
 function storeUrl(u) {
@@ -712,6 +757,53 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (pathname === '/api/refresh' && req.method === 'POST') { refreshAll(); return json(res, 202, { ok: true }); }
+
+    // ---- "Enviar para o SetupSniper": página aberta pelo usuário no navegador dele ----
+    if (pathname === '/api/capture' && req.method === 'POST') {
+      let b;
+      try { b = await body(req, 12e6); } catch (e) { return json(res, 413, { error: 'Página grande demais para enviar' }); }
+      const pageUrl = String(b.url ?? '');
+      const r = parseCapture({ url: pageUrl, html: String(b.html ?? '') });
+      if (!r.items.length) return json(res, 422, { store: r.store, kind: r.kind, items: [], error: r.error ?? 'nenhum preço encontrado' });
+      const items = flagOutliers(r.items.map(x => withTotals({ ...normalizeOffer(x, r.store), storeId: r.store, captured: true })), refOf).map(withTrust);
+      // Produto fixado com este link: atualiza o preço agora, como se a verificação tivesse rodado
+      let atualizados = 0;
+      if (r.kind === 'product') {
+        const canon = canonicalUrlOf(pageUrl);
+        for (const it of watch.items) {
+          if (!it.pins?.[r.store] || canonicalUrlOf(it.pins[r.store]) !== canon) continue;
+          const o = items[0];
+          (offers[it.id] ??= {})[r.store] = { ...(offers[it.id][r.store] ?? {}), status: 'ok', message: 'enviado por você pelo navegador', error: null, updatedAt: Date.now(),
+            price: refOf(o), offer: o, title: o.title, url: o.url, image: o.image, suspeito: !!o.suspeito, pinned: true, official: !!o.seller?.official, count: 1, others: [] };
+          const h = (history[`${it.id}:${r.store}`] ??= []); if (refOf(o) != null) h.push({ t: Date.now(), price: refOf(o) });
+          atualizados++;
+          evaluateAlerts(it).catch(() => {});
+        }
+        if (atualizados) { await writeJson('history.json', history); broadcast(); }
+      }
+      log(`[enviar] ${r.store} · ${r.kind} · ${items.length} oferta(s)${atualizados ? ` · ${atualizados} fixado(s) atualizado(s)` : ''}`);
+      return json(res, 200, { store: r.store, kind: r.kind, items, atualizados });
+    }
+
+    // ---- conta do Mercado Livre (login oficial) ----
+    if (pathname === '/api/ml/start' && req.method === 'POST') {
+      if (!officialConfigured.mercadolivre()) return json(res, 400, { error: 'Cadastre ML_CLIENT_ID e ML_CLIENT_SECRET no .env primeiro (veja docs/fontes-oficiais.md).' });
+      const state = newState();
+      mlPending.set(state, Date.now());
+      for (const [k, t] of mlPending) if (Date.now() - t > 15 * 60e3) mlPending.delete(k);
+      return json(res, 200, { url: mlAuthUrl({ clientId: mlApp().clientId, redirectUri: mlRedirect(), state }), redirectUri: mlRedirect() });
+    }
+    if (pathname === '/api/ml/code' && req.method === 'POST') {
+      try { return json(res, 200, await mlConnect((await body(req)).input)); } catch (e) { return json(res, 400, { error: e.message }); }
+    }
+    if (pathname === '/auth/ml/callback') {   // retorno automático (quando ML_REDIRECT_URI aponta para este servidor em HTTPS)
+      try { await mlConnect(url.href); res.writeHead(302, { Location: '/#lojas' }); return res.end(); }
+      catch (e) { res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' }); return res.end('Não deu para conectar: ' + e.message); }
+    }
+    if (pathname === '/api/ml/disconnect' && req.method === 'POST') {
+      mlAuthData = null; await rm(DATA('ml-auth.json'), { force: true }); broadcast();
+      return json(res, 200, mlStatus());
+    }
 
     // ---- diagnóstico: testa cada loja agora, sem cache, e diz o que cada tentativa devolveu ----
     if (pathname === '/api/diagnostico' && req.method === 'POST') return json(res, 200, await diagnostico());

@@ -503,3 +503,13 @@ dialog .btn.ghost { color: var(--ink); border-color: var(--ink); }
 .dl.blk b::before { content: '⛔ '; }
 .dl.err b::before { content: '✕ '; color: var(--orange); }
 .diag-txt { width: 100%; font: 12px var(--mono); margin-top: 10px; }
+
+/* Enviar da loja e conta do Mercado Livre */
+#send-panel, #ml-panel { margin-bottom: 18px; }
+.howto { display: grid; gap: 8px; padding-left: 20px; overflow-wrap: anywhere; }
+.howto code, #ml-box code { overflow-wrap: anywhere; }
+.ml-paste { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+.ml-paste input { flex: 1 1 220px; min-width: 0; }
+.receber { max-width: 900px; }
+.rc-items { display: grid; gap: 0; background: var(--paper); color: var(--ink); border: 3px solid var(--ink); border-radius: 12px; overflow: hidden; }
+.rc-items:empty { display: none; }

@@ -23,6 +23,23 @@ Para cada loja, aparece o que cada tentativa devolveu:
 
 Toque em **Copiar relatório** e envie para quem estiver ajudando. O relatório não tem CEP, token, chat nem os seus produtos.
 
+## Enviar da loja pelo seu navegador (funciona em todas as lojas)
+
+Esta é a saída para as lojas sem API (KaBuM!, Pichau, Terabyte, Magalu, Amazon). Você abre a página **no seu navegador**, como sempre: logado ou não, resolvendo a verificação da loja se ela aparecer. Depois toca no favorito **Enviar para o SetupSniper**.
+
+1. **Instale o favorito** na aba **Lojas**, em "Enviar da loja para o SetupSniper":
+   - **no PC:** arraste o botão para a barra de favoritos;
+   - **no celular:** toque em "Copiar o código do favorito", crie um favorito chamado `SetupSniper` e cole o código no lugar do endereço.
+2. **Abra a página** de um produto ou de uma busca na loja e toque no favorito. No celular, digite `SetupSniper` na barra de endereço e toque no favorito.
+3. **Uma janela do SetupSniper abre** com as ofertas lidas da sua tela, a nota de confiança e o botão 📌 Fixar.
+4. **Se o produto já estiver fixado** com aquele link, o preço dele é atualizado na hora e entra no histórico e nos alertas.
+
+O favorito só entrega à janela do **seu** servidor o HTML que já está na sua tela. Nenhum acesso automático é feito à loja, e nada do que você digitou na loja é enviado.
+
+## Compartilhar o link pelo app da loja
+
+No app da loja, toque em **Compartilhar** e mande o link para o seu bot do Telegram. O bot responde com o preço e um botão 📌 Fixar. Se a loja não deixar ler o preço na hora, o bot fixa mesmo assim, pelo nome do produto no link, e os Fixados tentam de novo nas próximas verificações.
+
 ## Mercado Livre: API oficial (grátis, recomendado)
 
 É a melhor fonte para o **comparativo de vendedores**: para cada produto do catálogo, a API devolve **todos os vendedores** que o vendem, com o preço de cada um e a reputação (termômetro, MercadoLíder, vendas, idade da conta). Isso alimenta a nota de confiança.
@@ -36,7 +53,23 @@ Toque em **Copiar relatório** e envie para quem estiver ajudando. O relatório 
    ```
 4. Reinicie o SetupSniper e rode o diagnóstico: o Mercado Livre deve aparecer como "via oficial".
 
-O SetupSniper pede um token só de leitura (`client_credentials`), renovado sozinho. Não acessa a sua conta, não compra nada e não vê os seus dados de comprador.
+Só com o app, o SetupSniper usa um token do aplicativo (`client_credentials`).
+
+### Conectar a sua conta (login oficial)
+
+Algumas consultas da API do Mercado Livre só respondem para um usuário conectado. Para isso:
+
+1. **Cadastre o endereço de retorno no app.** No app do Mercado Livre, em "Redirect URI", cadastre `https://localhost/setupsniper-ml`, ou o endereço HTTPS do seu servidor terminado em `/auth/ml/callback` (veja abaixo). Se usar outro endereço, coloque-o também no `.env`:
+   ```
+   ML_REDIRECT_URI=https://localhost/setupsniper-ml
+   ```
+2. **Peça o login.** Na aba **Lojas → Conta do Mercado Livre**, toque em **Conectar minha conta do Mercado Livre** e autorize no site do Mercado Livre.
+3. **Conclua.** O navegador vai para o endereço de retorno. Com `https://localhost/...`, a página não abre, e tudo bem: copie o endereço inteiro da barra (ele tem `?code=TG-...`), cole no campo e toque em **Concluir**. O código vale por poucos minutos.
+
+- **Retorno automático:** se o seu servidor tiver HTTPS (por exemplo, com `tailscale serve`), use `ML_REDIRECT_URI=https://<seu-servidor>/auth/ml/callback`. Aí o login conclui sozinho.
+- **Renovação:** o acesso é renovado sozinho se o app tiver a permissão "offline_access". Sem ela, conecte de novo quando vencer.
+- **Onde fica:** o token fica em `data/ml-auth.json`, que nunca vai para o GitHub. O SetupSniper só **lê** a API: não compra, não vê os seus pedidos e não recebe a sua senha.
+- **Para desconectar:** toque em **Desconectar**, ou revogue o acesso no Mercado Livre (Minha conta → Segurança → Aplicativos).
 
 ## Shopee: Shopee Affiliate Open API
 

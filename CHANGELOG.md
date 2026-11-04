@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.10.0 — 2026-11-04
+
+**Três saídas legítimas para as lojas que bloqueiam o servidor**
+- **Favorito "Enviar para o SetupSniper"** (aba Lojas): na página da loja aberta no seu navegador, ele manda o HTML da tela para o seu servidor (`/api/capture`, `public/receber.html`). As ofertas são lidas, entram com nota e totais e atualizam o produto fixado com aquele link. Nenhum acesso automático à loja.
+- **Login oficial na sua conta do Mercado Livre** (OAuth, só leitura), na aba Lojas: as consultas da API usam a sua conta. O token fica em `data/ml-auth.json`, fora do git, e é renovado sozinho quando o app permite.
+- **Compartilhar o link pelo app da loja** para o bot: se a loja não deixar ler o preço na hora, o bot fixa mesmo assim, pelo nome do produto no link.
+
+
 ## 2.9.0 — 2026-11-04
 
 **Comparativo entre lojas e vendedores**
