@@ -1,4 +1,4 @@
-// Lomadee (rede de afiliados), usada para a Terabyte: busca de produtos.
+// Lomadee (rede de afiliados), usada para a Terabyte: busca de produtos e cupons (campanhas).
 //
 // Credencial (no .env): LOMADEE_API_KEY, criada no painel da Lomadee (menu do usuário → "Credenciais de API"),
 // com o escopo products:read. A conta precisa estar aprovada no programa da Terabyte.
@@ -50,6 +50,51 @@ function toOffer(p, dominio) {
     image: img,
     available: p.available === false || opt.available === false ? false : true,
   };
+}
+
+// Cupons da loja: GET /affiliate/campaigns (escopo campaigns:read), tipos GenericCoupon e PersonalCoupon,
+// status onTime (vigentes) e scheduled (futuros). Máximo de 20 por página; lê até maxPaginas páginas.
+// Documentação conferida em 04/11/2026: https://docs.lomadee.com.br/api-reference/affiliate/campaigns/all
+// e https://docs.lomadee.com.br/api-reference/api-keys (não existe mais /affiliate/coupons nem /affiliate/offers).
+// [não verificado ao vivo] Sem conta Lomadee: testado com tests/fixtures/lomadee-cupons.json. Não conferidos:
+// o formato real de "data" (a especificação mostra um objeto; a resposta de exemplo, uma lista), se a Terabyte
+// publica cupons na Lomadee e se "url" aponta para a loja ou para um link rastreado.
+// Só leitura: nada é testado, gerado nem aplicado. O link curto (channels[].shortUrls) fica à parte, como afiliado.
+const COUPON_TYPES = ['GenericCoupon', 'PersonalCoupon'];
+const COUPON_HINT = 'confira LOMADEE_API_KEY (escopo campaigns:read) e se a conta está aprovada no programa da loja';
+export async function coupons(opts = {}) {
+  if (!configured()) throw new Error(`${NOME}: falta ${missing().join(', ')} no .env`);
+  const o = { ...DEFAULTS, maxPaginas: 3, fetchImpl: fetch, ...opts };
+  const dominio = o.dominio.replace(/^www\./, '');
+  const out = [];
+  for (let page = 1; page <= o.maxPaginas; page++) {
+    const qs = new URLSearchParams({ types: COUPON_TYPES.join(','), status: 'onTime,scheduled', page: String(page), limit: '20' });
+    if (o.organizationId) qs.set('organizationId', o.organizationId);
+    const res = await callApi(`https://api.lomadee.com.br/affiliate/campaigns?${qs}`,
+      { ...o, nome: NOME, limits: ['lomadee'], hint: COUPON_HINT, headers: { 'x-api-key': env('LOMADEE_API_KEY'), Accept: 'application/json' } });
+    const j = await readJson(res, NOME);
+    const list = Array.isArray(j?.data) ? j.data : (j?.data && typeof j.data === 'object' ? [j.data] : []);
+    for (const c of list) {
+      if (!COUPON_TYPES.includes(c?.type)) continue;
+      const code = typeof c.code === 'string' ? c.code.trim() : '';
+      if (!code) continue;
+      const url = typeof c.url === 'string' && /^https?:\/\//.test(c.url) ? c.url : null;
+      const daLoja = o.organizationId ? (c.organizationId == null || c.organizationId === o.organizationId)
+        : (url ? (hostOf(url) === dominio || hostOf(url).endsWith('.' + dominio)) : false);
+      if (!daLoja) continue;
+      const short = (Array.isArray(c.channels) ? c.channels : []).flatMap(ch => ch?.shortUrls ?? []).find(u => typeof u === 'string' && /^https:\/\//.test(u));
+      out.push({
+        id: String(c.id), tipo: c.type, nome: c.name ?? null, descricao: c.description ?? null, codigo: code,
+        inicio: c.period?.startAt ?? null, fim: c.period?.endAt ?? null, criadoEm: c.createdAt ?? null,
+        url: url && hostOf(url) && (hostOf(url) === dominio || hostOf(url).endsWith('.' + dominio)) ? canonicalUrl(url) : null,
+        affiliateUrl: short ?? null, organizationId: c.organizationId ?? null, status: c.status ?? null,
+        fonte: 'Lomadee API', verificado: false,
+      });
+    }
+    const totalPages = Number(j?.meta?.totalPages ?? 1);
+    if (!(page < totalPages) || !list.length) break;
+  }
+  return out;
 }
 
 export async function search(query, page = 1, opts = {}) {

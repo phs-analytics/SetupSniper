@@ -158,12 +158,14 @@ export async function search(query, page = 1, opts = {}) {
 
 // Offers API: promoções e cupons divulgados pelo anunciante. Sempre "não verificado": o SetupSniper
 // nunca testa, gera nem aplica cupom.
+// opts.status: 'active' (padrão), 'expiringSoon' (vencem em 7 dias) ou 'upcoming' (ainda não começaram).
+// As datas vêm em UTC sem "Z" (ex.: 2026-11-10T23:59:59.000); src/coupon-feed.js converte.
 export async function offers(opts = {}) {
   if (!configured()) throw new Error(`${NOME}: falta ${missing().join(', ')} no .env`);
   const o = { ...DEFAULTS, fetchImpl: fetch, ...opts };
   const advertiserId = await findAdvertiser(o);
   const pid = env('AWIN_PUBLISHER_ID');
-  const body = { filters: { advertiserIds: [advertiserId], membership: 'joined', regionCodes: ['BR'], status: 'active', type: 'all' }, pagination: { page: 1, pageSize: 200 } };
+  const body = { filters: { advertiserIds: [advertiserId], membership: 'joined', regionCodes: ['BR'], status: ['active', 'expiringSoon', 'upcoming'].includes(o.status) ? o.status : 'active', type: 'all' }, pagination: { page: 1, pageSize: 200 } };
   const res = await callApi(`https://api.awin.com/publisher/${encodeURIComponent(pid)}/promotions`,
     { ...o, nome: NOME, limits: ['awin'], hint: HINT, method: 'POST', body: JSON.stringify(body), headers: { ...auth(), 'Content-Type': 'application/json' } });
   const j = await readJson(res, NOME);
@@ -179,6 +181,8 @@ export async function offers(opts = {}) {
     url: p.url ? canonicalUrl(p.url) : null,
     affiliateUrl: typeof p.urlTracking === 'string' && /^https:\/\//.test(p.urlTracking) ? p.urlTracking : null,
     codigo: p.voucher?.code ?? null,
+    exclusivo: p.voucher?.exclusive === true,
+    adicionadoEm: p.dateAdded ?? null,
     loja: p.advertiser?.name ?? null,
     fonte: 'Awin Offers API',
     verificado: false,

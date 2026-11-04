@@ -7,6 +7,11 @@
 //   conditions: ['first_purchase','app_only','subscriber','new_account'],
 //   announcedPrice, inferred, source, sourceName, sourceUrl, seenAt, expiresAt,
 //   status: 'unverified'|'confirmed_by_user'|'expired' }
+// Cupons oficiais das redes de afiliados (src/coupon-feed.js) usam o mesmo modelo, mais:
+// { origem: 'oficial', rede: 'Awin'|'Lomadee', kind: 'cupom'|'promocao', startsAt, divulgadoEm, lidoEm,
+//   verificado, pageUrl, affiliateUrl, title, description, terms, exclusivo, regraDoTexto }
+// e a condição 'selected_items' (vale só em parte da loja: não entra sozinho no total).
+// Promoção sem código (kind 'promocao') aparece na aba Cupons, mas nunca entra no total.
 import { formatBRL } from './offer.js';
 
 // Rótulos para a interface e para o bot
@@ -22,8 +27,12 @@ export const SOURCE_LABEL = {
 export function isCouponActive(c, now = Date.now()) {
   if (!c || c.status === 'expired') return false;
   if (c.expiresAt && Date.parse(c.expiresAt) <= now) return false;
+  if (c.startsAt && Date.parse(c.startsAt) > now) return false;   // cupom futuro: ainda não vale
   return true;
 }
+
+// Só cupom com código entra no cálculo (promoção sem código já está no preço da página).
+export const hasCode = (c) => c?.kind !== 'promocao' && Array.isArray(c?.codes) && c.codes.length > 0;
 
 // O cupom vale para esta oferta? (mesma loja; e mesmo produto/vendedor quando o cupom é específico)
 export function couponMatches(c, offer) {
@@ -50,6 +59,7 @@ export function couponDiscount(c, base, method, { profile, shippingCost = null }
   if (c.appliesTo?.length && !c.appliesTo.includes(method)) return { ok: false, discount: 0, notes: [`não vale no ${method === 'pix' ? 'Pix' : 'cartão'}`] };
   const elig = eligibilityProblem(c, profile);
   if (elig) return { ok: false, discount: 0, notes: [elig] };
+  if ((c.conditions ?? []).includes('selected_items') && !c.productUrl) return { ok: false, discount: 0, notes: ['só em itens selecionados: confira na loja se vale para este produto'] };
   if (c.minOrder && base < c.minOrder) return { ok: false, discount: 0, missing: c.minOrder - base, notes: [`pedido mínimo de ${formatBRL(c.minOrder)}`] };
   if (!c.appliesTo?.length && method === 'card') notes.push('pode não valer no crédito');
   if ((c.conditions ?? []).includes('app_only')) notes.push('só no app');
@@ -68,7 +78,7 @@ export function couponDiscount(c, base, method, { profile, shippingCost = null }
 // ("X OU Y"): eles são alternativas, não somam.
 export function applyCoupons(offer, coupons, method, base, { profile, stacking = 1, shippingCost = null, now = Date.now() } = {}) {
   const candidates = coupons
-    .filter((c) => isCouponActive(c, now) && couponMatches(c, offer))
+    .filter((c) => hasCode(c) && isCouponActive(c, now) && couponMatches(c, offer))
     .map((c) => ({ coupon: c, ...couponDiscount(c, base, method, { profile, shippingCost }) }));
   const usable = candidates.filter((x) => x.ok && x.discount > 0).sort((a, b) => b.discount - a.discount);
   const applied = [];

@@ -1,0 +1,56 @@
+{
+  "_ajuda": "Cupons oficiais das redes de afiliados (src/coupon-feed.js). Cada rede tem fonte e data. 'lojas' = ids de data/stores.json; a configuração de cada loja na rede (advertiserId, organizationId, domínio) fica em data/stores.json → afiliado. Os cupons lidos ficam em data/coupons-feed.json (fora do git). Nada é testado, gerado nem aplicado: os cupons só aparecem na aba Cupons e entram no total quando a regra permite, sempre um por pedido.",
+  "atualizadoEm": "2026-11-04",
+  "intervaloHoras": {
+    "valor": 6,
+    "fonte": "decisão do projeto (SetupSniper 3.0)",
+    "data": "2026-11-04"
+  },
+  "historicoDias": {
+    "valor": 30,
+    "fonte": "decisão do SetupSniper: cupom vencido fica 30 dias no histórico e depois é apagado",
+    "data": "2026-11-04"
+  },
+  "historicoMaximo": {
+    "valor": 300,
+    "fonte": "decisão do SetupSniper: limite de itens no histórico, para o arquivo caber bem no celular",
+    "data": "2026-11-04"
+  },
+  "redes": {
+    "awin": {
+      "nome": "Awin",
+      "ativa": true,
+      "lojas": ["kabum"],
+      "endpoint": "POST https://api.awin.com/publisher/{publisherId}/promotions",
+      "consultas": ["active", "upcoming"],
+      "observacao": "membership 'joined': só programas em que a conta foi aprovada (o código do cupom vem nulo nos outros). 'active' já inclui os que vencem em 7 dias ('expiringSoon'). Datas em UTC. Limite de 20 chamadas/min (data/source-limits.json → awin). [não verificado ao vivo]",
+      "fonte": "https://help.awin.com/apidocs/promotions",
+      "data": "2026-11-04"
+    },
+    "lomadee": {
+      "nome": "Lomadee",
+      "ativa": true,
+      "lojas": ["terabyte"],
+      "endpoint": "GET https://api.lomadee.com.br/affiliate/campaigns?types=GenericCoupon,PersonalCoupon&status=onTime,scheduled",
+      "observacao": "Escopo campaigns:read na chave. Máximo de 20 por página. Não existe mais endpoint separado de cupons nem de ofertas: tudo é 'campaign'. [não verificado ao vivo]",
+      "fonte": "https://docs.lomadee.com.br/api-reference/affiliate/campaigns/all e https://docs.lomadee.com.br/api-reference/api-keys",
+      "data": "2026-11-04"
+    },
+    "shopee": {
+      "nome": "Shopee Afiliados",
+      "ativa": false,
+      "lojas": ["shopee"],
+      "motivo": "A Shopee Affiliate Open API integrada (productOfferV2, shopOfferV2) devolve preço, comissão e link, não códigos de cupom; nenhuma consulta de vouchers foi encontrada na documentação pública. [não verificado]",
+      "fonte": "https://open-api.affiliate.shopee.com.br/explorer/v2 (só o trecho indexado; a página exige login) e docs/cupons.md",
+      "data": "2026-11-04"
+    },
+    "aliexpress": {
+      "nome": "AliExpress Portals",
+      "ativa": false,
+      "lojas": ["aliexpress"],
+      "motivo": "A consulta integrada (aliexpress.affiliate.product.query) traz preço e link de promoção por produto; códigos de cupom por produto (promo_code_info) aparecem só em alguns relatos de terceiros e não na documentação oficial conferida. Fica desligada até ser testada com uma app key real. [não verificado]",
+      "fonte": "https://openservice.aliexpress.com (documentação de aliexpress.affiliate.product.query; abertura não conferida) e docs/cupons.md",
+      "data": "2026-11-04"
+    }
+  }
+}
