@@ -13,7 +13,7 @@ const HOSTS = [
   [/kabum\.com\.br$/i, 'kabum'],
   [/pichau\.com\.br$/i, 'pichau'],
   [/terabyteshop\.com\.br$/i, 'terabyte'],
-  [/tiktok\.com$/i, 'tiktok'],
+  [/tiktok\.com$/i, 'tiktokshop'],
 ];
 // Encurtadores genéricos de afiliados: a loja só aparece depois de seguir o link (src/link-resolver.js)
 const GENERIC_SHORTENERS = /^(tidd\.ly|bit\.ly|tinyurl\.com|cutt\.ly|rebrand\.ly)$/i;

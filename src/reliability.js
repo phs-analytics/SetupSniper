@@ -6,14 +6,14 @@ export const WEIGHTS = { reclameAqui: 0.40, rating: 0.25, vendas: 0.20, reviews:
 const clamp = (v, lo = 0, hi = 100) => Math.max(lo, Math.min(hi, v));
 
 export function scoreReclameAqui(ra = {}) {
-  if (ra.nota == null) return null;
+  if (ra?.nota == null) return null;
   const base = 0.40 * ra.nota * 10 + 0.30 * (ra.solucao ?? 0) + 0.20 * (ra.voltaria ?? 0) + 0.10 * (ra.respondidas ?? 0);
   return clamp(base + (ra.ra1000 ? 5 : 0));
 }
 
 // Média 1–5 convertida para 0–100, puxada para 50 quando há poucas avaliações.
 export function scoreRating(r = {}) {
-  if (r.media == null) return null;
+  if (r?.media == null) return null;
   const raw = ((r.media - 1) / 4) * 100;
   const confianca = Math.min(1, Math.log10((r.avaliacoes ?? 0) + 1) / 5); // 100k avaliações = confiança total
   return clamp(50 + (raw - 50) * confianca);

@@ -12,7 +12,7 @@
 - Quando um produto **fixado** atinge a **meta de preço**.
 - Quando cai pelo menos **X% abaixo da média de 30 dias**. O padrão é 10%, e o aviso só vale depois de existir histórico.
 
-Os avisos só consideram lojas com score de confiabilidade acima do mínimo, que por padrão é 60. Preços **suspeitos** (muito abaixo da mediana) são ignorados, a menos que você ative essa opção. Cada produto gera **uma mensagem só**, com a melhor oferta e as outras abaixo da meta. A mesma oferta não é repetida por 24h, a não ser que caia mais 1%.
+Os avisos só consideram ofertas cuja **nota final** (loja + vendedor + oferta, ver [Como funciona](como-funciona.md#nota-final-por-oferta-plataforma-vendedor-e-oferta-srcseller-scorejs)) fica acima do mínimo, que por padrão é 60. Preços **suspeitos** (muito abaixo da mediana) são ignorados, a menos que você ative essa opção. Cada produto gera **uma mensagem só**, com a melhor oferta e as outras abaixo da meta. A mesma oferta não é repetida por 24h, a não ser que caia mais 1%.
 
 Cada produto fixado tem um sininho 🔔 para ligar ou desligar os alertas só dele.
 
@@ -37,7 +37,7 @@ Encaminhe ao bot um post de grupo ou canal de promoções, com link e cupom. O b
 2. resolve o link encurtado (meli.la, amzn.to, s.shopee.com.br, a.aliexpress.com…) até a página da loja, sem login. Loja fora do escopo é descartada;
 3. lê o preço atual no Pix e no cartão;
 4. salva o cupom. Sem regra no post, ele **infere** o desconto pelo preço anunciado;
-5. responde com o **Total Pix** e o **Total Crédito**, a confiança da loja e três botões:
+5. responde com o **Total Pix** e o **Total Crédito**, a nota de confiança da oferta com os motivos e três botões:
    - **📌 Fixar:** passa a acompanhar o produto;
    - **✅ Funcionou** e **❌ Não funcionou:** marcam o cupom como confirmado ou expirado.
 

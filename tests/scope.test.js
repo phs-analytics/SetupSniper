@@ -59,3 +59,10 @@ test('o servidor só consulta as lojas do escopo, inclusive na busca profunda', 
   const state = await (await fetch(`${base}/api/state`)).json();
   assert.deepEqual(state.stores.map((s) => s.id).sort(), [...ESCOPO].sort());
 });
+
+test('TikTok Shop fica cadastrada, mas desligada e fora do escopo', () => {
+  const tt = stores.find((s) => s.id === 'tiktokshop');
+  assert.ok(tt, 'a TikTok Shop deve estar em data/stores.json');
+  assert.equal(tt.enabled, false);
+  assert.ok(!activeStoreIds(stores, {}, ADAPTERS).includes('tiktokshop'));
+});

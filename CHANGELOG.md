@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.7.0 — 2026-11-04
+
+**TikTok Shop (Fase 5)**
+- Pesquisa em `docs/tiktok-shop.md`. Não há busca web pública estável, os endpoints são assinados e os termos do TikTok proíbem coleta automatizada. As APIs oficiais exigem cadastro de empresa.
+- A loja entra em `data/stores.json` com `"enabled": false` e indicadores estimados (Reclame Aqui via busca), sem adaptador. Nenhuma busca nem monitoramento é feito na TikTok Shop.
+- Posts com link da TikTok Shop encaminhados ao bot são recusados com uma explicação.
+- `src/reliability.js` aceita lojas sem avaliação ou sem vendas informadas (`null`).
+
 ## 2.6.0 — 2026-11-04
 
 **Nota por vendedor com sinais de risco (Fase 4)**
