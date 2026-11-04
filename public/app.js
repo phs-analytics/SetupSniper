@@ -69,6 +69,9 @@ const search = { q: '', es: null, status: {}, results: [], running: false };
 
 const store = (id) => S?.stores.find(s => s.id === id) ?? { id, name: id, color: '#666' };
 const scoreOf = (id) => store(id).reliability?.score ?? null;
+// Nota final da oferta (plataforma + vendedor + sinais da oferta), calculada no servidor (src/seller-score.js).
+// Sem nota do vendedor, vale a nota da plataforma.
+const trustOf = (o) => o?.trust?.score ?? scoreOf(o?.storeId ?? o?.store);
 const adjusted = (p, sc) => p * (1 + (100 - (sc ?? 50)) / 400);
 
 async function api(path, opts = {}) {
@@ -82,11 +85,13 @@ function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.ad
 // Score de confiabilidade desenhado como carimbo
 // Score de confiabilidade desenhado como carimbo.
 // É uma nota calculada pelo SetupSniper, não uma certificação: as palavras evitam sugerir selo oficial.
-function ring(score, sm = true, estimado = true) {
+function ring(score, sm = true, estimado = true, trust = null) {
   const rot = ((score ?? 7) * 37) % 24 - 12;
   if (score == null) return `<div class="stamp ${sm ? 'sm' : ''} na" style="--r:${rot}deg" title="Comparador: sem nota"><b>—</b><span>comparador</span></div>`;
-  const word = score >= 85 ? 'confiável' : score >= 70 ? 'bom' : score >= 55 ? 'regular' : 'cautela';
-  const tip = `Nota de confiança ${score}/100 calculada pelo SetupSniper${estimado ? ' a partir de dados estimados' : ''}. Não é uma certificação nem um dado oficial do Reclame Aqui ou da loja.`;
+  const word = score >= 85 ? 'confiável' : score >= 70 ? 'bom' : score >= 55 ? 'regular' : score >= 40 ? 'cautela' : 'alto risco';
+  const conf = trust?.confidence != null ? ` Confiança nos dados do vendedor: ${Math.round(trust.confidence * 100)}%.` : '';
+  const motivos = (trust?.reasons ?? []).length ? `\nMotivos: ${trust.reasons.slice(0, 5).join('; ')}.` : '';
+  const tip = esc(`Nota de confiança ${score}/100${trust?.tier ? ` (${trust.tier})` : ''} calculada pelo SetupSniper${estimado ? ' a partir de dados estimados' : ''}.${conf} Não é uma certificação nem um dado oficial do Reclame Aqui ou da loja.${motivos}`);
   return `<div class="stamp ${sm ? 'sm' : ''}" style="--c:${scoreColor(score)};--r:${rot}deg" title="${tip}"><b>${score}</b><span>${word}</span></div>`;
 }
 // Código de barras decorativo gerado a partir de um texto (sempre igual para o mesmo texto)
@@ -167,7 +172,7 @@ function flagged(list) {   // mesmo critério do servidor (src/extract.js flagOu
   return list.filter(r => refOf(r) == null || refOf(r) >= med * 0.25).map(r => ({ ...r, suspeito: refOf(r) != null && refOf(r) < med * 0.55 }));
 }
 function sortList(list, priceOf = (o) => refOf(o) ?? Infinity) {
-  const key = { price: (o) => priceOf(o), score: (o) => -(scoreOf(o.storeId) ?? -1), balance: (o) => adjusted(priceOf(o), scoreOf(o.storeId)) }[ui.sort];
+  const key = { price: (o) => priceOf(o), score: (o) => -(trustOf(o.offer ?? o) ?? -1), balance: (o) => adjusted(priceOf(o), trustOf(o.offer ?? o)) }[ui.sort];
   return list.sort((a, b) => key(a) - key(b) || priceOf(a) - priceOf(b));
 }
 
@@ -189,7 +194,7 @@ function renderSearch() {
   if (ui.hideSus) list = list.filter(r => !r.suspeito);
   // Ofertas sem preço legível ou sem estoque vão para o fim, mas continuam visíveis.
   list = sortList(list).sort((a, b) => (refOf(a) == null || a.available === false) - (refOf(b) == null || b.available === false));
-  const eligible = list.filter(r => (scoreOf(r.storeId) ?? 100) >= ui.min && refOf(r) != null && r.available !== false);
+  const eligible = list.filter(r => (trustOf(r) ?? 100) >= ui.min && refOf(r) != null && r.available !== false);
   const best = [...eligible].sort((a, b) => refOf(a) - refOf(b))[0];
   const storesN = new Set(list.map(r => r.storeId)).size;
   const prices = list.map(refOf).filter(v => v != null).sort((a, b) => a - b);
@@ -199,7 +204,7 @@ function renderSearch() {
     : search.running ? 'Buscando nas lojas…' : `Nenhuma oferta encontrada para “${esc(search.q)}”. Tente termos mais simples (ex.: marca + modelo) ou ative a busca profunda.`;
 
   $('#results').innerHTML = list.slice(0, ui.shown).map((r, i) => {
-    const s = store(r.storeId), sc = scoreOf(r.storeId), below = sc != null && sc < ui.min;
+    const s = store(r.storeId), sc = trustOf(r), below = sc != null && sc < ui.min;
     const tags = [
       r === best ? '<span class="sticker lime">MELHOR PREÇO.</span>' : '',
       r.suspeito ? '<span class="tag warn" title="Muito abaixo da mediana: pode ser golpe, usado ou outro produto">Suspeito</span>' : '',
@@ -219,7 +224,7 @@ function renderSearch() {
       <div class="info">${/^https?:\/\//i.test(r.url ?? '') ? `<a class="title" href="${esc(r.url)}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer" title="${esc(r.title)}">${esc(r.title)}</a>` : `<div class="title" title="${esc(r.title)}">${esc(r.title)}</div>`}
         <div class="meta"><span class="sdot" style="background:${s.color}"></span>${esc(s.name)} ${tags}</div>
         <div class="code">${barcode(r.url ?? r.title)}<span>SN-${esc(r.storeId.slice(0, 3).toUpperCase())}-${licenseNo(r.url ?? r.title)}</span></div></div>
-      <div class="rscore">${ring(sc, true, s.estimado !== false)}</div>
+      <div class="rscore">${ring(sc, true, s.estimado !== false, r.trust)}</div>
       <div class="price">${priceHtml}</div>
       <div class="actions">
         ${pinnedItem(r) ? `<a class="btn small pinned-btn" href="#fixados" title="Já está nos fixados">✓ Fixado</a>` : `<button type="button" class="btn small" data-watch="${i}">📌 Fixar</button>`}
@@ -304,7 +309,7 @@ function renderWatch() {
     return;
   }
   $('#watch').innerHTML = S.items.map(it => {
-    const offers = it.offers.map(o => ({ ...o, sc: scoreOf(o.storeId) }));
+    const offers = it.offers.map(o => ({ ...o, sc: o.offer?.trust?.score ?? scoreOf(o.storeId) }));
     const valid = offers.filter(o => o.status === 'ok' && o.price != null && !o.suspeito && (o.sc ?? 100) >= S.settings.alerts.minScore);
     const best = [...valid].sort((a, b) => a.price - b.price)[0];
     const hit = best && it.target && best.price <= it.target;
@@ -324,7 +329,7 @@ function renderWatch() {
           <div style="min-width:0"><div class="n">${esc(s.name)} ${o.pin ? '<span class="tag info" title="Acompanhando um link fixo">📌</span>' : ''}</div>
           <div class="t" title="${esc(o.title)}">${esc(o.title ?? '')}${o.updatedAt ? ' · ' + ago(o.updatedAt) : ''}</div></div></div>
         <div class="pcell">${priceCell}</div>
-        <div class="score">${ring(o.sc, false, s.estimado !== false)}<div class="tier">${s.reliability?.tier ?? ''}</div></div>
+        <div class="score">${ring(o.sc, false, s.estimado !== false, o.offer?.trust)}<div class="tier">${o.offer?.trust?.tier ?? s.reliability?.tier ?? ''}</div></div>
         <div class="spk">${sparkline(o.history)}</div>
         <div class="actions">${storeLink(o.url, s, o.searchUrl)}</div>
       </div>`;
@@ -422,7 +427,7 @@ function renderStatus() {
 }
 let first = true;
 function bestOf(it) {
-  return it.offers.filter(o => o.status === 'ok' && o.price != null && !o.suspeito && (scoreOf(o.storeId) ?? 100) >= S.settings.alerts.minScore).sort((a, b) => a.price - b.price)[0];
+  return it.offers.filter(o => o.status === 'ok' && o.price != null && !o.suspeito && (o.offer?.trust?.score ?? scoreOf(o.storeId) ?? 100) >= S.settings.alerts.minScore).sort((a, b) => a.price - b.price)[0];
 }
 function pinnedItem(r) {
   return S.items.find(it => (r.url && Object.values(it.pins ?? {}).includes(r.url)));

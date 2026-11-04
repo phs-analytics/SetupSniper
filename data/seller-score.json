@@ -1,0 +1,62 @@
+{
+  "_ajuda": "Pesos, limites e priors do score de VENDEDOR (src/seller-score.js). PROPOSTA INICIAL: os pesos e limites ainda precisam ser calibrados com casos reais. 'pontos' = máximo de pontos de risco de cada sinal (pontos = intensidade 0–1 × pontos). Nota final = plataforma·0,25 + vendedor·0,55 + oferta·0,20, depois as travas. Falta de dado entra como 'valorAusente' e reduz a confiança; não redistribui o peso.",
+  "versao": 1,
+  "atualizadoEm": "2026-11-03",
+  "fonte": "docs/score-vendedor.md",
+  "camadas": { "plataforma": 0.25, "vendedor": 0.55, "oferta": 0.20 },
+  "priors": {
+    "notaBayesiana": { "m": 3.5, "C": 20 },
+    "wilsonZ": 1.96,
+    "valorAusente": 40,
+    "vendasParaCem": 10000,
+    "diasIdadeParaCem": 730
+  },
+  "pesosVendedor": {
+    "nota": 0.20,
+    "positivas": 0.10,
+    "vendas": 0.20,
+    "idade": 0.20,
+    "reputacao": 0.20,
+    "cnpj": 0.10
+  },
+  "risco": {
+    "lojaNova": { "pontos": 15, "dias": 90 },
+    "poucasVendas": { "pontos": 10, "vendas": 50 },
+    "rajada": { "pontos": 20, "janelaDias": 28, "minAvaliacoes": 3, "minFracaoDaBase": 0.5 },
+    "notasExtremas": { "pontos": 10, "baseCheia": 50 },
+    "idiomaEstrangeiro": {
+      "pontos": 15,
+      "pontosPorLoja": { "aliexpress": 8 },
+      "minAvaliacoes": 3,
+      "minPalavras": 3,
+      "minStopwordsPt": 0.10,
+      "stopwordsPt": ["de", "que", "o", "a", "e", "do", "da", "dos", "das", "em", "no", "na", "um", "uma", "para", "pra", "com", "nao", "muito", "bom", "boa", "otimo", "otima", "chegou", "produto", "veio", "certinho", "recomendo", "gostei", "entrega", "rapida", "rapido", "bem", "mais", "mas", "os", "as", "esta", "tudo", "qualidade", "vendedor", "excelente", "perfeito", "funcionando", "conforme", "prazo"]
+    },
+    "similaridade": { "pontos": 15, "ngrama": 3, "limiar": 0.25, "faixa": 0.25, "minAvaliacoes": 3 },
+    "cnpjRecente": { "pontos": 10, "dias": 180 }
+  },
+  "oferta": {
+    "base": 60,
+    "bonusFulfillment": 20,
+    "precoImplausivel": { "fracaoDaMediana": 0.60, "penalidade": 30 },
+    "tituloGenerico": { "minPalavras": 3, "penalidade": 10 },
+    "anuncioRecente": { "dias": 14, "penalidade": 10 },
+    "poucasFotos": { "minFotos": 3, "penalidade": 5 }
+  },
+  "reputacaoNativa": {
+    "mercadolivre": { "5_green": 100, "4_light_green": 80, "3_yellow": 50, "2_orange": 20, "1_red": 0, "semCor": 30, "bonusMercadoLider": 10 },
+    "shopee": { "mall": 95, "oficial": 95, "indicado": 80, "semSelo": 40 },
+    "aliexpress": { "officialStore": 90 }
+  },
+  "oficialOuPlataforma": { "vendedorMinimo": 90, "confiancaMinima": 70 },
+  "travas": {
+    "riscoAlto": { "R": 45, "notaMaxima": 39 },
+    "riscoModerado": { "R": 25, "notaMaxima": 54 },
+    "bloqueio": { "cnpjNaoAtivo": true, "mlTermometro": ["1_red", "2_orange"], "notaMaxima": 39 },
+    "confiancaBaixa": { "confianca": 40, "notaMaxima": 69 }
+  },
+  "confianca": { "pesoCobertura": 0.5, "pesoVolume": 0.5, "avaliacoesParaCem": 100, "alta": 70, "media": 40 },
+  "classes": { "Excelente": 85, "Bom": 70, "Regular": 55, "Cautela": 40, "Alto risco": 0 },
+  "naoSeAplica": { "aliexpress": ["cnpj"] },
+  "cnpj": { "fonte": "https://brasilapi.com.br/api/cnpj/v1/{cnpj}", "sobDemanda": true, "maxPorAnuncio": 1, "cache": false }
+}
