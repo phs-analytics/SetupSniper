@@ -58,6 +58,8 @@ mostra a mesma frase.
 
 ### Selo "preço inflado antes da promoção"
 
+Na tela, ele aparece como **"provável preço inflado antes da promoção (estimativa)"**: é um critério próprio do SetupSniper sobre o que ele mesmo viu, não uma acusação à loja.
+
 É uma **estimativa** feita só com o que o seu servidor viu, nunca uma acusação. Olha a série da loja × vendedor do
 ponto mais recente (misturar lojas inventaria "altas"):
 

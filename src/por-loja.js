@@ -79,6 +79,14 @@ export function vendedorAprovado(offer, minScore = DEFAULT_RULES.minScore) {
   return avaliarVendedor(offer, { minScore }).status === 'aprovado';
 }
 
+// Alerta de Fixado: com "alertas só de vendedor bom" ligado (padrão), segura o alerta de vendedor abaixo da nota
+// mínima ou sem dados, e diz o motivo (vai para o log). Desligado (alertasSoVendedorBom === false), não filtra.
+export function motivoSemAlerta(offer, porLojaPrefs = {}, minScore = DEFAULT_RULES.minScore) {
+  if (porLojaPrefs?.alertasSoVendedorBom === false || !offer) return null;
+  const a = avaliarVendedor(offer, { minScore });
+  return a.status === 'aprovado' ? null : (a.motivo ?? 'vendedor abaixo da nota mínima');
+}
+
 const defaultRef = (o) => o?.totals?.pix?.total ?? referencePrice(o);
 const defaultScore = (o) => o?.trust?.score ?? null;
 

@@ -22,7 +22,7 @@ import { normalizeGroups } from './src/telegram-groups.js';
 import { createPriceHistory, keepaConfigured, fetchKeepa } from './src/price-history.js';
 import { dailyMin } from './public/historico.js';
 import { createCouponFeed, mergeCoupons } from './src/coupon-feed.js';
-import { normalizeRules, buscarAteCompletar, produtosBons, vendedorAprovado } from './src/por-loja.js';
+import { normalizeRules, buscarAteCompletar, produtosBons, motivoSemAlerta } from './src/por-loja.js';
 import { channelStatus, promoFromPost, addPromos, queryPromos, watchMatches } from './src/promo-feed.js';
 import { fetchPtax } from './src/ptax.js';
 import { parseProductPage } from './src/scraper.js';
@@ -69,8 +69,8 @@ const alertState = await readJson('alerts.json', { last: {}, log: [] });
 
 // Preço de referência para ordenar, comparar metas e alertar: Pix (padrão) ou crédito.
 settings.priceReference ??= 'pix';
-settings.affiliateLinks ??= false;
-settings.porLoja ??= {};                                        // { soVendedorBom, notaMinima, produtosPorLoja, ordem, alertasSoVendedorBom }                               // "Ver na loja" com link de afiliado: só se o dono ligar (aviso visível)
+settings.affiliateLinks ??= false;                               // "Ver na loja" com link de afiliado: só se o dono ligar (aviso visível)
+settings.porLoja ??= {};                                        // { soVendedorBom, notaMinima, produtosPorLoja, ordem, alertasSoVendedorBom }
 
 // ---------- Fases 2 e 3: cupons, perfil, CEP, cotação e regras configuráveis ----------
 const taxesCfg = await readConfig('taxes.json', { importTaxStores: [] });
@@ -429,7 +429,8 @@ async function evaluateAlerts(it) {
     if (o.status !== 'ok' || !o.price || (o.suspeito && !a.allowSuspicious)) continue;
     const sc = trustScore(o.offer) ?? scoreOf(sid);
     if (sc != null && sc < a.minScore) continue;
-    if (settings.porLoja?.alertasSoVendedorBom !== false && o.offer && !vendedorAprovado(o.offer, porLojaRules().minScore)) continue;
+    const segura = motivoSemAlerta(o.offer, settings.porLoja, porLojaRules().minScore);
+    if (segura) { log(`[alerta] ${it.name} · ${storeName(sid)}: sem alerta (${segura}). Para avisar mesmo assim, desligue "Alertas só para vendedor acima da nota mínima" na aba Lojas.`); continue; }
     const reasons = [];
     if (it.target && o.price <= it.target) reasons.push(`total final (${refKind() === 'pix' ? 'Pix' : 'cartão'}) caiu abaixo da sua meta de ${brl(it.target)}`);
     if (avg && o.price <= avg * (1 - a.dropPct / 100)) reasons.push(`${Math.round((1 - o.price / avg) * 100)}% abaixo da média de 30 dias (${brl(avg)})`);
