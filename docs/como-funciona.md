@@ -21,6 +21,7 @@ O SetupSniper consulta só estas 8 lojas: **KaBuM!, Pichau, Terabyte, Amazon, Me
 - **Para mudar só na sua máquina:** use `"enabledStores": ["kabum", "pichau", ...]` em `data/settings.json`. Ele sobrescreve o padrão.
 - **Quem segue a lista:** a regra fica em `src/scope.js`, e a busca, os Fixados, os alertas e o bot do Telegram a respeitam. Pedir uma loja desativada pela API não faz o servidor consultá-la.
 - **Comparadores:** o código do Buscapé e do Zoom continua em `src/stores.js`, mas eles estão desativados.
+- **TikTok Shop:** está em `data/stores.json` com `"enabled": false` e sem adaptador. Não existe busca pública estável, e os termos do TikTok proíbem coleta automatizada. Posts com link da TikTok Shop encaminhados ao bot são recusados com uma mensagem clara. Detalhes e próximos passos em `docs/tiktok-shop.md`.
 - **Imposto de importação:** só vale para as lojas em `importTaxStores` no `data/taxes.json` (hoje Amazon, AliExpress e Shopee). As outras são tratadas como nacionais.
 
 ## Como os preços são lidos
@@ -188,3 +189,19 @@ A cada `INTERVAL_MIN` minutos, o servidor:
 | `GET /api/health` | saúde do servidor |
 | `POST /api/promo` | processa um post de promoção (link, página, cupom e totais) |
 | `POST /api/coupons` · `PATCH/DELETE /api/coupons/:id` | cadastro manual e "Funcionou" / "Não funcionou" |
+
+## O que ainda não foi conferido com as lojas de verdade
+
+O SetupSniper foi desenvolvido num ambiente cuja rede bloqueava os sites das lojas, do Telegram, do Banco Central, do gov.br e do Reclame Aqui. Por isso:
+
+| Parte | Situação | Próximo passo |
+|---|---|---|
+| Busca e página de produto das 8 lojas | testadas com páginas salvas (`tests/fixtures`), montadas a partir da estrutura conhecida de cada loja, não com acesso ao vivo | rodar `npm start`, buscar "rtx 4060" e conferir loja a loja. Onde aparecer "Preço não encontrado nesta página", salvar o HTML como fixture nova e ajustar o adaptador |
+| Links encurtados (meli.la, amzn.to, shopee.ee, tidd.ly...) | testados com respostas simuladas | encaminhar ao bot 2 ou 3 posts reais de cada loja |
+| Canais públicos do Telegram (`t.me/s`) | testados com uma página salva | ativar um canal na aba Cupons e conferir o resultado |
+| Cotação PTAX (Banco Central) | não acessada | usar o botão PTAX. Se falhar, a cotação manual continua valendo |
+| Reclame Aqui | nem a atualização diária nem a pesquisa de cupons (REA) rodaram | conferir as notas em `data/stores.json`. Elas são estimativas iniciais |
+| Dados do vendedor | os adaptadores leem nome, loja oficial e origem do envio. Idade da loja, vendas e avaliações do vendedor ainda não são lidas | ler esses campos onde a página mostrar e preencher `sellerInfo` |
+| Impostos | a regra de US$ 50,01 a US$ 3.000 e o ICMS de 17 UFs estão marcados `"verificar": true` em `data/taxes.json` | conferir nas fontes citadas no arquivo e trocar para `false` |
+| TikTok Shop | só pesquisa, sem nenhum teste de acesso | os passos estão em `docs/tiktok-shop.md` |
+

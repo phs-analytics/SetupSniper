@@ -196,6 +196,26 @@
       "color": "#7048e8",
       "agregador": true,
       "observacao": "Comparador: o link leva à página com as ofertas de várias lojas. Confira a loja final antes de comprar."
+    },
+    {
+      "id": "tiktokshop",
+      "enabled": false,
+      "name": "TikTok Shop",
+      "color": "#fe2c55",
+      "reclameAquiSlug": "tiktok-shop",
+      "reclameAqui": {
+        "nota": 7.5,
+        "solucao": 78,
+        "voltaria": 69,
+        "respondidas": 99,
+        "ra1000": false
+      },
+      "rating": null,
+      "vendas": null,
+      "reviewsPositivas": null,
+      "atualizadoEm": "2026-11-03",
+      "fonte": "estimativa inicial (Reclame Aqui via busca, nota 7,4–7,7; solução 76,7–80,9%; voltaria 69,5% segundo a Exame)",
+      "observacao": "Desligada: sem busca pública estável e os termos do TikTok proíbem coleta automatizada. Ver docs/tiktok-shop.md."
     }
   ]
 }

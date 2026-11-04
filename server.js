@@ -359,6 +359,7 @@ async function processPromo(text, opts = {}) {
   try {
     r = DEMO ? { finalUrl: p.links[0], canonicalUrl: p.links[0], store: p.store, html: '' } : await resolveLink(p.links[0]);
   } catch (e) { return { text: `❌ Não consegui abrir o link: ${escHtml(e.message)}` }; }
+  if (r.store === 'tiktokshop' && !activeIds().includes(r.store)) return { text: 'TikTok Shop ainda não é suportada: fica desligada até ser testada com a rede liberada (veja docs/tiktok-shop.md). Post descartado.' };
   if (!r.store || !activeIds().includes(r.store)) return { text: `Loja fora do escopo do SetupSniper${r.store ? ` (${escHtml(storeName(r.store))})` : ''}. Post descartado.` };
 
   // Página do produto: preço atual no Pix e no cartão (sem login)
