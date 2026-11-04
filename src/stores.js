@@ -3,6 +3,7 @@ import { fetchText } from './http.js';
 import { collectJsonBlobs, extractFromJson, extractFromHtmlCards, pricesFromText, decode } from './extract.js';
 import { parseBRL } from './scraper.js';
 import { browserAvailable, renderPage } from './browser.js';
+import { OFFICIAL } from './official-apis.js';
 
 const enc = encodeURIComponent;
 const slug = (q) => q.trim().toLowerCase().replace(/\s+/g, '-');
@@ -179,23 +180,36 @@ function shopeeItems(j) {
 // Busca numa loja: API → HTML → navegador headless (busca profunda, ou quando a loja recusar e o navegador existir).
 // page: página da loja (o scroll infinito pede 2, 3...). A busca profunda lê `pages` páginas de uma vez.
 // Retorna { items, searchUrl, page, hasMore, blocked }.
-export async function searchStore(storeId, query, { deep = false, page = 1, browserFallback = false } = {}) {
+// Ordem das tentativas: API OFICIAL (se o usuário cadastrou as credenciais) → API pública → HTML → navegador.
+// trace: o que cada tentativa devolveu (usado no diagnóstico das lojas).
+export async function searchStore(storeId, query, { deep = false, page = 1, browserFallback = false, noCache = false } = {}) {
   const a = ADAPTERS[storeId];
   if (!a) throw new Error('loja desconhecida');
   const maxPages = a.pages ?? 10;
   if (page > maxPages) return { items: [], searchUrl: a.url(query, 1), page, hasMore: false };
   const last = deep ? Math.min(maxPages, page + (a.pages ?? 2) - 1) : page;
   const errors = [];
-  let items = [], lastGot = 0, blocked = false;
+  let items = [], lastGot = 0, blocked = false, source = null;
+  const trace = [];
+  const off = OFFICIAL[storeId];
   for (let p = page; p <= last; p++) {
     let got = [];
-    if (a.api) { try { got = await a.api(query, p); } catch (e) { errors.push('API: ' + e.message); } }
+    if (off?.configured()) {
+      try { got = await off.search(query, p); trace.push({ via: off.nome, ok: true, n: got.length }); if (got.length) source = 'oficial'; }
+      catch (e) { errors.push(`${off.nome}: ${e.message}`); trace.push({ via: off.nome, ok: false, error: e.message }); }
+    }
+    if (!got.length && a.api) {
+      try { got = await a.api(query, p); trace.push({ via: 'API pública', ok: true, n: got.length }); if (got.length) source = 'api'; }
+      catch (e) { errors.push('API: ' + e.message); trace.push({ via: 'API pública', ok: false, error: e.message }); }
+    }
     if (!got.length) {
       try {
-        const html = await fetchText(a.url(query, p), { headers: a.headers });
+        const html = await fetchText(a.url(query, p), { headers: a.headers, useCache: !noCache });
         if (isChallenge(html)) { blocked = true; throw new Error('a loja pediu verificação (captcha/anti-bot)'); }
         got = a.parse(html, a);
-      } catch (e) { errors.push(e.message); if (/HTTP (401|403|429|503)|verifica/.test(e.message)) blocked = true; }
+        trace.push({ via: 'página da loja', ok: true, n: got.length, bytes: html.length });
+        if (got.length) source = 'html';
+      } catch (e) { errors.push(e.message); if (/HTTP (401|403|429|503)|verifica/.test(e.message)) blocked = true; trace.push({ via: 'página da loja', ok: false, error: e.message }); }
     }
     if (!got.length && (deep || (browserFallback && blocked)) && browserAvailable()) {
       try {
@@ -203,19 +217,20 @@ export async function searchStore(storeId, query, { deep = false, page = 1, brow
         if (isChallenge(r.html)) throw new Error('a loja pediu verificação também no navegador');
         got = a.fromCaptured?.(r.captured) ?? [];
         if (!got.length) got = a.parse(r.html, a);
-        if (got.length) blocked = false;
-      } catch (e) { errors.push('navegador: ' + e.message); }
-    }
+        if (got.length) { blocked = false; source = 'navegador'; }
+        trace.push({ via: 'navegador', ok: true, n: got.length });
+      } catch (e) { errors.push('navegador: ' + e.message); trace.push({ via: 'navegador', ok: false, error: e.message }); }
+    } else if (!got.length && blocked) trace.push({ via: 'navegador', ok: false, error: browserAvailable() ? 'desligado (browserFallback)' : 'Playwright não instalado neste aparelho' });
     items.push(...got);
     lastGot = got.length;
     if (!got.length) break;
   }
   if (!items.length && errors.length) {
     const err = new Error(errors.at(-1));
-    err.blocked = blocked;
+    err.blocked = blocked; err.trace = trace;
     throw err;
   }
-  return { items, searchUrl: a.url(query, 1), page: last, hasMore: lastGot > 0 && last < maxPages };
+  return { items, searchUrl: a.url(query, 1), page: last, hasMore: lastGot > 0 && last < maxPages, source, trace };
 }
 
 // Página de verificação (captcha, "confirme que você é humano", desafio do Cloudflare/Akamai/PerimeterX).

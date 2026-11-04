@@ -110,6 +110,9 @@ export function normalizeOffer(raw, store, { now = new Date() } = {}) {
     },
     shipping: normalizeShipping(raw),
     available: raw.available === false ? false : raw.available === true ? true : null,
+    // dados públicos do vendedor lidos pelo adaptador (idade, vendas, reputação), para a nota de confiança
+    ...(raw.sellerInfo && typeof raw.sellerInfo === 'object' ? { sellerInfo: raw.sellerInfo } : {}),
+    ...(raw.catalogId ? { catalogId: String(raw.catalogId) } : {}),
     fetchedAt: now.toISOString(),
   };
 }

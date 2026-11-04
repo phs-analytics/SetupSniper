@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.9.0 — 2026-11-04
+
+**Comparativo entre lojas e vendedores**
+- A busca abre no modo **Comparativo** (`src/compare.js`): o mesmo produto, escrito de jeitos diferentes em cada loja, vira um grupo, com uma linha por loja e por **vendedor de marketplace**, com o nome do vendedor, a nota, o preço e a diferença para o menor.
+- **Fixados:** a oferta principal mostra o vendedor, e os marketplaces mostram "Outros N vendedores" (até 8), na ordem preço + confiança.
+
+**APIs oficiais (opcionais, com as credenciais do usuário)**
+- `src/official-apis.js`: Mercado Livre (busca + catálogo com **todos os vendedores** e a reputação de cada um), Shopee Affiliate e AliExpress Affiliate. São usadas antes de ler o site, então não caem no bloqueio anti-bot. Guia: `docs/fontes-oficiais.md`. Não verificadas ao vivo.
+
+**Diagnóstico das lojas**
+- Aba Lojas → **Testar as lojas agora** (ou `/diagnostico` no bot): mostra o resultado de cada tentativa por loja e gera um relatório sem dados pessoais para copiar.
+- Erros de rede explicados ("endereço não encontrado (DNS)", "conexão cortada", "tempo esgotado") em vez de "fetch failed".
+- Arquivos do site com `Cache-Control: no-cache`: depois de atualizar o servidor, o navegador já pega a versão nova.
+
+
 ## 2.8.0 — 2026-11-04
 
 **Mais produtos por loja e scroll infinito**

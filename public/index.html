@@ -58,6 +58,10 @@
       <div id="pinned-strip" class="pinned" hidden></div>
       <div id="progress" class="progress" hidden></div>
       <div id="results-tools" class="controls" hidden>
+        <div class="seg" id="view" aria-label="Como mostrar">
+          <button type="button" data-view="compare" class="on" title="Agrupa o mesmo produto: todas as lojas e todos os vendedores lado a lado">Comparativo</button>
+          <button type="button" data-view="list">Lista</button>
+        </div>
         <div class="seg" id="sort">
           <button type="button" data-sort="balance" class="on" title="Padrão: menor preço entre os vendedores mais confiáveis. A nota de confiança menor recebe penalidade de até 25% no preço; alto risco e suspeitos ficam por último.">Melhor escolha</button>
           <button type="button" data-sort="price">Menor preço</button>
@@ -172,6 +176,13 @@
         <p class="muted">Reclame Aqui 40% · Avaliação da loja 25% · Volume de vendas 20% · Reviews 15%</p>
       </div>
       <p class="disclaimer">As notas são calculadas pelo SetupSniper a partir de indicadores públicos e, enquanto marcadas como <b>estimativa</b>, usam valores aproximados. Não são certificações nem dados oficiais do Reclame Aqui ou das lojas. Confira sempre na fonte antes de comprar.</p>
+      <div class="panel diag">
+        <div class="panel-head"><h2>Diagnóstico das lojas</h2>
+          <p class="muted">Testa agora cada loja a partir do <b>seu servidor</b> e mostra o que cada tentativa devolveu (API oficial, API pública, página da loja, navegador). Se aparecer "bloqueado", toque em <b>Copiar relatório</b> e envie para quem estiver ajudando: o relatório não tem dados pessoais.</p></div>
+        <button type="button" class="btn primary" id="diag-go">Testar as lojas agora</button>
+        <button type="button" class="btn" id="diag-copy" hidden>Copiar relatório</button>
+        <div id="diag-out" class="diag-out"></div>
+      </div>
       <div id="stores" class="stores"></div>
     </section>
 
