@@ -1,0 +1,39 @@
+{
+  "_ajuda": "Regras do histórico próprio de preços (src/price-history.js). Valores de dinheiro em centavos; percentuais em %. Guia: docs/historico.md.",
+  "_fonte": "Critério próprio do SetupSniper, definido em 04/11/2026 (Etapa 3 do docs/plano-3.0.md).",
+  "_data": "2026-11-04",
+  "gravacao": {
+    "janelaDedupeMin": 60,
+    "origens": ["busca", "fixado", "extensao", "api", "telegram", "keepa"],
+    "_explica": "No máximo 1 ponto por produto × loja × vendedor × fixado a cada janelaDedupeMin minutos, salvo se o preço mudar."
+  },
+  "historicoComecando": {
+    "minPontos": 3,
+    "minDias": 2,
+    "_explica": "Com menos pontos ou menos dias de série que isso, os indicadores dizem 'histórico começando' em vez de números."
+  },
+  "janelasDias": [30, 90],
+  "atualHoras": 24,
+  "_atualExplica": "Preço atual = menor preço visto nas últimas atualHoras horas da série consultada (quando o chamador não informa o preço atual).",
+  "inflado": {
+    "altaMinimaPct": 10,
+    "janelaDias": 30,
+    "quedaRealMaximaPct": 5,
+    "quedaRecenteDias": 14,
+    "_explica": "Selo 'preço inflado antes da promoção': o preço 'de' (antes da queda) ficou pelo menos altaMinimaPct acima do menor preço visto nos janelaDias anteriores, e o preço novo fica a menos de quedaRealMaximaPct abaixo desse menor preço (a 'promoção' só devolve o preço de antes). A queda precisa ter acontecido nos últimos quedaRecenteDias.",
+    "fonte": "Critério próprio inspirado no CDC (Lei 8.078/1990), art. 37 (publicidade enganosa) e na regra europeia do 'menor preço dos 30 dias anteriores' (Diretiva UE 2019/2161, que incluiu o art. 6.º-A na Diretiva 98/6/CE). Não há norma brasileira com esse número exato: os limites 10% / 30 dias / 5% são escolha do projeto. [não verificado]",
+    "data": "2026-11-04",
+    "verificar": true
+  },
+  "retencao": {
+    "compactarAposDias": 180,
+    "fusoHorasDia": -3,
+    "_explica": "Pontos com mais de compactarAposDias dias viram 1 ponto por dia (o menor do dia), por produto × loja × vendedor × fixado. O dia é contado no horário de Brasília (UTC−3, sem horário de verão desde 2019)."
+  },
+  "keepa": {
+    "dominioBR": 12,
+    "fonte": "Cliente oficial da Keepa em Java (github.com/keepacom/api_backend, consultado em 04/11/2026): AmazonLocale.BR = 12; KeepaTime.keepaStartMinute = 21564000; Product.CsvType AMAZON = 0, NEW = 1; URL https://api.keepa.com/product?key=…&domain=…&asin=…. Preços em centavos da moeda local; -1 = sem oferta. Resposta real não conferida (sem chave). [não verificado ao vivo]",
+    "data": "2026-11-04",
+    "verificar": true
+  }
+}

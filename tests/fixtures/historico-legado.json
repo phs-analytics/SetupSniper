@@ -1,0 +1,49 @@
+{
+ "_ajuda": "data/history.json no formato antigo (v2.4+): \"itemId:storeId\" e \"itemId:__best\" -> [{t (ms), price (centavos)}]. Datas relativas a 2026-11-04T15:00:00Z.",
+ "history": {
+  "cpu:kabum": [
+   {
+    "t": 1776524400000,
+    "price": 209990
+   },
+   {
+    "t": 1792940400000,
+    "price": 199990
+   },
+   {
+    "t": 1793631600000,
+    "price": 189990
+   }
+  ],
+  "cpu:pichau": [
+   {
+    "t": 1793372400000,
+    "price": 205000
+   }
+  ],
+  "cpu:__best": [
+   {
+    "t": 1792940400000,
+    "price": 199990
+   },
+   {
+    "t": 1793631600000,
+    "price": 189990
+   }
+  ],
+  "gpu:terabyte": [
+   {
+    "t": 1793545200000,
+    "price": 249900
+   }
+  ],
+  "__schema": 2
+ },
+ "watchItems": [
+  {
+   "id": "cpu",
+   "name": "AMD Ryzen 7 7800X3D",
+   "query": "Ryzen 7 7800X3D"
+  }
+ ]
+}

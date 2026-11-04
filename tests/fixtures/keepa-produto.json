@@ -1,0 +1,27 @@
+{
+ "_ajuda": "Resposta simulada da Keepa API /product (domínio 12 = amazon.com.br), montada pela documentação pública, sem rede. csv[0] = preço vendido pela Amazon, csv[1] = menor preço novo de terceiros; pares [minutoKeepa, centavos]; -1 = sem estoque. [não verificado]",
+ "products": [
+  {
+   "asin": "B0TESTE123",
+   "domainId": 12,
+   "title": "Processador AMD Ryzen 7 7800X3D, 8-Core, 4.2GHz, AM5",
+   "csv": [
+    [
+     8283600,
+     199990,
+     8303760,
+     -1,
+     8328240,
+     189990
+    ],
+    [
+     8285040,
+     195000,
+     8310960,
+     187500
+    ]
+   ]
+  }
+ ],
+ "tokensLeft": 99
+}
