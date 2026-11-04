@@ -159,7 +159,7 @@ function startSearch(q) {
   es.onmessage = (ev) => {
     const m = JSON.parse(ev.data);
     if (m.type === 'store') {
-      search.status[m.storeId] = { state: m.status, n: m.items.length, error: m.error, blocked: m.blocked, reason: m.reason, approx: m.approx, url: m.searchUrl, ms: m.ms, page: m.page ?? 1, hasMore: !!m.hasMore };
+      search.status[m.storeId] = { state: m.status, n: m.items.length, error: m.error, blocked: m.blocked, reason: m.reason, approx: m.approx, url: m.searchUrl, ms: m.ms, page: m.page ?? 1, hasMore: !!m.hasMore, fromCaptures: !!m.fromCaptures, capturedAt: m.capturedAt, blockedNote: m.blockedNote };
       addResults(m.items);
     } else if (m.type === 'done') { search.running = false; es.close(); }
     renderSearch();
@@ -236,9 +236,10 @@ function renderSearch() {
   $('#progress').innerHTML = Object.entries(search.status).map(([id, s]) => {
     const n = store(id).name;
     if (s.state === 'loading') return `<span class="pchip loading">${esc(n)}</span>`;
+    if (s.state === 'ok' && s.n && s.fromCaptures) return `<span class="pchip ok" title="${esc(`A loja recusou o servidor (${s.blockedNote ?? 'bloqueio'}). Estes preços foram vistos por você no navegador.`)}"><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(n)} <b>${s.n}</b> · visto por você ${ago(s.capturedAt)} · abrir na loja para atualizar ↗</a></span>`;
     if (s.state === 'ok' && s.n) return `<span class="pchip ok${s.loadingMore ? ' loading' : ''}" title="${s.approx ? 'Nenhum título tinha todos os termos: mostrando os parecidos' : ''}">${esc(n)} <b>${s.n}</b>${s.approx ? ' ≈' : ''}${s.hasMore ? '+' : ''}</span>`;
     if (s.state === 'ok') return `<span class="pchip none" title="${esc(s.reason ?? '')}"><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(n)}: ${s.reason && /mostrou \d/.test(s.reason) ? 'nada parecido' : 'sem resultados'} ↗</a></span>`;
-    return `<span class="pchip err" title="${esc(errHelp(s))}"><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(n)}: ${esc(s.blocked ? 'bloqueado' : shortErr(s.error))} ↗</a></span>`;
+    return `<span class="pchip err" title="${esc(errHelp(s))}"><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(n)}: ${esc(s.blocked ? 'bloqueado · abrir na loja' : shortErr(s.error))} ↗</a></span>`;
   }).join('');
 
   let list = flagged(search.results);
@@ -267,6 +268,7 @@ function renderSearch() {
       r.suspeito ? '<span class="tag warn" title="Muito abaixo da mediana: pode ser golpe, usado ou outro produto">Suspeito</span>' : '',
       r.approx ? '<span class="tag info" title="O título não tem todos os termos da busca: confira se é o produto certo">Parecido</span>' : '',
       r.seller?.official ? '<span class="tag info">Oficial</span>' : '',
+      r.captured ? `<span class="tag info" title="A loja recusou o servidor; este preço veio da página que você abriu">visto por você ${ago(r.capturedAt)}</span>` : '',
       s.agregador ? '<span class="tag info">Comparador</span>' : '',
     ].join('');
     const rp = refOf(r);
@@ -286,20 +288,24 @@ function renderSearch() {
       <div class="price">${priceHtml}</div>
       <div class="actions">
         ${pinnedItem(r) ? `<a class="btn small pinned-btn" href="#fixados" title="Já está nos fixados">✓ Fixado</a>` : `<button type="button" class="btn small" data-watch="${i}">📌 Fixar</button>`}
-        ${storeLink(r.url, s, search.status[r.storeId]?.url)}
+        ${storeLink(linkOf(r), s, search.status[r.storeId]?.url)}
       </div></div>`;
   }).join('') + moreFooter(list);
   search.view = list;
   const sentinel = $('#more-sentinel');
   if (sentinel && moreObserver) { moreObserver.disconnect(); moreObserver.observe(sentinel); }
 }
+// "Ver na loja" abre a URL canônica limpa. Só com a opção "links de afiliado" ligada (aba Lojas) usa o link
+// rastreado que a API oficial devolveu, e o botão avisa isso.
+const linkOf = (o) => (S.settings?.affiliateLinks && /^https?:\/\//i.test(o?.affiliateUrl ?? '') ? { url: o.affiliateUrl, affiliate: true } : o?.url);
 // Botão que leva direto à página do produto na loja (ou, sem link direto, à busca da loja)
 function storeLink(url, s, fallbackUrl) {
+  const affiliate = !!url?.affiliate; if (affiliate) url = url.url;
   const safe = (u) => /^https?:\/\//i.test(u ?? '') ? u : null;
   const u = safe(url), f = safe(fallbackUrl);
   const hex = (s.color ?? '#ff5a1f').replace('#', ''), [r, g, b] = [0, 2, 4].map(i => parseInt(hex.slice(i, i + 2), 16));
   const ink = (0.299 * r + 0.587 * g + 0.114 * b) > 150 ? '#111' : '#fff';   // texto legível sobre a cor da loja
-  if (u) return `<a class="btn small shop" href="${esc(u)}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer" style="--sc:${s.color};--ink:${ink}" aria-label="Ver produto na ${esc(s.name)}">${s.agregador ? 'Ver ofertas' : 'Ver na loja'} ↗</a>`;
+  if (u) return `<a class="btn small shop" href="${esc(u)}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer" style="--sc:${s.color};--ink:${ink}" aria-label="Ver produto na ${esc(s.name)}">${s.agregador ? 'Ver ofertas' : 'Ver na loja'} ↗</a>${affiliate ? '<small class="tag warn" title="Este botão usa o link de afiliado da rede (opção ligada na aba Lojas). O preço é o mesmo; a rede registra a visita.">link de afiliado</small>' : ''}`;
   if (f) return `<a class="btn small" href="${esc(f)}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer" title="Sem link direto: abre a busca da loja">Buscar na loja ↗</a>`;
   return '';
 }
@@ -397,6 +403,7 @@ function renderWatch() {
       let priceCell;
       // Cada loja termina com um estado explícito (server.js checkItem): nada some em silêncio.
       if (o.status === 'ok') priceCell = `${o.offer?.totals ? totalsHtml(o.offer, { compact: true }) : `<div class="price">${brl(o.price)} <small class="reflbl">${refLabel(o.offer)}</small></div><div class="pdetail">${priceDetail(o.offer)}</div>`}<div class="diff ${o === best ? 'isbest' : ''}">${o === best ? 'menor preço' : best ? '+' + brl(o.price - best.price) : ''}${o.suspeito ? ' <span class="tag warn">Suspeito</span>' : ''}</div>`;
+      else if (o.status === 'stale') priceCell = `<div class="price" style="opacity:.6">${brl(o.price)} <small class="reflbl">${refLabel(o.offer)}</small></div><div class="pdetail"><span class="tag warn" title="${esc(o.message)}">visto por você ${ago(o.capturedAt)}</span> a loja recusou o servidor; não entra nos alertas</div>${/^https?:\/\//i.test(o.url ?? '') ? `<a class="btn small" href="${esc(o.url)}" target="_blank" rel="noopener noreferrer">Abrir na loja para atualizar ↗</a>` : ''}`;
       else if (o.status === 'error') priceCell = `<span class="tag err" title="${esc(o.message)}">⚠ ${esc(shortErr(o.message))}</span>`;
       else if (o.status === 'unavailable') priceCell = `<span class="tag out" title="${esc(o.message)}">Indisponível</span>`;
       else if (o.status === 'price_not_found') priceCell = `<span class="tag err" title="O produto foi encontrado, mas o preço não foi lido da página">Preço não encontrado nesta página</span>`;
@@ -407,11 +414,11 @@ function renderWatch() {
         <div class="store"><div class="chip" style="background:${s.color}">${esc(s.name[0])}</div>
           <div style="min-width:0"><div class="n">${esc(s.name)} ${o.pin ? '<span class="tag info" title="Acompanhando um link fixo">📌</span>' : ''}</div>
           ${o.status === 'ok' && o.offer ? `<div class="sv">${esc(sellerLabel({ storeId: o.storeId, seller: o.offer.seller }))}</div>` : ''}
-          <div class="t" title="${esc(o.title)}">${esc(o.title ?? '')}${o.updatedAt ? ' · ' + ago(o.updatedAt) : ''}</div></div></div>
+          <div class="t" title="${esc(o.title)}">${esc(o.title ?? '')}${o.capturedAt && (o.status === 'stale' || o.lastError) ? ' · visto por você ' + ago(o.capturedAt) : o.updatedAt ? ' · ' + ago(o.updatedAt) : ''}</div></div></div>
         <div class="pcell">${priceCell}</div>
         <div class="score">${ring(o.sc, false, s.estimado !== false, o.offer?.trust)}<div class="tier">${o.offer?.trust?.tier ?? s.reliability?.tier ?? ''}</div></div>
         <div class="spk">${sparkline(o.history)}</div>
-        <div class="actions">${storeLink(o.url, s, o.searchUrl)}</div>
+        <div class="actions">${storeLink(linkOf({ url: o.url, affiliateUrl: o.offer?.affiliateUrl }), s, o.searchUrl)}</div>
         ${o.status === 'ok' && o.others?.length ? `<details class="others"><summary>Outros ${o.others.length} vendedor(es) na ${esc(s.name)}</summary>${o.others.map(x => `
           <div class="orow"><span class="owho">${esc(sellerLabel({ storeId: o.storeId, seller: x.seller }))}</span>
             <span class="osc" title="${esc((x.trust?.reasons ?? []).join('; '))}">${x.trust?.score != null ? `<b style="color:${scoreColor(x.trust.score)}">${x.trust.score}</b> ${esc(x.trust.tier ?? '')}` : 'sem nota'}</span>
@@ -530,8 +537,13 @@ function renderPinned() {
       <span class="pc-meta">${b ? esc(store(b.storeId).name) : ''}${it.target ? ` · meta ${brl(it.target)}` : ''}${hit ? ' · <b>atingida</b>' : ''}</span></a>`;
   }).join('') + `</div>`;
 }
+$('#aff-on').onchange = async (e) => {
+  try { await api('/api/settings', { method: 'POST', body: { affiliateLinks: e.target.checked } }); toast(e.target.checked ? 'Ver na loja vai usar o link de afiliado, com aviso' : 'Ver na loja volta a abrir a página limpa'); }
+  catch (err) { toast(err.message); e.target.checked = !e.target.checked; }
+};
 function render() {
   if (!S) return;
+  $('#aff-on').checked = !!S.settings?.affiliateLinks;
   renderStatus(); renderWatch(); renderPinned(); renderCoupons(); if (search.q && !search.running) renderSearch(); renderStores(); renderAlerts(); renderPromos(); renderMl();
   // Promoções novas chegaram e a pessoa está no topo da aba: atualiza a lista sozinha
   const nPromo = S.channels?.promos ?? 0;
@@ -751,7 +763,7 @@ function renderCompare(list, best) {
       <div class="cprice">${rp == null ? '<small>preço não lido</small>' : `<b>${brl(rp)}</b><small>${refKind() === 'pix' ? 'Pix' : 'cartão'}${card != null && card !== rp ? ` · ${brl(card)} cartão` : ''}</small>`}
         ${o.approx ? '<span class="tag info">Parecido</span>' : ''}${o.suspeito ? '<span class="tag warn">Suspeito</span>' : ''}${o.available === false ? '<span class="tag out">Indisponível</span>' : ''}
         ${g.min != null && rp != null && rp > g.min ? `<small class="cdiff">+${brl(rp - g.min)}</small>` : ''}</div>
-      <div class="cact"><button type="button" class="btn small" data-cwatch="${i}" title="Fixar">📌</button>${storeLink(o.url, s, search.status[o.storeId]?.url)}</div>
+      <div class="cact"><button type="button" class="btn small" data-cwatch="${i}" title="Fixar">📌</button>${storeLink(linkOf(o), s, search.status[o.storeId]?.url)}</div>
     </div>`;
   };
   search.localMore = groups.length > shownGroups;

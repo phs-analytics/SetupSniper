@@ -64,6 +64,7 @@ const alertState = await readJson('alerts.json', { last: {}, log: [] });
 
 // Preço de referência para ordenar, comparar metas e alertar: Pix (padrão) ou crédito.
 settings.priceReference ??= 'pix';
+settings.affiliateLinks ??= false;                               // "Ver na loja" com link de afiliado: só se o dono ligar (aviso visível)
 
 // ---------- Fases 2 e 3: cupons, perfil, CEP, cotação e regras configuráveis ----------
 const taxesCfg = await readConfig('taxes.json', { importTaxStores: [] });
@@ -251,7 +252,7 @@ async function runSearch(q, { deep = false, stores, onStore, page = 1 } = {}) {
       const cap = page === 1 ? capturedFor(id, q) : [];
       if (cap.length) {
         all.push(...cap);
-        onStore?.({ storeId: id, status: 'ok', items: cap, raw: cap.length, fromCaptures: true, blockedNote: e.message, hasMore: false, page, searchUrl: ADAPTERS[id].url(q, 1), ms: Date.now() - t0 });
+        onStore?.({ storeId: id, status: 'ok', items: cap, raw: cap.length, fromCaptures: true, capturedAt: Math.max(...cap.map(c => c.capturedAt ?? 0)), blockedNote: e.message, hasMore: false, page, searchUrl: ADAPTERS[id].url(q, 1), ms: Date.now() - t0 });
       } else onStore?.({ storeId: id, status: 'error', error: e.message, blocked: !!e.blocked, items: [], hasMore: false, page, searchUrl: ADAPTERS[id].url(q, 1), ms: Date.now() - t0 });
     }
   }));
@@ -315,6 +316,12 @@ async function checkItem(it) {
       // Erro agora, mas o seu navegador enviou o preço deste link há menos de 12 h: mantém esse preço
       const prev = res[sid];
       if (r.error && prev?.capturedAt && now - prev.capturedAt < 12 * 3600e3) { res[sid] = { ...prev, lastError: r.error, errorAt: now }; continue; }
+      // Modo degradado honesto: preço mais antigo (até 7 dias) visto pelo seu navegador continua visível, com a idade
+      // e o motivo, mas não conta para alerta nem para "menor preço" (status 'stale').
+      if (r.error && prev?.capturedAt && prev.price != null && now - prev.capturedAt < STALE_MAX) {
+        res[sid] = { ...prev, status: 'stale', message: `a loja recusou o servidor (${r.error}); último preço visto por você`, lastError: r.error, errorAt: now, updatedAt: now };
+        continue;
+      }
       const st = storeState(r.error ? r : { raw: r.raw, offers: mine }, it, refOf);
       const o = st.offer;
       res[sid] = {
@@ -439,6 +446,7 @@ function titleFromUrl(u) {
 // ---------- preços enviados pelo navegador do usuário (favorito ou extensão) ----------
 // Ficam 24 h em memória e entram na busca e nos Fixados quando a loja não responde ao servidor.
 const CAPTURE_TTL = 24 * 3600e3;
+const STALE_MAX = 7 * 24 * 3600e3;   // Fixados: até quanto tempo o último preço visto por você aparece (sem alerta)
 const captures = new Map();   // url canônica → oferta (com capturedAt)
 function rememberCaptures(items) {
   const now = Date.now();
@@ -898,6 +906,7 @@ const server = http.createServer(async (req, res) => {
         if ('minScore' in a) settings.alerts.minScore = Math.min(100, Math.max(0, Number(a.minScore) || 0));
       }
       if ('priceReference' in b) settings.priceReference = b.priceReference === 'card' ? 'card' : 'pix';
+      if ('affiliateLinks' in b) settings.affiliateLinks = !!b.affiliateLinks;
       if (Array.isArray(b.monitorStores)) settings.monitorStores = b.monitorStores.filter(id => activeIds().includes(id));
       if (b.intervalMin) { settings.intervalMin = Math.max(5, Math.min(720, Number(b.intervalMin))); schedule(); }
       // Fase 3: CEP (só 8 dígitos), cotação do dólar, perfil e canais
