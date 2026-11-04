@@ -13,11 +13,15 @@ import { createHash, createHmac } from 'node:crypto';
 import { netError } from './http.js';
 
 const env = (k) => (process.env[k] ?? '').trim();
-export const configured = {
-  mercadolivre: () => !!(env('ML_CLIENT_ID') && env('ML_CLIENT_SECRET')),
-  shopee: () => !!(env('SHOPEE_AFFILIATE_APP_ID') && env('SHOPEE_AFFILIATE_SECRET')),
-  aliexpress: () => !!(env('ALIEXPRESS_APP_KEY') && env('ALIEXPRESS_APP_SECRET')),
+// Variáveis do .env de cada API oficial (para o diagnóstico dizer qual falta).
+export const VARS = {
+  mercadolivre: ['ML_CLIENT_ID', 'ML_CLIENT_SECRET'],
+  shopee: ['SHOPEE_AFFILIATE_APP_ID', 'SHOPEE_AFFILIATE_SECRET'],
+  aliexpress: ['ALIEXPRESS_APP_KEY', 'ALIEXPRESS_APP_SECRET'],
 };
+// missing.<loja>() → nomes das variáveis que faltam (nunca os valores)
+export const missing = Object.fromEntries(Object.entries(VARS).map(([id, vs]) => [id, () => vs.filter(k => !env(k))]));
+export const configured = Object.fromEntries(Object.keys(VARS).map(id => [id, () => missing[id]().length === 0]));
 
 async function getJson(fetchImpl, url, opts = {}) {
   let res;
@@ -146,7 +150,7 @@ export async function aliSearch(q, page = 1, { fetchImpl = fetch, now = Date.now
 }
 
 export const OFFICIAL = {
-  mercadolivre: { configured: configured.mercadolivre, search: mlSearch, nome: 'API oficial do Mercado Livre' },
-  shopee: { configured: configured.shopee, search: shopeeSearch, nome: 'Shopee Affiliate API' },
-  aliexpress: { configured: configured.aliexpress, search: aliSearch, nome: 'AliExpress Affiliate API' },
+  mercadolivre: { id: 'mercadolivre-api', configured: configured.mercadolivre, missing: missing.mercadolivre, search: mlSearch, nome: 'API oficial do Mercado Livre' },
+  shopee: { id: 'shopee-affiliate', configured: configured.shopee, missing: missing.shopee, search: shopeeSearch, nome: 'Shopee Affiliate API' },
+  aliexpress: { id: 'aliexpress-affiliate', configured: configured.aliexpress, missing: missing.aliexpress, search: aliSearch, nome: 'AliExpress Affiliate API' },
 };

@@ -1,0 +1,36 @@
+{
+  "searchResult": {
+    "items": [
+      {
+        "asin": "B0BHPW5DS5",
+        "detailPageURL": "https://www.amazon.com.br/dp/B0BHPW5DS5?tag=meutag-20&linkCode=osi&th=1&psc=1",
+        "images": { "primary": { "medium": { "height": 160, "url": "https://m.media-amazon.com/images/I/41kX9lJzNQL._SL160_.jpg", "width": 160 } } },
+        "itemInfo": { "title": { "displayValue": "Kingston NV2 SSD 1TB M.2 2280 NVMe PCIe 4.0", "label": "Title", "locale": "pt_BR" } },
+        "offersV2": { "listings": [
+          { "availability": { "type": "IN_STOCK" }, "condition": { "value": "New" }, "isBuyBoxWinner": true,
+            "merchantInfo": { "name": "Amazon.com.br", "id": "A1ZZFT5FULY4LN" },
+            "price": { "money": { "amount": 449.9, "currency": "BRL", "displayAmount": "R$ 449,90" },
+              "savingBasis": { "money": { "amount": 599.0, "currency": "BRL", "displayAmount": "R$ 599,00" }, "savingBasisType": "LIST_PRICE" } } }
+        ] }
+      },
+      {
+        "asin": "B0C8XMRL2K",
+        "detailPageURL": "https://www.amazon.com.br/dp/B0C8XMRL2K?tag=meutag-20&linkCode=osi",
+        "images": { "primary": { "medium": { "url": "https://m.media-amazon.com/images/I/31abc._SL160_.jpg" } } },
+        "itemInfo": { "title": { "displayValue": "WD Blue SN580 SSD 1TB NVMe" } },
+        "offersV2": { "listings": [
+          { "availability": { "type": "IN_STOCK" }, "condition": { "value": "Used" }, "isBuyBoxWinner": false, "merchantInfo": { "name": "Loja Usados" }, "price": { "money": { "amount": 300.0, "currency": "BRL" } } },
+          { "availability": { "type": "IN_STOCK" }, "condition": { "value": "New" }, "isBuyBoxWinner": true, "merchantInfo": { "name": "TechParceiro BR", "id": "A3PARCEIRO" }, "price": { "money": { "amount": 519.0, "currency": "BRL" } } }
+        ] }
+      },
+      {
+        "asin": "B0NOPRICE1",
+        "detailPageURL": "https://www.amazon.com.br/dp/B0NOPRICE1?tag=meutag-20",
+        "itemInfo": { "title": { "displayValue": "SSD 1TB sem oferta" } },
+        "offersV2": null
+      }
+    ],
+    "searchURL": "https://www.amazon.com.br/s/?field-keywords=ssd+1tb&tag=meutag-20&linkCode=osi",
+    "totalResultCount": 146
+  }
+}

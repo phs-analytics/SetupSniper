@@ -1,11 +1,54 @@
 # Quando aparece "bloqueado": fontes oficiais e outras saídas
 
-Algumas lojas recusam acessos automáticos ao site (a resposta é HTTP 403/429 ou uma página de captcha). O SetupSniper **não tenta burlar** essas proteções. Em vez disso, ele tenta, nesta ordem:
+Algumas lojas recusam acessos automáticos ao site (a resposta é HTTP 403/429 ou uma página de captcha). O SetupSniper **não tenta burlar** essas proteções: nada de captcha, disfarce de navegador, proxy ou cookies de login. Em vez disso, cada loja tem uma **lista de fontes**, da mais oficial para a menos oficial, em `data/stores.json` (campo `sources`):
 
-1. **API oficial da loja**, se você cadastrar as suas credenciais no `.env`. O preço vem da própria loja, sem ler o site, e não cai no bloqueio.
-2. **API pública** que o próprio site usa (KaBuM!, Mercado Livre, Shopee).
-3. **Página de busca da loja** (HTML).
-4. **Navegador de verdade** (Playwright), quando a loja recusa e o navegador está instalado no aparelho.
+| Id | Fonte | Precisa de |
+|---|---|---|
+| `api-oficial` | API oficial da loja | as suas credenciais no `.env` |
+| `feed-afiliado` | rede de afiliados (Awin, Lomadee) | conta de afiliado aprovada no programa da loja |
+| `api-publica` | o JSON público que o próprio site usa | nada |
+| `pagina` | a página pública de busca (HTML) | nada |
+| `navegador` | a mesma página num navegador de verdade (Playwright) | `npm run navegador` (só no PC) |
+
+A busca tenta as fontes nessa ordem e para na primeira que devolver produtos. **Fontes sem credencial são puladas** sem erro. No diagnóstico, cada tentativa mostra a fonte usada.
+
+## Fontes por loja (04/11/2026)
+
+Baseada no diagnóstico real feito no celular em 04/11/2026 (`docs/diagnostico-2026-11.md`) e no plano 3.0.
+
+| Loja | Ordem das fontes | Situação no diagnóstico | O que você precisa fazer |
+|---|---|---|---|
+| KaBuM! | API pública → feed Awin → página → navegador | funciona (API pública, 40 itens) | nada; a Awin é reforço, se um dia a API pública parar |
+| Terabyte | feed Lomadee → página → navegador | bloqueada (HTTP 403 na página) | conta Lomadee aprovada no programa da Terabyte |
+| Amazon | Creators API → página → navegador | funciona (página, 47 itens) | opcional: Creators API (exige vendas como associado) |
+| Mercado Livre | API oficial → API pública → página → navegador | bloqueada (403 na API pública, página sem itens) | só as credenciais `ML_CLIENT_ID` e `ML_CLIENT_SECRET` |
+| Shopee | API de afiliados → API pública → página → navegador | bloqueada (403 na API pública, página sem itens) | só as credenciais `SHOPEE_AFFILIATE_APP_ID` e `SHOPEE_AFFILIATE_SECRET` |
+| AliExpress | API de afiliados → página → navegador | funciona (página, 7 itens) | opcional: `ALIEXPRESS_APP_KEY` e `ALIEXPRESS_APP_SECRET` traz mais itens |
+| Pichau | página → navegador | bloqueada (HTTP 403) | nenhuma fonte oficial encontrada \[não verificado\]; use a extensão ou o favorito |
+| Magalu | página → navegador | bloqueada (HTTP 403) | nenhuma API de busca encontrada \[não verificado\]; use a extensão ou o favorito |
+
+Mercado Livre, Shopee e AliExpress **já têm o código pronto**: só faltam as credenciais no `.env` (passo a passo abaixo).
+
+## Pausa após bloqueio (6 horas)
+
+Quando a **página** de uma loja bloqueia (captcha, ou HTTP 401, 403, 429 ou 503), o SetupSniper deixa a página e o navegador headless daquela loja **6 horas sem nova tentativa**. Insistir só gera erro e pode piorar o bloqueio.
+
+- Durante a pausa, a loja aparece como bloqueada, e o motivo diz até que horas vai a pausa.
+- As fontes oficiais e de afiliado **continuam funcionando** durante a pausa.
+- **Testar as lojas agora** (diagnóstico) ignora a pausa, porque foi você quem pediu. Se a página responder, a pausa acaba na hora.
+- A pausa fica só na memória: reiniciar o servidor também a encerra.
+- O valor fica em `data/source-limits.json` (`pausaAposBloqueioHoras`), com a fonte e a data.
+
+## Limites de chamadas
+
+As redes de afiliados limitam quantas consultas você faz por minuto. Os limites ficam em `data/source-limits.json`, com a fonte e a data, e o SetupSniper espera a vez antes de chamar. Se a espera passar de 20 segundos, aquela fonte é pulada nesta busca, com uma mensagem clara.
+
+| Fonte | Limite usado | Fonte do número |
+|---|---|---|
+| Awin (API) | 20 por minuto | https://help.awin.com/apis/apidocs/introduction-1 |
+| Awin (download do feed) | 5 por minuto; o feed fica guardado 6 h | https://help.awin.com/apidocs/retail-publisher-productapidocumentation-1 |
+| Lomadee | 10 por minuto | https://ce-docs.keywordrush.com/modules/affiliate/lomadeeproducts (a documentação oficial fala em 60; fica o menor) |
+| Amazon Creators API | 30 por minuto e 8640 por dia | https://affiliate-program.amazon.com/creatorsapi/docs/en-us/concepts/api-rates (no início, 1 por segundo) |
 
 ## Primeiro: descubra o que está acontecendo
 
@@ -19,7 +62,8 @@ Para cada loja, aparece o que cada tentativa devolveu:
 | `a loja pediu verificação (captcha)` | apareceu uma página "confirme que você é humano" |
 | `endereço não encontrado (DNS)` | o aparelho está sem internet, ou a rede (operadora, VPN, DNS) bloqueia o site |
 | `a conexão foi cortada` | a loja ou a rede derrubou a conexão (pode ser bloqueio) |
-| `N itens via oficial/api/html/navegador` | funcionou, e mostra por qual caminho |
+| `N itens via api-oficial/feed-afiliado/api-publica/pagina/navegador` | funcionou, e mostra por qual fonte |
+| `pausada após bloqueio até 18:30` | a página bloqueou há pouco; o SetupSniper só tenta de novo depois desse horário |
 
 Toque em **Copiar relatório** e envie para quem estiver ajudando. O relatório não tem CEP, token, chat nem os seus produtos.
 
@@ -29,7 +73,7 @@ A forma mais automática para as lojas sem API é a **extensão** (`docs/extensa
 
 ## Enviar da loja pelo seu navegador (funciona em todas as lojas)
 
-Esta é a saída para as lojas sem API (KaBuM!, Pichau, Terabyte, Magalu, Amazon). Você abre a página **no seu navegador**, como sempre: logado ou não, resolvendo a verificação da loja se ela aparecer. Depois toca no favorito **Enviar para o SetupSniper**.
+Esta é a saída para as lojas sem fonte oficial (Pichau e Magalu) e para as outras enquanto você não tiver as credenciais. Você abre a página **no seu navegador**, como sempre: logado ou não, resolvendo a verificação da loja se ela aparecer. Depois toca no favorito **Enviar para o SetupSniper**.
 
 1. **Instale o favorito** na aba **Lojas**, em "Enviar da loja para o SetupSniper":
    - **no PC:** arraste o botão para a barra de favoritos;
@@ -55,7 +99,7 @@ No app da loja, toque em **Compartilhar** e mande o link para o seu bot do Teleg
    ML_CLIENT_ID=123456789
    ML_CLIENT_SECRET=abc...
    ```
-4. Reinicie o SetupSniper e rode o diagnóstico: o Mercado Livre deve aparecer como "via oficial".
+4. Reinicie o SetupSniper e rode o diagnóstico: o Mercado Livre deve aparecer como "via api-oficial".
 
 Só com o app, o SetupSniper usa um token do aplicativo (`client_credentials`).
 
@@ -103,13 +147,66 @@ Os preços vêm em reais, com envio para o Brasil.
 >
 > As credenciais ficam só no `.env`, que nunca vai para o GitHub. O `.env` é lido pelo Node 20.12 ou mais novo (o Termux já instala uma versão nova).
 
-## Lojas sem API pública
+## KaBuM!: feed de produtos da Awin
 
-KaBuM!, Pichau, Terabyte, Magalu e Amazon não oferecem uma API de preços para uso pessoal.
+A KaBuM! tem programa de afiliados na **Awin** \[não verificado: confira no diretório de anunciantes da Awin Brasil\]. Hoje a API pública da KaBuM! funciona, então a Awin entra só se ela parar.
 
-- **Amazon:** a Product Advertising API exige ser afiliado com vendas recentes, então não foi integrada.
-- **Para essas lojas, o que mais ajuda:**
-  1. **Rode o servidor em casa.** Internet residencial (Wi-Fi ou 4G) é bloqueada bem menos que servidores na nuvem ou VPNs.
-  2. **No PC, instale o navegador:** `npm run navegador`. Com ele, quando a loja recusa, a mesma página pública é aberta num Chromium de verdade. Ele não resolve captcha: se a loja pedir verificação, a loja continua "bloqueada". No celular (Termux) o Playwright não funciona.
-  3. **Fixe o link do produto.** A página de um produto costuma ser menos protegida que a busca, e os Fixados conferem o preço direto nela.
-  4. **Encaminhe posts de promoção para o bot** e ative os canais na aba 📣 Promoções: o preço vem do post, e o link é conferido quando possível.
+1. Crie uma conta de **publisher** (afiliado) em https://www.awin.com/br e anote o **número da conta** (Publisher ID), que aparece no painel.
+2. No painel, procure o programa da **KaBuM!** e peça para entrar. Espere a aprovação.
+3. Gere o seu token em https://ui.awin.com/awin-api ("Show my API token").
+4. No `.env`:
+   ```
+   AWIN_TOKEN=...
+   AWIN_PUBLISHER_ID=...
+   ```
+
+O SetupSniper acha o programa da KaBuM! sozinho, pelo domínio, entre os programas em que você foi aprovado. Se quiser fixar o número do anunciante, preencha `afiliado.awin.advertiserId` na KaBuM! em `data/stores.json`.
+
+O feed é o catálogo inteiro da loja (formato Google, JSON Lines). Ele é baixado no máximo a cada 6 horas e a busca é feita nele, sem chamar a Awin a cada pesquisa. A **Offers API** da Awin (promoções e cupons do anunciante) também está pronta no código, para a etapa de cupons; os cupons dela aparecem sempre como "divulgado pela Awin, não verificado" e nunca são testados nem aplicados.
+
+\[não verificado\]: se a KaBuM! publica o feed no formato Google com o idioma `pt_BR`, e o nome do campo com o link rastreado.
+
+## Terabyte: busca de produtos da Lomadee
+
+1. Crie uma conta de afiliado na **Lomadee** (https://www.lomadee.com.br) e peça a entrada no programa da **Terabyte** \[não verificado: confira se a Terabyte está na Lomadee\].
+2. No painel, abra o menu do usuário → **Credenciais de API** e crie uma chave com o escopo `products:read`.
+3. No `.env`:
+   ```
+   LOMADEE_API_KEY=...
+   ```
+
+A busca da Lomadee pode trazer produtos de outras lojas da rede: o SetupSniper mostra só os da Terabyte (pelo domínio). Se souber o identificador da Terabyte na Lomadee (um UUID), preencha `afiliado.lomadee.organizationId` em `data/stores.json`, para a busca já vir filtrada.
+
+\[não verificado\]: se o preço da Lomadee é o à vista (Pix) ou o parcelado. Por segurança, ele entra como preço no cartão.
+
+## Amazon: Creators API
+
+A Product Advertising API (PA-API 5) foi desligada e responde HTTP 403. A substituta é a **Creators API**.
+
+1. Você precisa ser **associado aceito** no Amazon Associados (https://associados.amazon.com.br) e ter **vendas qualificadas recentes**: a Amazon exige 10 vendas nos últimos 30 dias para liberar a API e corta o acesso depois de 30 dias sem vendas. Para uso só pessoal, isso pode não ser possível; a página da Amazon continua funcionando como hoje.
+2. No Associados, abra **Ferramentas → Creators API → Create Application** e crie uma credencial. Copie o **Credential ID** e o **Credential Secret** (o segredo só aparece uma vez).
+3. No `.env`:
+   ```
+   AMAZON_CREATORS_CLIENT_ID=...
+   AMAZON_CREATORS_CLIENT_SECRET=...
+   AMAZON_PARTNER_TAG=seunome-20
+   ```
+
+O SetupSniper pede o token (OAuth 2.0, client credentials) em `api.amazon.com`, que é o endereço da região do Brasil, e guarda por 1 hora. \[não verificado ao vivo\]
+
+## Links de afiliado
+
+As redes de afiliados e a Amazon devolvem **links rastreados**. O SetupSniper guarda o link rastreado separado (`affiliateUrl`), mas o **"Ver na loja" continua abrindo a URL limpa** da loja. Usar link de afiliado só vai acontecer se você ligar uma opção para isso, e com aviso visível.
+
+## Pichau e Magalu: sem fonte oficial
+
+- **Pichau:** nenhuma API pública nem programa de afiliados com API de produtos foi encontrado \[não verificado\].
+- **Magalu:** o programa **Parceiro Magalu** tem uma API de links de parceiro que lê um produto pelo endereço, mas não foi encontrada uma API de **busca** documentada \[não verificado\]. Fica para uma etapa futura.
+- **Para as duas, o que funciona:** a **extensão** do navegador, o **favorito** "Enviar para o SetupSniper" e o **app instalado** com "Compartilhar". O preço que você viu aparece com a idade ("visto por você há 3 h").
+
+## Outras dicas quando a loja bloqueia
+
+1. **Rode o servidor em casa.** Internet residencial (Wi-Fi ou 4G) é bloqueada bem menos que servidores na nuvem ou VPNs.
+2. **No PC, instale o navegador:** `npm run navegador`. Com ele, quando a loja recusa, a mesma página pública é aberta num Chromium de verdade. Ele não resolve captcha: se a loja pedir verificação, a loja continua "bloqueada". No celular (Termux) o Playwright não funciona.
+3. **Fixe o link do produto.** A página de um produto costuma ser menos protegida que a busca, e os Fixados conferem o preço direto nela.
+4. **Encaminhe posts de promoção para o bot** e ative os canais na aba 📣 Promoções: o preço vem do post, e o link é conferido quando possível.

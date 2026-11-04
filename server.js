@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { fetchPrice } from './src/scraper.js';
 import { computeReliability } from './src/reliability.js';
 import { fetchReclameAqui } from './src/reclameaqui.js';
-import { ADAPTERS, searchStore } from './src/stores.js';
+import { ADAPTERS, searchStore, officialSourcesStatus, listBlockPauses } from './src/stores.js';
 import { activeStoreIds } from './src/scope.js';
 import { cleanResults, flagOutliers } from './src/extract.js';
 import { normalizeOffer, referencePrice, formatBRL, toCents, canonicalUrl as canonicalUrlOf } from './src/offer.js';
@@ -281,6 +281,9 @@ async function diagnostico(q = 'ssd 1tb') {
       demo: DEMO, navegador: browserAvailable(), browserFallback: settings.browserFallback !== false,
       apisOficiais: { mercadolivre: officialConfigured.mercadolivre(), shopee: officialConfigured.shopee(), aliexpress: officialConfigured.aliexpress() },
       busca: q, lojas,
+      // fontes oficiais por loja: configurada ou não e QUAIS variáveis faltam (só os nomes, nunca os valores)
+      fontesOficiais: officialSourcesStatus(activeIds()).map(f => ({ loja: f.loja, nome: f.nome, configurada: f.configurada, faltam: f.faltam })),
+      pausas: listBlockPauses(),
     };
   })();
   try { return await diagRunning; } finally { diagRunning = null; }
@@ -667,6 +670,7 @@ const botHandlers = {
   async diagnostico() {
     const d = await diagnostico();
     return '🩺 <b>Diagnóstico das lojas</b> (busca "ssd 1tb")\n\n' + d.lojas.map(l => `${l.ok ? '✅' : l.bloqueado ? '⛔' : '❌'} <b>${escHtml(l.nome)}</b>: ${l.ok ? `${l.itens} itens via ${escHtml(l.fonte)}` : escHtml((l.erro ?? 'nenhum item').slice(0, 120))}`).join('\n') +
+      (d.fontesOficiais.some(f => !f.configurada) ? '\n\n🔑 <b>Credenciais que faltam</b>\n' + d.fontesOficiais.filter(f => !f.configurada).map(f => `${escHtml(storeName(f.loja))} (${escHtml(f.nome)}): ${f.faltam.map(escHtml).join(', ')}`).join('\n') : '') +
       `\n\nNavegador headless: ${d.navegador ? 'sim' : 'não'}. Relatório completo: aba Lojas → Diagnóstico.`;
   },
   post: async (text) => processPromo(text, { source: 'telegram_forward' }),

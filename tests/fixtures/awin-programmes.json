@@ -1,0 +1,4 @@
+[
+  { "id": 11111, "name": "Outra Loja BR", "currencyCode": "BRL", "primaryRegion": { "countryCode": "BR", "name": "Brazil" }, "status": "Active", "validDomains": [{ "domain": "outraloja.com.br" }] },
+  { "id": 17729, "name": "KaBuM!", "currencyCode": "BRL", "primaryRegion": { "countryCode": "BR", "name": "Brazil" }, "status": "Active", "displayUrl": "https://www.kabum.com.br", "validDomains": [{ "domain": "www.kabum.com.br" }, { "domain": "kabum.com.br" }] }
+]

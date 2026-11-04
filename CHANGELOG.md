@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.12.0 — 2026-11-04
+
+**Etapa 1 do plano 3.0: fontes oficiais no lugar das páginas bloqueadas**
+Base: o diagnóstico real de 04/11/2026 (`docs/diagnostico-2026-11.md`). KaBuM!, Amazon e AliExpress funcionam. Pichau, Terabyte, Magalu, Mercado Livre e Shopee recusam o servidor com HTTP 403.
+- **Lista de fontes por loja** (`sources` em `data/stores.json`): o servidor tenta da mais oficial para a menos oficial (API oficial → feed de afiliado → API pública → página → navegador) e o diagnóstico diz qual fonte respondeu.
+- **Fontes novas** em `src/sources/`: Awin (feed e Offers API, para a KaBuM!), Lomadee (Terabyte) e Amazon Creators API (a PA-API foi desligada em 15/05/2026). Todas opcionais, com as credenciais do usuário no `.env`. Não verificadas ao vivo.
+- **Limites de chamadas** por fonte em `data/source-limits.json`, com fonte e data, controlados por `src/rate-limit.js` (sem dependência).
+- **Pausa após bloqueio:** quando a página de uma loja recusa o servidor, ela fica 6 h sem ser tentada de novo (valor no JSON). As fontes oficiais continuam. O teste manual da aba Lojas ignora a pausa.
+- **Modo degradado honesto:** loja bloqueada mostra o último preço visto pelo seu navegador com a idade ("visto por você há 3 h") e o botão para abrir na loja. Nos Fixados, esse preço aparece por até 7 dias, sem disparar alerta.
+- **Links de afiliado:** o link rastreado das APIs fica guardado à parte. "Ver na loja" continua abrindo a página limpa; uma opção na aba Lojas (desligada por padrão) troca pelo link de afiliado, com aviso visível.
+- **Diagnóstico** (aba Lojas, relatório e `/diagnostico`): mostra cada fonte oficial, se está configurada e quais variáveis faltam no `.env` (só os nomes).
+- `.env.example`: `AWIN_TOKEN`, `AWIN_PUBLISHER_ID`, `LOMADEE_API_KEY`, `AMAZON_CREATORS_CLIENT_ID`, `AMAZON_CREATORS_CLIENT_SECRET`, `AMAZON_PARTNER_TAG`.
+
 ## 2.11.0 — 2026-11-04
 
 **Mais automático, no PC e no celular**
