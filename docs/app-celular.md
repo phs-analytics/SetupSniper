@@ -27,9 +27,9 @@ O PWA é o mesmo site, então tudo o que muda no servidor já aparece no app. Um
 
 Com HTTPS, o **login do Mercado Livre** também conclui sozinho. Na aba Lojas, ele mostra o endereço de retorno para cadastrar no app do Mercado Livre (`https://<...>.ts.net/auth/ml/callback`).
 
-### Servidor no celular (Termux)
+### Servidor próprio num celular Android (Termux)
 
-O app do Tailscale para Android não tem o comando `serve`, então um celular servidor não ganha HTTPS do Tailscale. Você tem três saídas:
+O app do Tailscale para Android não tem o comando `serve`, então um servidor rodando no celular não ganha HTTPS do Tailscale. Você tem três saídas:
 
 - usar o link normal (`http://100.x.x.x:3000`) e **Adicionar à tela inicial**: vira um atalho com ícone, mas sem tela cheia nem Compartilhar;
 - rodar o SetupSniper num PC com `tailscale serve`;

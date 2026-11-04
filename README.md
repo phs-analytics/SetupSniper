@@ -4,14 +4,14 @@
 
 **Caçador de preços de hardware.** Busca em várias lojas brasileiras ao mesmo tempo, mostra um **score de confiabilidade** de cada loja e avisa no **Telegram** quando o preço cai.
 
-Roda no seu PC ou num **celular Android antigo** usado como servidor pessoal, que também pode virar a sua **nuvem de arquivos**.
+Roda num **servidor próprio**, do jeito que você preferir: o seu PC, um mini PC ou Raspberry Pi, um NAS com Docker, uma VPS ou até um celular Android antigo. Seus dados ficam só nele.
 
 [![CI](https://github.com/phs-analytics/SetupSniper/actions/workflows/ci.yml/badge.svg)](https://github.com/phs-analytics/SetupSniper/actions/workflows/ci.yml)
 ![Node](https://img.shields.io/badge/node-%E2%89%A518.18-339933)
 ![Dependências](https://img.shields.io/badge/depend%C3%AAncias-0-brightgreen)
 ![Licença](https://img.shields.io/badge/licen%C3%A7a-MIT-blue)
 
-[Começar](#-começar-em-2-minutos) · [Celular como servidor](docs/celular-servidor.md) · [Telegram](docs/telegram.md) · [Nuvem](docs/nuvem.md) · [FAQ](docs/faq.md)
+[Começar](#-começar-em-2-minutos) · [Servidor próprio](docs/servidor-proprio.md) · [Credenciais](docs/credenciais.md) · [Telegram](docs/telegram.md) · [Nuvem](docs/nuvem.md) · [FAQ](docs/faq.md)
 
 </div>
 
@@ -34,8 +34,8 @@ Roda no seu PC ou num **celular Android antigo** usado como servidor pessoal, qu
 | 📌 **Fixar produtos** | Fixe uma oferta com **meta de preço**. O servidor confere de tempos em tempos e guarda o histórico. |
 | 🔔 **Alertas no Telegram** | Avisa quando o preço atinge a meta ou cai abaixo da média. Também dá para fixar produtos pelo próprio bot. |
 | ↗️ **Link direto** | O botão "Ver na loja" leva direto à página do produto. |
-| 📱 **Servidor no celular** | Scripts para Termux: liga sozinho, reinicia se cair, tem um vigia que religa tudo a cada 15 min e atualiza pelo Telegram. |
-| ☁️ **Nuvem de arquivos** | Opcional: seus arquivos no celular servidor, acessíveis pelo navegador ou por WebDAV. |
+| 🖥️ **Servidor próprio** | Roda em qualquer máquina com Node.js: PC, Linux ou Raspberry Pi (systemd), Docker, VPS ou celular Android (Termux, com scripts que religam sozinhos). Atualiza pelo Telegram. |
+| ☁️ **Nuvem de arquivos** | Opcional: seus arquivos no seu servidor, acessíveis pelo navegador ou por WebDAV. |
 | 🔒 **Privado** | Nenhum dado sai da sua máquina. Zero dependências e zero contas. |
 
 ![Fixados](docs/fixados.png)
@@ -47,7 +47,7 @@ Precisa do **Node.js 18.18+**. Não tem `npm install`.
 ```bash
 git clone https://github.com/phs-analytics/SetupSniper.git
 cd SetupSniper
-cp .env.example .env        # defina uma SENHA
+cp .env.example .env        # defina uma SENHA (veja docs/credenciais.md)
 npm start                   # abra http://localhost:3000
 ```
 
@@ -58,12 +58,13 @@ Quer só conhecer a interface? Rode `npm run demo` (preços simulados).
 | Guia | Para quê |
 |---|---|
 | [Instalação no computador](docs/instalacao.md) | Windows, macOS, Linux e Docker |
-| [Celular como servidor](docs/celular-servidor.md) | Android antigo + Termux + Tailscale, rodando 24h |
+| [Servidor próprio](docs/servidor-proprio.md) | Onde rodar 24 h: PC, Linux/Raspberry Pi, Docker, VPS ou celular Android, e acesso pelo Tailscale |
+| [Credenciais](docs/credenciais.md) | Passo a passo para pôr senha, Telegram e as APIs oficiais no `.env` do seu servidor |
 | [Alertas no Telegram](docs/telegram.md) | Criar o bot, regras de alerta e comandos |
 | [Nuvem de arquivos](docs/nuvem.md) | Seus arquivos no servidor, pelo navegador ou WebDAV |
 | [Extensão do navegador](docs/extensao.md) | Envio automático dos preços das páginas que você abre (PC e Android) |
 | [App no celular](docs/app-celular.md) | Link ou app? Como instalar, HTTPS e Compartilhar |
-| [Lojas bloqueadas e APIs oficiais](docs/fontes-oficiais.md) | Diagnóstico e como ligar as APIs do Mercado Livre, da Shopee e do AliExpress |
+| [Lojas bloqueadas e APIs oficiais](docs/fontes-oficiais.md) | Diagnóstico, fontes por loja e as APIs do Mercado Livre, Shopee, AliExpress, Awin, Lomadee e Amazon |
 | [Como funciona](docs/como-funciona.md) | Leitura de preços, totais, cupons, score, API e o que ainda não foi conferido |
 | [Cupons](docs/cupons.md) | De onde vêm os cupons de cada loja e como são tratados |
 | [Impostos de importação](docs/impostos-importacao.md) | Regras de II e ICMS, com fontes e vigência |

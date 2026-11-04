@@ -24,3 +24,6 @@ node_modules/
 data/promos.json
 # login da conta do Mercado Livre (tokens)
 data/ml-auth.json
+
+# cópias de trabalho temporárias dos subagentes do Claude Code
+.claude/worktrees/
