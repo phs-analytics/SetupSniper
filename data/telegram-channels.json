@@ -1,111 +1,148 @@
 {
-  "_sobre": "Canais públicos do Telegram sugeridos para promoções e cupons de hardware. Lidos pela prévia pública https://t.me/s/<canal>, sem login, só se o usuário ativar. Grupos (não canais) e canais com prévia desativada não podem ser lidos assim: encaminhe os posts ao bot.",
+  "_sobre": "Canais públicos do Telegram sugeridos para promoções e cupons de hardware. Lidos pela prévia pública https://t.me/s/<canal>, sem login, só se o usuário ativar. Grupos (não canais) e canais com prévia desativada não podem ser lidos assim: encaminhe os posts ao bot. Cada canal tem o seu intervalo de leitura (intervaloMin); o agendador está em src/telegram-channels.js.",
   "atualizadoEm": "2026-11-04",
   "fonte": "lista enviada pelo dono do projeto em 04/11/2026; não conferida ao vivo (t.me bloqueado no ambiente de desenvolvimento)",
+  "agendamento": {
+    "_sobre": "Regras do agendador dos canais (src/telegram-channels.js → DEFAULT_SCHEDULE). Canal sem post novo há paradoAposH horas passa a ser lido a cada intervaloParadoMin. Quando a prévia falha, a espera começa em recuoBaseMin e dobra a cada falha até recuoMaxMin; canal sem prévia pública espera o teto.",
+    "fonte": "plano 3.0, Etapa 4 (3 a 5 min para os canais ativos, 30 min para os parados); recuo e mínimo escolhidos para ser educado com o t.me. Atividade de cada canal estimada pelo tipo, não medida ao vivo (t.me bloqueado no ambiente de desenvolvimento).",
+    "atualizadoEm": "2026-11-04",
+    "intervaloPadraoMin": 30,
+    "intervaloParadoMin": 30,
+    "paradoAposH": 24,
+    "minimoMin": 3,
+    "recuoBaseMin": 10,
+    "recuoMaxMin": 360
+  },
   "canais": [
     {
       "canal": "LaPromotion",
-      "tipo": "promocoes"
+      "tipo": "promocoes",
+      "intervaloMin": 5
     },
     {
       "canal": "urubupromo",
-      "tipo": "promocoes"
+      "tipo": "promocoes",
+      "intervaloMin": 5
     },
     {
       "canal": "sucumbapromo",
-      "tipo": "promocoes"
+      "tipo": "promocoes",
+      "intervaloMin": 5
     },
     {
       "canal": "TJGOFERTASs",
-      "tipo": "promocoes"
+      "tipo": "promocoes",
+      "intervaloMin": 5
     },
     {
       "canal": "pcdofafapromo",
-      "tipo": "promocoes"
+      "tipo": "promocoes",
+      "intervaloMin": 5
     },
     {
       "canal": "cupombr",
-      "tipo": "cupons"
+      "tipo": "cupons",
+      "intervaloMin": 30
     },
     {
       "canal": "cupom_aliexpress",
-      "tipo": "cupons"
+      "tipo": "cupons",
+      "intervaloMin": 30
     },
     {
       "canal": "CuponsCupomBR",
-      "tipo": "cupons"
+      "tipo": "cupons",
+      "intervaloMin": 30
     },
     {
       "canal": "cupomdashopee",
-      "tipo": "cupons"
+      "tipo": "cupons",
+      "intervaloMin": 30
     },
     {
       "canal": "cuponsdasho",
-      "tipo": "cupons"
+      "tipo": "cupons",
+      "intervaloMin": 30
     },
     {
       "canal": "CupomKabum",
-      "tipo": "cupons"
+      "tipo": "cupons",
+      "intervaloMin": 30
     },
     {
       "canal": "cupommagalu",
-      "tipo": "cupons"
+      "tipo": "cupons",
+      "intervaloMin": 30
     },
     {
       "canal": "cupomonline",
-      "tipo": "cupons"
+      "tipo": "cupons",
+      "intervaloMin": 30
     },
     {
       "canal": "smarteletrobarato",
-      "tipo": "promocoes"
+      "tipo": "promocoes",
+      "intervaloMin": 5
     },
     {
       "canal": "setupgamerbr",
-      "tipo": "promocoes"
+      "tipo": "promocoes",
+      "intervaloMin": 5
     },
     {
       "canal": "SetupHumilde",
-      "tipo": "promocoes"
+      "tipo": "promocoes",
+      "intervaloMin": 5
     },
     {
       "canal": "upandosetup",
-      "tipo": "promocoes"
+      "tipo": "promocoes",
+      "intervaloMin": 5
     },
     {
       "canal": "pobregram",
-      "tipo": "promocoes"
+      "tipo": "promocoes",
+      "intervaloMin": 5
     },
     {
       "canal": "xetdaspromocoes",
-      "tipo": "promocoes"
+      "tipo": "promocoes",
+      "intervaloMin": 5
     },
     {
       "canal": "promotop",
-      "tipo": "promocoes"
+      "tipo": "promocoes",
+      "intervaloMin": 5
     },
     {
       "canal": "promocoes5",
-      "tipo": "promocoes"
+      "tipo": "promocoes",
+      "intervaloMin": 5
     },
     {
       "canal": "emipefpscupons",
-      "tipo": "cupons"
+      "tipo": "cupons",
+      "intervaloMin": 30
     },
     {
       "canal": "emipefps",
-      "tipo": "promocoes"
+      "tipo": "promocoes",
+      "intervaloMin": 5
     },
     {
       "canal": "emipepromoskkl",
-      "tipo": "promocoes"
+      "tipo": "promocoes",
+      "intervaloMin": 5
     },
     {
       "canal": "terabyteshopoficial",
-      "tipo": "loja"
+      "tipo": "loja",
+      "intervaloMin": 30
     },
     {
       "canal": "pichauofertas",
-      "tipo": "loja"
+      "tipo": "loja",
+      "intervaloMin": 30
     }
   ]
 }

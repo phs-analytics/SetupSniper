@@ -1,0 +1,158 @@
+{
+  "_sobre": "Atualizações (getUpdates) de exemplo do Bot API do Telegram, montadas a partir da documentação (https://core.telegram.org/bots/api#update), com ids e nomes fictícios. O dono é o usuário 1111 (chat privado 1111). O grupo permitido é -1001000000001; o não permitido, -1001000000002; o canal com o bot admin, -1001000000003.",
+  "grupo_permitido_oferta": {
+    "update_id": 500,
+    "message": {
+      "message_id": 77,
+      "date": 1793800000,
+      "from": { "id": 2222, "is_bot": false, "first_name": "Fulano", "username": "fulano_promos" },
+      "chat": { "id": -1001000000001, "type": "supergroup", "title": "Promos de Hardware", "username": "promoshw_teste" },
+      "text": "🔥 SSD Kingston NV2 1TB NVMe\nPor: R$ 389,90\n🎟️ Cupom: NV2OFF\nhttps://meli.la/abc123"
+    }
+  },
+  "grupo_nao_permitido_oferta": {
+    "update_id": 501,
+    "message": {
+      "message_id": 12,
+      "date": 1793800010,
+      "from": { "id": 3333, "is_bot": false, "first_name": "Ciclano" },
+      "chat": { "id": -1001000000002, "type": "supergroup", "title": "Outro grupo" },
+      "text": "Placa de Vídeo RTX 4060 por R$ 1.799,00\nhttps://www.kabum.com.br/produto/1"
+    }
+  },
+  "grupo_permitido_conversa": {
+    "update_id": 502,
+    "message": {
+      "message_id": 78,
+      "date": 1793800020,
+      "from": { "id": 2222, "is_bot": false, "first_name": "Fulano" },
+      "chat": { "id": -1001000000001, "type": "supergroup", "title": "Promos de Hardware", "username": "promoshw_teste" },
+      "text": "alguém sabe se essa fonte aguenta uma 4070? paguei R$ 450 nela"
+    }
+  },
+  "grupo_permitido_foto_legenda": {
+    "update_id": 503,
+    "message": {
+      "message_id": 79,
+      "date": 1793800030,
+      "from": { "id": 2222, "is_bot": false, "first_name": "Fulano" },
+      "chat": { "id": -1001000000001, "type": "group", "title": "Promos de Hardware" },
+      "photo": [{ "file_id": "x", "width": 90, "height": 90 }],
+      "caption": "Mouse Logitech G203 Lightsync\nR$ 99,90\nhttps://amzn.to/xyz"
+    }
+  },
+  "canal_bot_admin_oferta": {
+    "update_id": 504,
+    "channel_post": {
+      "message_id": 900,
+      "date": 1793800040,
+      "sender_chat": { "id": -1001000000003, "type": "channel", "title": "Meu Canal de Ofertas", "username": "meucanal_teste" },
+      "chat": { "id": -1001000000003, "type": "channel", "title": "Meu Canal de Ofertas", "username": "meucanal_teste" },
+      "author_signature": "Fulano",
+      "text": "Processador AMD Ryzen 5 7600\nde R$ 1.299 por R$ 999\nhttps://www.pichau.com.br/processador-amd-ryzen-5-7600"
+    }
+  },
+  "canal_nao_permitido_oferta": {
+    "update_id": 505,
+    "channel_post": {
+      "message_id": 5,
+      "date": 1793800050,
+      "chat": { "id": -1001000000004, "type": "channel", "title": "Canal estranho" },
+      "text": "Monitor LG 24 por R$ 749,00 https://www.magazineluiza.com.br/monitor/p/abc123/"
+    }
+  },
+  "grupo_add_pelo_dono": {
+    "update_id": 506,
+    "message": {
+      "message_id": 80,
+      "date": 1793800060,
+      "from": { "id": 1111, "is_bot": false, "first_name": "Dono" },
+      "chat": { "id": -1001000000002, "type": "supergroup", "title": "Outro grupo" },
+      "text": "/grupo_add@SetupSniperBot",
+      "entities": [{ "type": "bot_command", "offset": 0, "length": 25 }]
+    }
+  },
+  "grupo_add_por_estranho": {
+    "update_id": 507,
+    "message": {
+      "message_id": 81,
+      "date": 1793800070,
+      "from": { "id": 3333, "is_bot": false, "first_name": "Ciclano" },
+      "chat": { "id": -1001000000002, "type": "supergroup", "title": "Outro grupo" },
+      "text": "/grupo_add"
+    }
+  },
+  "grupo_remover_pelo_dono": {
+    "update_id": 508,
+    "message": {
+      "message_id": 82,
+      "date": 1793800080,
+      "from": { "id": 1111, "is_bot": false, "first_name": "Dono" },
+      "chat": { "id": -1001000000001, "type": "supergroup", "title": "Promos de Hardware" },
+      "text": "/grupo_remover"
+    }
+  },
+  "canal_pede_conexao": {
+    "update_id": 509,
+    "channel_post": {
+      "message_id": 901,
+      "date": 1793800090,
+      "chat": { "id": -1001000000004, "type": "channel", "title": "Canal estranho" },
+      "text": "/grupo_add"
+    }
+  },
+  "start_em_grupo": {
+    "update_id": 510,
+    "message": {
+      "message_id": 83,
+      "date": 1793800100,
+      "from": { "id": 3333, "is_bot": false, "first_name": "Ciclano" },
+      "chat": { "id": -1001000000002, "type": "supergroup", "title": "Outro grupo" },
+      "text": "/start"
+    }
+  },
+  "fixados_em_grupo_pelo_dono": {
+    "update_id": 511,
+    "message": {
+      "message_id": 84,
+      "date": 1793800110,
+      "from": { "id": 1111, "is_bot": false, "first_name": "Dono" },
+      "chat": { "id": -1001000000001, "type": "supergroup", "title": "Promos de Hardware" },
+      "text": "/fixados"
+    }
+  },
+  "encaminhado_de_canal": {
+    "update_id": 512,
+    "message": {
+      "message_id": 300,
+      "date": 1793800120,
+      "from": { "id": 1111, "is_bot": false, "first_name": "Dono" },
+      "chat": { "id": 1111, "type": "private", "first_name": "Dono" },
+      "forward_origin": { "type": "channel", "date": 1793790000, "message_id": 4321, "chat": { "id": -1001000000005, "type": "channel", "title": "Canal Público", "username": "canalpublico_teste" } },
+      "forward_from_chat": { "id": -1001000000005, "type": "channel", "title": "Canal Público", "username": "canalpublico_teste" },
+      "text": "Memória Kingston Fury 16GB DDR5 por R$ 329,90 https://meli.la/demo"
+    }
+  },
+  "encaminhado_de_pessoa": {
+    "update_id": 513,
+    "message": {
+      "message_id": 301,
+      "date": 1793800130,
+      "from": { "id": 1111, "is_bot": false, "first_name": "Dono" },
+      "chat": { "id": 1111, "type": "private", "first_name": "Dono" },
+      "forward_origin": { "type": "user", "date": 1793790000, "sender_user": { "id": 4444, "is_bot": false, "first_name": "Beltrano" } },
+      "forward_from": { "id": 4444, "is_bot": false, "first_name": "Beltrano" },
+      "text": "Water Cooler Rise Mode 240mm R$ 189,90 https://shopee.com.br/product/1/2"
+    }
+  },
+  "privado_de_estranho": {
+    "update_id": 514,
+    "message": {
+      "message_id": 5,
+      "date": 1793800140,
+      "from": { "id": 3333, "is_bot": false, "first_name": "Ciclano" },
+      "chat": { "id": 3333, "type": "private", "first_name": "Ciclano" },
+      "text": "SSD barato R$ 100 https://meli.la/x"
+    }
+  }
+}
