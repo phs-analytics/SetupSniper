@@ -1,6 +1,6 @@
 # SetupSniper: contexto para a próxima sessão do Claude Code
 
-> Situação em 04/11/2026: versão **2.10.0** na branch `main`, com 145 testes passando.
+> Situação em 04/11/2026: versão **2.11.0** na branch `main`, com 146 testes passando.
 > Este arquivo trata **só do SetupSniper**. Leia inteiro antes de mexer no projeto.
 
 ---
@@ -78,6 +78,8 @@ Variáveis úteis:
 | `src/official-apis.js` | APIs oficiais com credenciais do usuário no `.env`: Mercado Livre (busca + catálogo multi-vendedor + reputação), Shopee Affiliate, AliExpress Affiliate |
 | `src/capture.js` | favorito "Enviar para o SetupSniper": lê o HTML que o usuário mandou da própria tela (`/api/capture`, `public/receber.html`) |
 | `src/ml-oauth.js` | login oficial (OAuth) na conta do Mercado Livre do usuário; token em `data/ml-auth.json` |
+| `extensao/` | extensão MV3 (Chrome/Edge/Firefox, Firefox Android): envia ao servidor as páginas de produto/busca que o usuário abre; ignora carrinho/conta |
+| `public/manifest.webmanifest`, `public/sw.js` | app instalável (PWA) com `share_target` → `/compartilhar` |
 | `src/ranking.js` | ordem padrão: menor preço ajustado à confiança; alto risco/suspeito depois; sem preço por último |
 | `src/promo-feed.js` | feed de promoções dos canais: `promoFromPost`, `addPromos`, `queryPromos`, `watchMatches`, `channelStatus` |
 | `src/extract.js` | classifica preços pelo nome do campo e pelo texto (Pix, cartão, parcela, preço "de"); `cleanResults`; `flagOutliers` |
@@ -248,6 +250,14 @@ Comparava três produtos fixos e calculava um score de confiabilidade.
 - **Favorito "Enviar para o SetupSniper":** o usuário abre a loja no próprio navegador e envia a tela para o servidor.
 - **Login oficial (OAuth) na conta do Mercado Livre.**
 - **Link compartilhado ao bot** fixa o produto mesmo quando a página não abre na hora.
+
+### 2.11.0: automático no PC e no celular
+- **Extensão do navegador:** envio automático das páginas que o usuário abre.
+- **Preços do navegador na busca e nos Fixados:** ficam 24 h e entram no comparativo; nos Fixados valem até 12 h quando a loja recusa o servidor.
+- **PWA com Compartilhar** no Android.
+- **Login do Mercado Livre automático em HTTPS.**
+- **`npm run navegador`** instala o Playwright no PC.
+- **Celular:** a recomendação ao dono é **PWA (link instalado)**, não app nativo; HTTPS via `tailscale serve` (PC) ou proxy com domínio (nuvem). O Tailscale do Android não tem `serve`.
 
 ## 6. Decisões já tomadas (não reabrir)
 

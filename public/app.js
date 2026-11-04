@@ -612,7 +612,10 @@ $('#promo-go').onclick = async () => {
   try {
     const r = await api('/api/promo', { method: 'POST', body: { text } });
     // r.text é HTML gerado pelo servidor só com texto escapado (o mesmo enviado ao Telegram)
-    out.innerHTML = `<div class="promo-msg">${r.text.replace(/\n/g, '<br>')}</div>${r.offer?.totals ? totalsHtml(r.offer) : ''}${r.offer?.url ? storeLink(r.offer.url, store(r.offer.store)) : ''}`;
+    out.innerHTML = `<div class="promo-msg">${r.text.replace(/\n/g, '<br>')}</div>${r.offer?.totals ? totalsHtml(r.offer) : ''}
+      <div class="pc-actions">${r.offer?.title ? '<button type="button" class="btn small" id="promo-fix">📌 Fixar</button>' : ''}${r.offer?.url ? storeLink(r.offer.url, store(r.offer.store)) : ''}</div>`;
+    const fx = $('#promo-fix');
+    if (fx) fx.onclick = () => openWatchDialog({ name: r.offer.title.slice(0, 80), query: r.offer.title.split(/\s+/).slice(0, 6).join(' '), refPrice: refOf(r.offer), pin: r.offer.url ? { storeId: r.offer.store, url: r.offer.url } : null });
   } catch (e) { out.innerHTML = `<span class="tag err">${esc(e.message)}</span>`; }
 };
 $('#coupon-list').addEventListener('click', async (e) => {
@@ -832,13 +835,20 @@ function renderMl() {
   const box = $('#ml-box');
   if (box.dataset.k === JSON.stringify(m) && box.innerHTML) return;   // não apaga o que a pessoa está digitando
   box.dataset.k = JSON.stringify(m);
+  const https = location.protocol === 'https:';
+  const retorno = m.redirectUri !== 'https://localhost/setupsniper-ml' ? m.redirectUri : https ? `${location.origin}/auth/ml/callback` : m.redirectUri;
   if (!m.app) {
-    box.innerHTML = `<p>Primeiro cadastre o app grátis do Mercado Livre e coloque <code>ML_CLIENT_ID</code> e <code>ML_CLIENT_SECRET</code> no <code>.env</code> do servidor. No app, use como endereço de retorno (redirect URI): <code>${esc(m.redirectUri)}</code>. Passo a passo em <code>docs/fontes-oficiais.md</code>.</p>`;
+    box.innerHTML = `<p>Primeiro cadastre o app grátis do Mercado Livre e coloque <code>ML_CLIENT_ID</code> e <code>ML_CLIENT_SECRET</code> no <code>.env</code> do servidor. No app, use como endereço de retorno (redirect URI): <code>${esc(retorno)}</code>${https ? ' (com ele, o login conclui sozinho)' : ''}. Passo a passo em <code>docs/fontes-oficiais.md</code>.</p>`;
     return;
   }
   if (m.connected) {
     box.innerHTML = `<p>✅ Conectado${m.nickname ? ` como <b>${esc(m.nickname)}</b>` : ''}. ${m.renewable ? 'O acesso é renovado sozinho.' : 'Este app não renova o acesso sozinho: conecte de novo quando vencer (ative "offline_access" no app para renovar).'}</p>
       <button type="button" class="btn" id="ml-off">Desconectar</button>`;
+    return;
+  }
+  if (https && retorno.endsWith('/auth/ml/callback')) {
+    box.innerHTML = `<p><button type="button" class="btn primary" id="ml-go">Conectar minha conta do Mercado Livre</button></p>
+      <p class="muted">Você autoriza no site do Mercado Livre e volta para cá já conectado. O app do Mercado Livre precisa ter <code>${esc(retorno)}</code> como endereço de retorno.</p>`;
     return;
   }
   box.innerHTML = `<ol class="howto">
@@ -850,8 +860,10 @@ function renderMl() {
 }
 document.addEventListener('click', async (e) => {
   if (e.target.id === 'ml-go') {
-    const r = await fetch('/api/ml/start', { method: 'POST' }); const j = await r.json();
-    if (!r.ok) return toast(j.error); window.open(j.url, '_blank', 'noopener');
+    const r = await fetch('/api/ml/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ origin: location.origin }) }); const j = await r.json();
+    if (!r.ok) return toast(j.error);
+    if (j.automatic) location.href = j.url;   // HTTPS: o Mercado Livre devolve direto para cá, sem colar nada
+    else window.open(j.url, '_blank', 'noopener');
   }
   if (e.target.id === 'ml-done') {
     const r = await fetch('/api/ml/code', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ input: $('#ml-code').value }) });
@@ -859,3 +871,20 @@ document.addEventListener('click', async (e) => {
   }
   if (e.target.id === 'ml-off') { await fetch('/api/ml/disconnect', { method: 'POST' }); toast('Desconectado'); }
 });
+
+// ================= APP INSTALADO (PWA) =================
+// Instalável pelo navegador (precisa de HTTPS: tailscale serve, ou servidor na nuvem com certificado).
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) navigator.serviceWorker.register('/sw.js').catch(() => {});
+// Link recebido pelo "Compartilhar" do celular (app da loja → SetupSniper): calcula como um post colado
+function receberCompartilhado() {
+  const m = location.hash.match(/^#compartilhar=(.*)$/);
+  if (!m) return;
+  const texto = decodeURIComponent(m[1]);
+  history.replaceState(null, '', '/#cupons');
+  showTab();
+  $('#promo-text').value = texto;
+  $('#promo-go').click();
+  toast('Link recebido: calculando o total');
+}
+receberCompartilhado();
+addEventListener('hashchange', receberCompartilhado);

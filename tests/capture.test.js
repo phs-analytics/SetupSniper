@@ -48,3 +48,14 @@ test('/api/capture aceita página grande e devolve as ofertas com totais e nota'
   assert.ok(r.items[0].totals?.pix?.total > 0);
   assert.equal(typeof r.items[0].trust?.score, 'number');
 });
+
+test('preço enviado pelo navegador entra na busca da loja', async (t) => {
+  const dataDir = mkdtempSync(path.join(tmpdir(), 'setupsniper-'));
+  t.after(() => rmSync(dataDir, { recursive: true, force: true }));
+  const { base } = await startDemoServer(t, dataDir);
+  await fetch(`${base}/api/capture`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url: 'https://www.kabum.com.br/produto/426262', html: fx('kabum-produto.html'), source: 'extensao' }) });
+  const body = await (await fetch(`${base}/api/search?q=${encodeURIComponent('ryzen 7 7800x3d')}&stores=kabum`)).text();
+  const items = body.split('\n').filter(l => l.startsWith('data: ')).map(l => JSON.parse(l.slice(6))).filter(m => m.type === 'store').flatMap(m => m.items);
+  assert.ok(items.some(o => o.captured && o.url?.includes('426262')), 'a oferta enviada aparece na busca');
+});

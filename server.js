@@ -227,6 +227,8 @@ async function searchOne(storeId, q, deep, page = 1) {
   // em vez de "nenhum resultado" (ex.: a loja escreve "RX7600" e a busca foi "rx 7600 xt 8gb").
   if (!items.length && offersRaw.length) { items = cleanResults(offersRaw, q, { minRel: 0.6 }).map(x => ({ ...x, approx: true })); approx = items.length > 0; }
   items = items.map(x => withTotals({ ...x, storeId }));
+  // + preços que o seu navegador enviou desta loja nas últimas 24 h (se não vieram de novo agora)
+  if (page === 1) { const urls = new Set(items.map(x => x.canonicalUrl ?? x.url)); items.push(...capturedFor(storeId, q).filter(x => !urls.has(x.canonicalUrl ?? x.url))); }
   return { items, searchUrl: r.searchUrl, raw: r.items.length, approx, hasMore: !!r.hasMore, page: r.page ?? page };
 }
 
@@ -245,7 +247,12 @@ async function runSearch(q, { deep = false, stores, onStore, page = 1 } = {}) {
       const reason = r.items.length ? null : r.raw ? `a loja mostrou ${r.raw} produto(s), mas nenhum parece ser "${q}"` : 'a loja não mostrou produtos para essa busca';
       onStore?.({ storeId: id, status: 'ok', items: r.items, raw: r.raw, approx: r.approx, reason, hasMore: r.hasMore && r.items.length > 0, page: r.page, searchUrl: r.searchUrl, ms: Date.now() - t0 });
     } catch (e) {
-      onStore?.({ storeId: id, status: 'error', error: e.message, blocked: !!e.blocked, items: [], hasMore: false, page, searchUrl: ADAPTERS[id].url(q, 1), ms: Date.now() - t0 });
+      // A loja não respondeu ao servidor, mas o seu navegador enviou preços dela: mostra esses, marcados
+      const cap = page === 1 ? capturedFor(id, q) : [];
+      if (cap.length) {
+        all.push(...cap);
+        onStore?.({ storeId: id, status: 'ok', items: cap, raw: cap.length, fromCaptures: true, blockedNote: e.message, hasMore: false, page, searchUrl: ADAPTERS[id].url(q, 1), ms: Date.now() - t0 });
+      } else onStore?.({ storeId: id, status: 'error', error: e.message, blocked: !!e.blocked, items: [], hasMore: false, page, searchUrl: ADAPTERS[id].url(q, 1), ms: Date.now() - t0 });
     }
   }));
   return flagOutliers(all, refOf).map(withTrust);
@@ -305,6 +312,9 @@ async function checkItem(it) {
       const r = results[sid];
       if (!r) continue;
       const mine = r.offers ? flagged.filter(o => o.storeId === sid) : undefined;
+      // Erro agora, mas o seu navegador enviou o preço deste link há menos de 12 h: mantém esse preço
+      const prev = res[sid];
+      if (r.error && prev?.capturedAt && now - prev.capturedAt < 12 * 3600e3) { res[sid] = { ...prev, lastError: r.error, errorAt: now }; continue; }
       const st = storeState(r.error ? r : { raw: r.raw, offers: mine }, it, refOf);
       const o = st.offer;
       res[sid] = {
@@ -426,10 +436,27 @@ function titleFromUrl(u) {
   } catch { return null; }
 }
 
+// ---------- preços enviados pelo navegador do usuário (favorito ou extensão) ----------
+// Ficam 24 h em memória e entram na busca e nos Fixados quando a loja não responde ao servidor.
+const CAPTURE_TTL = 24 * 3600e3;
+const captures = new Map();   // url canônica → oferta (com capturedAt)
+function rememberCaptures(items) {
+  const now = Date.now();
+  for (const o of items) if (o.canonicalUrl ?? o.url) captures.set(o.canonicalUrl ?? o.url, { ...o, captured: true, capturedAt: now });
+  for (const [k, o] of captures) if (now - o.capturedAt > CAPTURE_TTL) captures.delete(k);
+  while (captures.size > 2000) captures.delete(captures.keys().next().value);
+}
+function capturedFor(storeId, q) {
+  const mine = [...captures.values()].filter(o => o.storeId === storeId && Date.now() - o.capturedAt < CAPTURE_TTL);
+  return mine.length ? cleanResults(mine, q).map(o => withTrust(withTotals(o))) : [];
+}
+
 // ---------- conta do Mercado Livre (login oficial, OAuth) ----------
 let mlAuthData = await readJson('ml-auth.json', null);
-const mlPending = new Map();   // state → criado em
-const mlRedirect = () => process.env.ML_REDIRECT_URI || 'https://localhost/setupsniper-ml';
+const mlPending = new Map();   // state → { t, redirect }
+// Endereço de retorno: o do .env; senão, se você abriu o SetupSniper em HTTPS (ex.: tailscale serve ou servidor na
+// nuvem), o próprio servidor (login conclui sozinho); senão, https://localhost/... (aí é preciso colar o endereço).
+const mlRedirect = (origin) => process.env.ML_REDIRECT_URI || (/^https:\/\/[^/]+$/.test(origin ?? '') ? `${origin}/auth/ml/callback` : 'https://localhost/setupsniper-ml');
 const mlApp = () => ({ clientId: process.env.ML_CLIENT_ID ?? '', clientSecret: process.env.ML_CLIENT_SECRET ?? '' });
 const saveMlAuth = async (d) => { mlAuthData = d; await writeJson('ml-auth.json', d); };
 setMlUserTokenProvider(() => mlAuthData ? validToken(mlAuthData, { ...mlApp(), save: saveMlAuth }) : null);
@@ -442,8 +469,9 @@ async function mlConnect(input, { checkState = true } = {}) {
   if (error) throw new Error(`o Mercado Livre não autorizou: ${error}`);
   if (!code) throw new Error('não achei o código: cole o endereço inteiro para onde o Mercado Livre levou o navegador');
   if (checkState && state && !mlPending.has(state)) throw new Error('esse pedido de login expirou: toque em "Conectar" de novo');
+  const redirect = mlPending.get(state)?.redirect ?? mlRedirect();
   mlPending.delete(state);
-  const st = await exchangeCode({ ...mlApp(), redirectUri: mlRedirect(), code });
+  const st = await exchangeCode({ ...mlApp(), redirectUri: redirect, code });
   try {
     const me = await (await fetch('https://api.mercadolibre.com/users/me', { headers: { Authorization: `Bearer ${st.accessToken}` }, signal: AbortSignal.timeout(15000) })).json();
     st.nickname = me.nickname ?? null;
@@ -698,7 +726,7 @@ const botHandlers = {
 };
 
 // ---------- HTTP ----------
-const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml' };
+const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.webmanifest': 'application/manifest+json' };
 async function body(req, limit = 1e5) { let b = ''; for await (const c of req) { b += c; if (b.length > limit) throw new Error('payload grande'); } return b ? JSON.parse(b) : {}; }
 const json = (res, code, v) => { res.writeHead(code, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(v)); };
 const STORE_HOSTS = Object.values(ADAPTERS).map(a => new URL(a.base).hostname.replace(/^(www|pt|lista)\./, ''));
@@ -758,6 +786,13 @@ const server = http.createServer(async (req, res) => {
 
     if (pathname === '/api/refresh' && req.method === 'POST') { refreshAll(); return json(res, 202, { ok: true }); }
 
+    // ---- app instalado (PWA): link compartilhado pelo botão "Compartilhar" do celular ----
+    if (pathname === '/compartilhar') {
+      const sp = url.searchParams;
+      const texto = [sp.get('title'), sp.get('text'), sp.get('url')].filter(Boolean).join('\n').slice(0, 4000);
+      res.writeHead(302, { Location: '/#compartilhar=' + encodeURIComponent(texto) }); return res.end();
+    }
+
     // ---- "Enviar para o SetupSniper": página aberta pelo usuário no navegador dele ----
     if (pathname === '/api/capture' && req.method === 'POST') {
       let b;
@@ -765,7 +800,8 @@ const server = http.createServer(async (req, res) => {
       const pageUrl = String(b.url ?? '');
       const r = parseCapture({ url: pageUrl, html: String(b.html ?? '') });
       if (!r.items.length) return json(res, 422, { store: r.store, kind: r.kind, items: [], error: r.error ?? 'nenhum preço encontrado' });
-      const items = flagOutliers(r.items.map(x => withTotals({ ...normalizeOffer(x, r.store), storeId: r.store, captured: true })), refOf).map(withTrust);
+      const items = flagOutliers(r.items.map(x => withTotals({ ...normalizeOffer(x, r.store), storeId: r.store, captured: true, capturedAt: Date.now() })), refOf).map(withTrust);
+      rememberCaptures(items);
       // Produto fixado com este link: atualiza o preço agora, como se a verificação tivesse rodado
       let atualizados = 0;
       if (r.kind === 'product') {
@@ -773,7 +809,7 @@ const server = http.createServer(async (req, res) => {
         for (const it of watch.items) {
           if (!it.pins?.[r.store] || canonicalUrlOf(it.pins[r.store]) !== canon) continue;
           const o = items[0];
-          (offers[it.id] ??= {})[r.store] = { ...(offers[it.id][r.store] ?? {}), status: 'ok', message: 'enviado por você pelo navegador', error: null, updatedAt: Date.now(),
+          (offers[it.id] ??= {})[r.store] = { ...(offers[it.id][r.store] ?? {}), status: 'ok', message: 'enviado pelo seu navegador', error: null, updatedAt: Date.now(), capturedAt: Date.now(),
             price: refOf(o), offer: o, title: o.title, url: o.url, image: o.image, suspeito: !!o.suspeito, pinned: true, official: !!o.seller?.official, count: 1, others: [] };
           const h = (history[`${it.id}:${r.store}`] ??= []); if (refOf(o) != null) h.push({ t: Date.now(), price: refOf(o) });
           atualizados++;
@@ -781,17 +817,19 @@ const server = http.createServer(async (req, res) => {
         }
         if (atualizados) { await writeJson('history.json', history); broadcast(); }
       }
-      log(`[enviar] ${r.store} · ${r.kind} · ${items.length} oferta(s)${atualizados ? ` · ${atualizados} fixado(s) atualizado(s)` : ''}`);
+      log(`[enviar${b.source === 'extensao' ? ' · extensão' : ''}] ${r.store} · ${r.kind} · ${items.length} oferta(s)${atualizados ? ` · ${atualizados} fixado(s) atualizado(s)` : ''}`);
       return json(res, 200, { store: r.store, kind: r.kind, items, atualizados });
     }
 
     // ---- conta do Mercado Livre (login oficial) ----
     if (pathname === '/api/ml/start' && req.method === 'POST') {
       if (!officialConfigured.mercadolivre()) return json(res, 400, { error: 'Cadastre ML_CLIENT_ID e ML_CLIENT_SECRET no .env primeiro (veja docs/fontes-oficiais.md).' });
+      const b = await body(req).catch(() => ({}));
+      const redirect = mlRedirect(String(b.origin ?? ''));
       const state = newState();
-      mlPending.set(state, Date.now());
-      for (const [k, t] of mlPending) if (Date.now() - t > 15 * 60e3) mlPending.delete(k);
-      return json(res, 200, { url: mlAuthUrl({ clientId: mlApp().clientId, redirectUri: mlRedirect(), state }), redirectUri: mlRedirect() });
+      mlPending.set(state, { t: Date.now(), redirect });
+      for (const [k, v] of mlPending) if (Date.now() - v.t > 15 * 60e3) mlPending.delete(k);
+      return json(res, 200, { url: mlAuthUrl({ clientId: mlApp().clientId, redirectUri: redirect, state }), redirectUri: redirect, automatic: redirect.endsWith('/auth/ml/callback') });
     }
     if (pathname === '/api/ml/code' && req.method === 'POST') {
       try { return json(res, 200, await mlConnect((await body(req)).input)); } catch (e) { return json(res, 400, { error: e.message }); }
