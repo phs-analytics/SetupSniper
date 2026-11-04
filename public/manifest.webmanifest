@@ -1,0 +1,21 @@
+{
+  "name": "SetupSniper",
+  "short_name": "SetupSniper",
+  "description": "Compare preços de hardware entre lojas e vendedores, com a nota de confiança de cada um.",
+  "lang": "pt-BR",
+  "start_url": "/#busca",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#1b1b1b",
+  "theme_color": "#1b1b1b",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "share_target": {
+    "action": "/compartilhar",
+    "method": "GET",
+    "params": { "title": "title", "text": "text", "url": "url" }
+  }
+}

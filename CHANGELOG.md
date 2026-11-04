@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.11.0 — 2026-11-04
+
+**Mais automático, no PC e no celular**
+- **Extensão do navegador** (`extensao/`, guia em `docs/extensao.md`): envia sozinha ao seu servidor os preços de toda página de produto ou de busca que você abre nas 8 lojas. Funciona no Chrome, Edge e Firefox, e no Firefox para Android. Nunca envia carrinho, pagamento, login nem conta, e não abre páginas sozinha. Testada no Chromium.
+- **Preços do navegador na busca e nos Fixados:** o que a extensão ou o favorito enviam fica 24 h no servidor e entra no comparativo, marcado. Quando a loja recusa o servidor, o preço enviado continua valendo nos Fixados por até 12 h.
+- **App no celular (PWA):** o site pode ser instalado (ícone, tela cheia) e aparece no **Compartilhar** do Android. O link da loja abre já calculado, com 📌 Fixar. Guia e comparação "link × app" em `docs/app-celular.md`.
+- **Login do Mercado Livre sem colar nada** quando o SetupSniper é aberto em HTTPS (`tailscale serve` ou nuvem): o Mercado Livre devolve direto para o servidor.
+- `npm run navegador` instala o navegador automático (Playwright) no PC, sem virar dependência do projeto.
+
+
 ## 2.10.0 — 2026-11-04
 
 **Três saídas legítimas para as lojas que bloqueiam o servidor**

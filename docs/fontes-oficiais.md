@@ -23,6 +23,10 @@ Para cada loja, aparece o que cada tentativa devolveu:
 
 Toque em **Copiar relatório** e envie para quem estiver ajudando. O relatório não tem CEP, token, chat nem os seus produtos.
 
+## Automático: extensão do navegador
+
+A forma mais automática para as lojas sem API é a **extensão** (`docs/extensao.md`). Ela envia sozinha os preços de toda página de produto ou de busca que você abrir, no PC e no Firefox do Android. Os itens abaixo são as alternativas sem extensão.
+
 ## Enviar da loja pelo seu navegador (funciona em todas as lojas)
 
 Esta é a saída para as lojas sem API (KaBuM!, Pichau, Terabyte, Magalu, Amazon). Você abre a página **no seu navegador**, como sempre: logado ou não, resolvendo a verificação da loja se ela aparecer. Depois toca no favorito **Enviar para o SetupSniper**.
@@ -66,7 +70,7 @@ Algumas consultas da API do Mercado Livre só respondem para um usuário conecta
 2. **Peça o login.** Na aba **Lojas → Conta do Mercado Livre**, toque em **Conectar minha conta do Mercado Livre** e autorize no site do Mercado Livre.
 3. **Conclua.** O navegador vai para o endereço de retorno. Com `https://localhost/...`, a página não abre, e tudo bem: copie o endereço inteiro da barra (ele tem `?code=TG-...`), cole no campo e toque em **Concluir**. O código vale por poucos minutos.
 
-- **Retorno automático:** se o seu servidor tiver HTTPS (por exemplo, com `tailscale serve`), use `ML_REDIRECT_URI=https://<seu-servidor>/auth/ml/callback`. Aí o login conclui sozinho.
+- **Retorno automático:** abra o SetupSniper pelo endereço HTTPS (por exemplo, com `tailscale serve`, veja `docs/app-celular.md`) e cadastre no app do Mercado Livre o endereço que a aba Lojas mostra (`https://<seu-servidor>/auth/ml/callback`). Aí é só tocar em Conectar e autorizar, sem colar nada. Também dá para fixar o endereço com `ML_REDIRECT_URI` no `.env`.
 - **Renovação:** o acesso é renovado sozinho se o app tiver a permissão "offline_access". Sem ela, conecte de novo quando vencer.
 - **Onde fica:** o token fica em `data/ml-auth.json`, que nunca vai para o GitHub. O SetupSniper só **lê** a API: não compra, não vê os seus pedidos e não recebe a sua senha.
 - **Para desconectar:** toque em **Desconectar**, ou revogue o acesso no Mercado Livre (Minha conta → Segurança → Aplicativos).
@@ -106,6 +110,6 @@ KaBuM!, Pichau, Terabyte, Magalu e Amazon não oferecem uma API de preços para 
 - **Amazon:** a Product Advertising API exige ser afiliado com vendas recentes, então não foi integrada.
 - **Para essas lojas, o que mais ajuda:**
   1. **Rode o servidor em casa.** Internet residencial (Wi-Fi ou 4G) é bloqueada bem menos que servidores na nuvem ou VPNs.
-  2. **No PC, instale o navegador:** `npm i playwright && npx playwright install chromium`. Com ele, quando a loja recusa, a mesma página pública é aberta num Chromium de verdade. Ele não resolve captcha: se a loja pedir verificação, a loja continua "bloqueada". No celular (Termux) o Playwright não funciona.
+  2. **No PC, instale o navegador:** `npm run navegador`. Com ele, quando a loja recusa, a mesma página pública é aberta num Chromium de verdade. Ele não resolve captcha: se a loja pedir verificação, a loja continua "bloqueada". No celular (Termux) o Playwright não funciona.
   3. **Fixe o link do produto.** A página de um produto costuma ser menos protegida que a busca, e os Fixados conferem o preço direto nela.
   4. **Encaminhe posts de promoção para o bot** e ative os canais na aba 📣 Promoções: o preço vem do post, e o link é conferido quando possível.

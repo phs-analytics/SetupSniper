@@ -22,7 +22,8 @@ Roda no seu PC ou num **celular Android antigo** usado como servidor pessoal, qu
 | | |
 |---|---|
 | 🔎 **Busca livre** | Digite qualquer produto e os resultados de cada loja aparecem conforme ela responde. O scroll infinito traz mais páginas de cada loja, com as ofertas mais baratas dos vendedores mais confiáveis primeiro. |
-| ⇪ **Enviar da loja** | Loja bloqueou o servidor? Abra a página no seu navegador e toque no favorito: os preços da sua tela vão para o comparativo e atualizam os Fixados. |
+| ⇪ **Extensão do navegador** | Loja bloqueou o servidor? Com a extensão (PC e Firefox do Android), toda página de produto ou busca que você abre manda os preços sozinha para o comparativo e os Fixados. Sem extensão, use o favorito "Enviar para o SetupSniper". |
+| 📱 **App no celular** | Instale o site como app (PWA): ícone na tela inicial, tela cheia e **Compartilhar → SetupSniper** direto do app da loja. |
 | ⚖️ **Comparativo** | O mesmo produto em todas as lojas e em **cada vendedor** dos marketplaces, lado a lado, do mais barato e confiável para o menos. |
 | 🛒 **8 lojas** | KaBuM!, Pichau, Terabyte, Amazon, Mercado Livre, Magalu, Shopee e AliExpress. A **busca profunda** lê mais páginas de cada loja e, no PC, pode usar um navegador headless. O conjunto de lojas é configurável. |
 | 🛡️ **Nota de confiança** | De 0 a 100 por oferta: junta a nota da loja (Reclame Aqui, avaliação, vendas, reviews), os **sinais de risco do vendedor** e os da própria oferta, com motivos e nível de confiança. É uma estimativa do projeto, não uma certificação. |
@@ -60,6 +61,8 @@ Quer só conhecer a interface? Rode `npm run demo` (preços simulados).
 | [Celular como servidor](docs/celular-servidor.md) | Android antigo + Termux + Tailscale, rodando 24h |
 | [Alertas no Telegram](docs/telegram.md) | Criar o bot, regras de alerta e comandos |
 | [Nuvem de arquivos](docs/nuvem.md) | Seus arquivos no servidor, pelo navegador ou WebDAV |
+| [Extensão do navegador](docs/extensao.md) | Envio automático dos preços das páginas que você abre (PC e Android) |
+| [App no celular](docs/app-celular.md) | Link ou app? Como instalar, HTTPS e Compartilhar |
 | [Lojas bloqueadas e APIs oficiais](docs/fontes-oficiais.md) | Diagnóstico e como ligar as APIs do Mercado Livre, da Shopee e do AliExpress |
 | [Como funciona](docs/como-funciona.md) | Leitura de preços, totais, cupons, score, API e o que ainda não foi conferido |
 | [Cupons](docs/cupons.md) | De onde vêm os cupons de cada loja e como são tratados |
