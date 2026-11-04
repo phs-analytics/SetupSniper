@@ -48,4 +48,4 @@ Busca de teste: "ssd 1tb".
 - Nenhuma loja caiu em "Rede" (DNS, timeout ou conexão recusada). Todas os erros são HTTP 403.
 - As páginas da Mercado Livre e da Shopee voltaram com 0 itens, mas o tamanho da resposta (41 KB e 152 KB) sugere página de verificação, não de produto. Isso fica como [não verificado] até conferir o HTML.
 - As APIs oficiais de ML, Shopee e AliExpress não estão configuradas neste aparelho. Parte do bloqueio pode ser resolvida só com as credenciais, sem código novo.
-- Sem Playwright no celular, o plano B pelo navegador não roda aqui. O caminho disponível é a extensão ou o favorito "Enviar para o SetupSniper".
+- Registro do diagnóstico, com a versão 2.11.0. Desde a 3.0.0 o servidor não abre navegador automático: o caminho é a extensão ou o favorito "Enviar para o SetupSniper".

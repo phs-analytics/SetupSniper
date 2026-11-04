@@ -58,13 +58,13 @@ test('stores.json: cada loja do escopo tem a lista de fontes, com ids conhecidos
   for (const s of j.stores.filter(s => s.enabled)) {
     assert.ok(Array.isArray(s.sources) && s.sources.length, s.id);
     for (const f of s.sources) assert.ok(SOURCE_IDS.includes(f), `${s.id}: ${f}`);
-    assert.equal(s.sources.at(-1), 'navegador', s.id);
+    assert.ok(!s.sources.includes('navegador'), `${s.id}: sem navegador automático`);
   }
-  assert.deepEqual(storeSources('kabum'), ['api-publica', 'feed-afiliado', 'pagina', 'navegador']);
-  assert.deepEqual(storeSources('terabyte'), ['feed-afiliado', 'pagina', 'navegador']);
-  assert.deepEqual(storeSources('amazon'), ['api-oficial', 'pagina', 'navegador']);
-  assert.deepEqual(storeSources('pichau'), ['pagina', 'navegador']);
-  assert.deepEqual(storeSources('mercadolivre'), ['api-oficial', 'api-publica', 'pagina', 'navegador']);
+  assert.deepEqual(storeSources('kabum'), ['api-publica', 'feed-afiliado', 'pagina']);
+  assert.deepEqual(storeSources('terabyte'), ['feed-afiliado', 'pagina']);
+  assert.deepEqual(storeSources('amazon'), ['api-oficial', 'pagina']);
+  assert.deepEqual(storeSources('pichau'), ['pagina']);
+  assert.deepEqual(storeSources('mercadolivre'), ['api-oficial', 'api-publica', 'pagina']);
 });
 
 // ---------------- Awin (KaBuM!) ----------------

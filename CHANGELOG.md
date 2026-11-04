@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.0.1 — 2026-11-04
+
+**O servidor não abre mais navegador automático para ler lojas**
+- Quando uma loja recusa o acesso, o servidor não tenta de novo num navegador (Playwright). A busca profunda passa a só ler mais páginas, sem navegador.
+- Removidos `src/browser.js`, o script `npm run navegador` e a fonte "navegador" de `data/stores.json`. O diagnóstico e a interface deixaram de falar em navegador.
+- Para as lojas que recusam, as saídas são as fontes oficiais, a extensão e o favorito "Enviar para o SetupSniper". Testes garantem que nenhum navegador automático volta.
+
 ## 3.0.0 — 2026-11-04
 
 **SetupSniper 3.0: fontes oficiais, histórico, cupons oficiais, busca por loja, Telegram em tempo real e aba Ofertas**

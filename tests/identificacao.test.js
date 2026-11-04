@@ -17,3 +17,11 @@ test('nenhum arquivo de src/ imita navegador ou o site da loja', () => {
     assert.doesNotMatch(s, /\bReferer:\s*'https:\/\/(www\.)?(kabum|shopee|pichau|terabyte|amazon|mercadolivre|magazineluiza|aliexpress)/, f);
   }
 });
+
+test('o servidor não abre navegador automático para ler lojas (Playwright e Chromium ficam de fora)', () => {
+  const arquivos = [...readdirSync(new URL('../src/', import.meta.url)).filter((f) => f.endsWith('.js')).map((f) => `../src/${f}`), '../server.js'];
+  for (const f of arquivos) {
+    const s = readFileSync(new URL(f, import.meta.url), 'utf8');
+    assert.doesNotMatch(s, /playwright|chromium\.launch|launchPersistentContext/i, f);
+  }
+});

@@ -1,7 +1,7 @@
 # Perguntas frequentes
 
 **Uma loja aparece como "bloqueado". É bug?**
-Normalmente não. A loja barrou o acesso automático (anti-bot). As outras lojas continuam funcionando, e o servidor tenta de novo na próxima verificação. Shopee e AliExpress bloqueiam com mais frequência. No PC, a busca profunda com Playwright costuma resolver ([instalacao.md](instalacao.md)).
+Normalmente não. A loja barrou o acesso automático (anti-bot). As outras lojas continuam funcionando, e o servidor tenta de novo na próxima verificação. Shopee e AliExpress bloqueiam com mais frequência. Nesses casos, use a extensão ou o favorito "Enviar para o SetupSniper" ([fontes-oficiais.md](fontes-oficiais.md)).
 
 **Uma loja aparece como "Nenhum resultado compatível".**
 A loja respondeu, mas nenhum produto bateu com todos os termos da busca. Tente termos mais simples, como marca e modelo.

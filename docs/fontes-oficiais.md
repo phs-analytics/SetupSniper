@@ -8,7 +8,6 @@ Algumas lojas recusam acessos automáticos ao site (a resposta é HTTP 403/429 o
 | `feed-afiliado` | rede de afiliados (Awin, Lomadee) | conta de afiliado aprovada no programa da loja |
 | `api-publica` | o JSON público que o próprio site usa | nada |
 | `pagina` | a página pública de busca (HTML) | nada |
-| `navegador` | a mesma página num navegador de verdade (Playwright) | `npm run navegador` (só no PC) |
 
 A busca tenta as fontes nessa ordem e para na primeira que devolver produtos. **Fontes sem credencial são puladas** sem erro. No diagnóstico, cada tentativa mostra a fonte usada.
 
@@ -31,7 +30,7 @@ Mercado Livre, Shopee e AliExpress **já têm o código pronto**: só faltam as 
 
 ## Pausa após bloqueio (6 horas)
 
-Quando a **página** de uma loja bloqueia (captcha, ou HTTP 401, 403, 429 ou 503), o SetupSniper deixa a página e o navegador headless daquela loja **6 horas sem nova tentativa**. Insistir só gera erro e pode piorar o bloqueio.
+Quando a **página** de uma loja bloqueia (captcha, ou HTTP 401, 403, 429 ou 503), o SetupSniper deixa a página daquela loja **6 horas sem nova tentativa**. Insistir só gera erro e pode piorar o bloqueio.
 
 - Durante a pausa, a loja aparece como bloqueada, e o motivo diz até que horas vai a pausa.
 - As fontes oficiais e de afiliado **continuam funcionando** durante a pausa.
@@ -207,6 +206,6 @@ As redes de afiliados e a Amazon devolvem **links rastreados**. O SetupSniper gu
 ## Outras dicas quando a loja bloqueia
 
 1. **Rode o servidor em casa.** Internet residencial (Wi-Fi ou 4G) é bloqueada bem menos que servidores na nuvem ou VPNs.
-2. **No PC, instale o navegador:** `npm run navegador`. Com ele, quando a loja recusa, a mesma página pública é aberta num Chromium de verdade. Ele não resolve captcha: se a loja pedir verificação, a loja continua "bloqueada". No celular (Termux) o Playwright não funciona.
+2. **Use a extensão ou o favorito.** Quando a loja recusa, o que você abrir no seu navegador continua chegando ao SetupSniper. O servidor não abre navegador nenhum para ler lojas.
 3. **Fixe o link do produto.** A página de um produto costuma ser menos protegida que a busca, e os Fixados conferem o preço direto nela.
 4. **Encaminhe posts de promoção para o bot** e ative os canais na aba 📣 Promoções: o preço vem do post, e o link é conferido quando possível.

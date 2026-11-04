@@ -8,7 +8,7 @@ Escolha o que você já tem em casa. Dá para trocar depois: basta copiar a past
 
 | Opção | Bom para | Guia |
 |---|---|---|
-| **PC ou notebook** | começar agora, sem nada extra; tem o navegador headless (`npm run navegador`) | [Instalação no computador](instalacao.md) e [Deixar ligado](#pc-ou-notebook) |
+| **PC ou notebook** | começar agora, sem nada extra | [Instalação no computador](instalacao.md) e [Deixar ligado](#pc-ou-notebook) |
 | **Linux, mini PC ou Raspberry Pi** | ficar ligado 24 h gastando pouca energia | [Linux com systemd](#linux-mini-pc-ou-raspberry-pi) |
 | **Docker** (PC, NAS, home server) | quem já usa contêineres | [Docker](#docker) |
 | **Celular Android antigo** | reaproveitar um aparelho parado, 24 h na tomada | [Celular Android (Termux)](#celular-android-termux) |
@@ -81,7 +81,7 @@ Os seus dados ficam na pasta `data/`, montada como volume. Veja [`docker-compose
 
 Um celular antigo na tomada vira um servidor 24 h. Ele também pode servir a sua **nuvem de arquivos** (porta 8090, opcional, veja [nuvem.md](nuvem.md)).
 
-**Requisitos:** Android 7 ou mais novo, Wi-Fi, carregador e uns 30 minutos. No celular, o navegador headless (Playwright) não funciona; para as lojas que bloqueiam, use as [fontes oficiais](fontes-oficiais.md) e a [extensão](extensao.md).
+**Requisitos:** Android 7 ou mais novo, Wi-Fi, carregador e uns 30 minutos. Para as lojas que bloqueiam, use as [fontes oficiais](fontes-oficiais.md) e a [extensão](extensao.md).
 
 ### 1. Instale os apps
 

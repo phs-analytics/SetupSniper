@@ -25,7 +25,7 @@ Roda num **servidor próprio**, do jeito que você preferir: o seu PC, um mini P
 | ⇪ **Extensão do navegador** | Loja bloqueou o servidor? Com a extensão (PC e Firefox do Android), toda página de produto ou busca que você abre manda os preços sozinha para o comparativo e os Fixados. Sem extensão, use o favorito "Enviar para o SetupSniper". No ícone, ela mostra quantos cupons ativos a loja aberta tem e, na página do produto, o menor preço dos últimos 90 dias. Ela nunca preenche cupom nem clica em nada. |
 | 📱 **App no celular** | Instale o site como app (PWA): ícone na tela inicial, tela cheia e **Compartilhar → SetupSniper** direto do app da loja. |
 | ⚖️ **Comparativo** | O mesmo produto em todas as lojas e em **cada vendedor** dos marketplaces, lado a lado, do mais barato e confiável para o menos. |
-| 🛒 **8 lojas** | KaBuM!, Pichau, Terabyte, Amazon, Mercado Livre, Magalu, Shopee e AliExpress. A **busca profunda** lê mais páginas de cada loja e, no PC, pode usar um navegador headless. O conjunto de lojas é configurável. |
+| 🛒 **8 lojas** | KaBuM!, Pichau, Terabyte, Amazon, Mercado Livre, Magalu, Shopee e AliExpress. A **busca profunda** lê mais páginas de cada loja. O conjunto de lojas é configurável. |
 | 🛡️ **Nota de confiança** | De 0 a 100 por oferta: junta a nota da loja (Reclame Aqui, avaliação, vendas, reviews), os **sinais de risco do vendedor** e os da própria oferta, com motivos e nível de confiança. É uma estimativa do projeto, não uma certificação. |
 | 🧹 **Filtro de lixo** | Descarta acessórios e marca como **suspeito** o preço bom demais para ser verdade. |
 | 💳 **Total Pix e Total Crédito** | Cada oferta mostra os dois totais finais, com cupom, frete e, nos importados de Amazon, AliExpress e Shopee, imposto de importação e ICMS da sua UF. |
@@ -86,9 +86,9 @@ Lojas mudam de layout o tempo todo, então correções de adaptadores são muito
 
 ## ⚠️ Avisos
 
-- **Os preços vêm das APIs oficiais e de páginas públicas.** Nas consultas diretas, o servidor se identifica como SetupSniper, e não como um navegador; ele não tenta burlar bloqueios. A exceção é o navegador automático opcional (Playwright, só no PC), que abre a página pública num Chromium de verdade, sem resolver captcha e sem login. Se uma loja mudar o layout ou recusar o acesso, só aquela loja é afetada.
+- **Os preços vêm das APIs oficiais e de páginas públicas.** Nas consultas diretas, o servidor se identifica como SetupSniper, e não como um navegador; ele não tenta burlar bloqueios. Se uma loja mudar o layout ou recusar o acesso, só aquela loja é afetada.
 - **As notas de confiança são estimativas do SetupSniper, não certificações nem dados oficiais.** Os indicadores em `data/stores.json` são valores iniciais aproximados: ajuste conforme a sua pesquisa. A interface marca como "estimativa" toda nota que não veio do Reclame Aqui ao vivo.
-- **Uso pessoal.** O SetupSniper foi feito para uso pessoal e não comercial. Respeite os termos de uso de cada loja, mantenha intervalos conservadores entre as consultas e use a busca profunda com navegador só quando precisar.
+- **Uso pessoal.** O SetupSniper foi feito para uso pessoal e não comercial. Respeite os termos de uso de cada loja, mantenha intervalos conservadores entre as consultas e use a busca profunda só quando precisar.
 - **Nomes e marcas** das lojas pertencem aos seus donos e aparecem só para identificar a origem de cada oferta, sem logotipos.
 - **Sinais de risco não são acusação.** "Alto risco" quer dizer que os dados públicos lidos pedem cautela, não que o vendedor cometeu fraude.
 - **Links de afiliado:** por padrão, "Ver na loja" abre a página limpa. Se você ligar a opção de link de afiliado, o botão mostra o aviso "link de afiliado" (transparência na publicidade, CDC art. 37).

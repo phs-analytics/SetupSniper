@@ -1,14 +1,13 @@
 {
   "name": "setupsniper",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Compare preços de peças de PC em várias lojas brasileiras, veja a confiabilidade de cada loja e receba alertas de preço baixo no Telegram.",
   "type": "module",
   "scripts": {
     "start": "node server.js",
     "demo": "node server.js --demo",
     "test": "node --test",
-    "check": "node scripts/check.js",
-    "navegador": "npm install --no-save playwright && npx playwright install chromium"
+    "check": "node scripts/check.js"
   },
   "engines": {
     "node": ">=18.18"

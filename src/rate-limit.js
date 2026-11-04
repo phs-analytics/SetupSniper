@@ -5,7 +5,7 @@
 // disso, falha na hora com uma mensagem clara (e a busca segue para a próxima fonte da loja).
 //
 // Pausa após bloqueio: quando a página de uma loja bloqueia (captcha ou HTTP 401/403/429/503), a loja fica
-// pausaAposBloqueioHoras sem tentar a página nem o navegador headless. O estado fica só em memória.
+// pausaAposBloqueioHoras sem tentar a página de novo. O estado fica só em memória.
 // Relógio injetável ({ now, sleep }) para os testes.
 import { readFileSync } from 'node:fs';
 

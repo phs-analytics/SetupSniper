@@ -187,7 +187,7 @@ export function produtosBons(offers, query, opts = {}) {
 // Chama search(storeId, q, { page }) página a página até ter `needed` produtos bons (contar(items) ≥ needed)
 // ou chegar a maxPages. Para também quando a loja não tem mais páginas, em erro, em bloqueio e na pausa após
 // bloqueio (searchStore devolve `pausa` ou lança erro com e.blocked/e.pausa): nunca insiste.
-//   search: injetável (o servidor passa searchStore com browserFallback; os testes, uma função falsa).
+//   search: injetável (o servidor passa searchStore; os testes, uma função falsa).
 //   contar(items): quantos produtos bons há nos itens acumulados (padrão: nº de itens).
 // Se a PRIMEIRA página der erro, o erro sobe (o servidor já trata "bloqueado"/"erro" por loja).
 // Retorna { items, pages: [nºs lidos], page (última), hasMore, parou, error?, pausa?, trace, searchUrl, source }.

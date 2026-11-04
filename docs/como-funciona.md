@@ -12,8 +12,8 @@ navegador ──SSE──▶ server.js ──▶ src/stores.js ──▶ fontes 
 ```
 
 - **Sem banco de dados:** tudo fica em arquivos JSON (e JSONL, no histórico) na pasta `data/`.
-- **Identificação honesta:** nas consultas diretas, o servidor se apresenta às lojas como `SetupSniper/<versão>`, e não como um navegador. Nada de captcha, proxy ou cookies de login. A exceção é o navegador automático opcional (Playwright, só no PC), que abre a página pública num Chromium de verdade quando você instala com `npm run navegador`.
-- **Sem dependências:** só a biblioteca padrão do Node.js. O Playwright é opcional.
+- **Identificação honesta:** o servidor se apresenta às lojas como `SetupSniper/<versão>`, e não como um navegador. Nada de captcha, proxy, cookies de login ou navegador automático.
+- **Sem dependências:** só a biblioteca padrão do Node.js.
 - **Tempo real:** a interface recebe atualizações por Server-Sent Events (`/api/stream`), e cada busca chega em streaming, loja por loja (`/api/search`).
 
 ## Lojas no escopo
@@ -34,7 +34,6 @@ Cada loja tem um adaptador em `src/stores.js` que monta a URL de busca. A leitur
 1. **API pública**, quando existe (Mercado Livre, Shopee).
 2. **Extrator genérico** (`src/extract.js`): encontra dados embutidos na página (JSON-LD, `__NEXT_DATA__`, estados iniciais como `window.__X__ = {...}`) e percorre tudo atrás de objetos com cara de produto, ou seja, com nome e preço, e opcionalmente link e imagem. Os preços são **classificados pelo nome do campo**: Pix ou à vista (`priceWithDiscount`, `avista`, `bestPrice`…), crédito (`price`, `salePrice`, `final_price`…), parcelas (`installments`…) e preço "de" (`oldPrice`, `listPrice`, `fullPrice`…), que é ignorado. Nos cartões em HTML, o contexto decide: "à vista", "no Pix" ou "com Pix" indicam Pix, "10x de R$" indica parcela e "de R$" indica o preço riscado.
 3. **Leitura dos cartões HTML**, como plano B: links de produto com um "R$" por perto.
-4. **Navegador headless**, só na busca profunda e se o Playwright estiver instalado.
 
 ## Schema único de oferta (`src/offer.js`)
 
@@ -244,7 +243,7 @@ Cada loja mostra por que ficou sem ofertas:
 
 | Na tela | O que quer dizer | O que fazer |
 |---|---|---|
-| **bloqueado** | a loja recusou o acesso automático (HTTP 403/429/503) ou mostrou uma página de verificação (captcha) | O SetupSniper **não tenta burlar** a proteção. Rode o servidor em casa (internet residencial é bloqueada bem menos que servidor na nuvem). No PC, instale o Playwright: com ele, quando a loja recusa, a mesma página pública é aberta num navegador de verdade (`browserFallback`, ligado por padrão). Ou fixe o link do produto. |
+| **bloqueado** | a loja recusou o acesso automático (HTTP 403/429/503) ou mostrou uma página de verificação (captcha) | O SetupSniper **não tenta burlar** a proteção. Rode o servidor em casa (internet residencial é bloqueada bem menos que servidor na nuvem), use a extensão ou o favorito "Enviar para o SetupSniper", ou fixe o link do produto. |
 | **nada parecido** | a loja mostrou produtos, mas nenhum parece ser o buscado | refaça a busca com menos termos (marca + modelo) |
 | **sem resultados** | a loja não mostrou nenhum produto | toque no chip para abrir a busca na loja e conferir |
 

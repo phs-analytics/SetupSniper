@@ -9,15 +9,15 @@ const T0 = Date.UTC(2026, 10, 4, 12, 0, 0);
 const HOUR = 3600e3;
 
 // Fontes falsas: cada uma conta as chamadas.
-function deps({ html, htmlError, providers = {}, browser = null, now = () => T0, sources } = {}) {
-  const calls = { pagina: 0, navegador: 0, prov: {} };
+function deps({ html, htmlError, providers = {}, now = () => T0, sources } = {}) {
+  const calls = { pagina: 0, prov: {} };
   return {
     calls,
     deps: {
       now, ...(sources ? { sources } : {}),
       fetchText: async () => { calls.pagina++; if (htmlError) throw new Error(htmlError); return html; },
-      browserAvailable: () => !!browser,
-      renderPage: async () => { calls.navegador++; return browser; },
+      // o navegador automático foi retirado: nada deve chamá-lo
+      renderPage: async () => { throw new Error('o navegador não deve ser usado'); },
       providerFor: (store, fonte) => {
         const p = providers[fonte];
         if (!p) return null;
@@ -83,38 +83,35 @@ test('erro da fonte oficial aparece no trace com a fonte e a busca segue para a 
   assert.equal(r.source, 'pagina');
 });
 
-test('pausa após bloqueio: HTTP 403 pausa a página e o navegador por 6 h; o trace diz até quando', async () => {
+test('pausa após bloqueio: HTTP 403 pausa a página por 6 h; o trace diz até quando', async () => {
   clearBlockPause();
   let t = T0;
-  const browser = { html: fx('pichau-busca.html'), captured: [] };
   const a = deps({ htmlError: 'HTTP 403 (bloqueio anti-bot)', now: () => t });
   // 1ª busca: a página dá 403, a pausa começa; sem navegador instalado
-  await assert.rejects(searchStore('pichau', 'rtx 4060', { browserFallback: true, deps: a.deps }), (e) => {
+  await assert.rejects(searchStore('pichau', 'rtx 4060', { deps: a.deps }), (e) => {
     assert.equal(e.blocked, true);
     assert.equal(e.pausa.until, new Date(T0 + 6 * HOUR).toISOString());
     assert.equal(e.trace[0].fonte, 'pagina');
     assert.equal(e.trace[0].pausadaAte, e.pausa.until);
-    assert.equal(e.trace[1].fonte, 'navegador');
+    assert.equal(e.trace.length, 1, 'nenhuma outra tentativa depois do bloqueio');
     return true;
   });
   assert.equal(a.calls.pagina, 1);
   assert.equal(blockPause('pichau', { now: t }).until, new Date(T0 + 6 * HOUR).toISOString());
   assert.ok(listBlockPauses({ now: t }).pichau);
 
-  // 2ª busca, 1 h depois, agora com navegador: nem a página nem o navegador são tentados
+  // 2ª busca, 1 h depois: a página não é tentada
   t = T0 + HOUR;
-  const b = deps({ html: fx('pichau-busca.html'), browser, now: () => t });
-  await assert.rejects(searchStore('pichau', 'rtx 4060', { browserFallback: true, deps: b.deps }), (e) => {
+  const b = deps({ html: fx('pichau-busca.html'), now: () => t });
+  await assert.rejects(searchStore('pichau', 'rtx 4060', { deps: b.deps }), (e) => {
     assert.equal(e.blocked, true);
     assert.match(e.message, /pausada após bloqueio até/);
     assert.deepEqual(e.trace.map(x => [x.fonte, x.skipped, x.pausadaAte]), [
       ['pagina', true, new Date(T0 + 6 * HOUR).toISOString()],
-      ['navegador', true, new Date(T0 + 6 * HOUR).toISOString()],
     ]);
     return true;
   });
   assert.equal(b.calls.pagina, 0);
-  assert.equal(b.calls.navegador, 0);
 
   // diagnóstico manual (noCache) ignora a pausa e, como a página respondeu, a pausa acaba
   const c = deps({ html: fx('pichau-busca.html'), now: () => t });
@@ -142,16 +139,11 @@ test('pausa após bloqueio: depois de 6 h a página é tentada de novo; fontes o
   assert.equal(c.calls.pagina, 1);
 });
 
-test('página de captcha também pausa; navegador que consegue ler encerra a pausa', async () => {
+test('página de captcha pausa a loja e não abre navegador nenhum', async () => {
   clearBlockPause();
-  const browser = { html: fx('pichau-busca.html'), captured: [] };
-  const a = deps({ html: '<title>Just a moment...</title><div id="cf-chl-widget">', browser });
-  const r = await searchStore('pichau', 'rtx 4060', { browserFallback: true, deps: a.deps });
-  assert.equal(a.calls.navegador, 1);
-  assert.equal(r.source, 'navegador');
-  assert.equal(r.trace[0].fonte, 'pagina');
-  assert.ok(r.trace[0].pausadaAte);
-  assert.equal(blockPause('pichau', { now: T0 }), null);
+  const a = deps({ html: '<title>Just a moment...</title><div id="cf-chl-widget">' });
+  await assert.rejects(searchStore('pichau', 'rtx 4060', { deps: a.deps }), (e) => e.blocked === true && /verificação/.test(e.message) && e.trace.length === 1);
+  assert.ok(blockPause('pichau', { now: T0 }));
   const b = deps({ html: '<title>Just a moment...</title><div id="cf-chl-widget">' });
   await assert.rejects(searchStore('pichau', 'rtx 4060', { deps: b.deps }), (e) => e.blocked === true && /verificação/.test(e.message));
   assert.ok(blockPause('pichau', { now: T0 }));

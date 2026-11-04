@@ -37,17 +37,6 @@ npm start
 
 Abra **http://localhost:3000**. Para só conhecer a interface, com preços simulados, use `npm run demo`.
 
-## Opcional: busca profunda com navegador
-
-Shopee e AliExpress costumam bloquear requisições simples. No computador, dá para usar um navegador headless:
-
-```bash
-npm install playwright
-npx playwright install chromium
-```
-
-Depois disso, ative **Busca profunda** na interface.
-
 ## Opcional: Docker
 
 ```bash

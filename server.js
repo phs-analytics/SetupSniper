@@ -29,7 +29,6 @@ import { channelStatus, promoFromPost, addPromos, queryPromos, watchMatches } fr
 import { fetchPtax } from './src/ptax.js';
 import { parseProductPage } from './src/scraper.js';
 import { fetchText } from './src/http.js';
-import { browserAvailable } from './src/browser.js';
 import { configured as officialConfigured, setMlUserTokenProvider } from './src/official-apis.js';
 import { authUrl as mlAuthUrl, newState, codeFromInput, exchangeCode, validToken } from './src/ml-oauth.js';
 import { parseCapture } from './src/capture.js';
@@ -184,7 +183,7 @@ function publicSettings() {
 }
 function state() {
   return {
-    demo: DEMO, refreshing, lastRefresh, browser: browserAvailable(), version: VERSION,
+    demo: DEMO, refreshing, lastRefresh, version: VERSION,
     settings: publicSettings(),
     stores: storesWithScore(),
     alerts: alertState.log.slice(0, 30),
@@ -256,7 +255,7 @@ async function demoSearch(storeId, q, page = 1) {
 
 // ---------- busca ----------
 async function searchOne(storeId, q, deep, page = 1, { porLoja = false } = {}) {
-  const one = (id, qq, { page: pg }) => DEMO ? demoSearch(id, qq, pg) : searchStore(id, qq, { deep, page: pg, browserFallback: settings.browserFallback !== false });
+  const one = (id, qq, { page: pg }) => DEMO ? demoSearch(id, qq, pg) : searchStore(id, qq, { deep, page: pg });
   let r;
   if (porLoja && page === 1 && !deep) {
     const rules = porLojaRules();
@@ -302,7 +301,7 @@ async function runSearch(q, { deep = false, stores, onStore, page = 1, porLoja =
 }
 
 // ---------- diagnóstico das lojas ----------
-// Sem dados pessoais: só versão, sistema, se há navegador, quais APIs oficiais estão configuradas (sim/não)
+// Sem dados pessoais: só versão, sistema, quais APIs oficiais estão configuradas (sim/não)
 // e, por loja, o resultado de cada tentativa. Feito para o usuário copiar e mandar para quem for ajudar.
 let diagRunning = null;
 async function diagnostico(q = 'ssd 1tb') {
@@ -312,7 +311,7 @@ async function diagnostico(q = 'ssd 1tb') {
       const t0 = Date.now();
       try {
         const r = DEMO ? { ...(await demoSearch(id, q)), source: 'demo', trace: [{ via: 'demo', ok: true }] }
-          : await searchStore(id, q, { noCache: true, browserFallback: settings.browserFallback !== false });
+          : await searchStore(id, q, { noCache: true });
         return { id, nome: storeName(id), ok: r.items.length > 0, itens: r.items.length, fonte: r.source, ms: Date.now() - t0, tentativas: r.trace };
       } catch (e) {
         return { id, nome: storeName(id), ok: false, itens: 0, bloqueado: !!e.blocked, erro: e.message, ms: Date.now() - t0, tentativas: e.trace ?? [] };
@@ -320,7 +319,7 @@ async function diagnostico(q = 'ssd 1tb') {
     }));
     return {
       quando: new Date().toISOString(), versao: VERSION.version, commit: VERSION.commit, node: process.version, sistema: `${process.platform}/${process.arch}`,
-      demo: DEMO, navegador: browserAvailable(), browserFallback: settings.browserFallback !== false,
+      demo: DEMO,
       apisOficiais: { mercadolivre: officialConfigured.mercadolivre(), shopee: officialConfigured.shopee(), aliexpress: officialConfigured.aliexpress() },
       busca: q, lojas,
       // fontes oficiais por loja: configurada ou não e QUAIS variáveis faltam (só os nomes, nunca os valores)
@@ -784,7 +783,7 @@ const botHandlers = {
     const d = await diagnostico();
     return '🩺 <b>Diagnóstico das lojas</b> (busca "ssd 1tb")\n\n' + d.lojas.map(l => `${l.ok ? '✅' : l.bloqueado ? '⛔' : '❌'} <b>${escHtml(l.nome)}</b>: ${l.ok ? `${l.itens} itens via ${escHtml(l.fonte)}` : escHtml((l.erro ?? 'nenhum item').slice(0, 120))}`).join('\n') +
       (d.fontesOficiais.some(f => !f.configurada) ? '\n\n🔑 <b>Credenciais que faltam</b>\n' + d.fontesOficiais.filter(f => !f.configurada).map(f => `${escHtml(storeName(f.loja))} (${escHtml(f.nome)}): ${f.faltam.map(escHtml).join(', ')}`).join('\n') : '') +
-      `\n\nNavegador headless: ${d.navegador ? 'sim' : 'não'}. Relatório completo: aba Lojas → Diagnóstico.`;
+      `\n\nRelatório completo: aba Lojas → Diagnóstico.`;
   },
   post: async (text, meta = {}) => {
     if (meta.source === 'telegram_group' || meta.source === 'telegram_bot_channel') return ingestBotPost(text, meta);
@@ -1202,7 +1201,7 @@ async function refreshReclameAqui() {
 
 server.listen(PORT, HOST, () => {
   console.log(`\n  SetupSniper em http://localhost:${server.address().port}${DEMO ? '  (MODO DEMO — preços simulados)' : ''}`);
-  console.log(`  Monitorando ${watch.items.length} produto(s) a cada ${DEMO ? 1 : settings.intervalMin} min · navegador headless: ${browserAvailable() ? 'sim' : 'não'}${SENHA ? ' · com senha' : ''}\n`);
+  console.log(`  Monitorando ${watch.items.length} produto(s) a cada ${DEMO ? 1 : settings.intervalMin} min${SENHA ? ' · com senha' : ''}\n`);
   refreshReclameAqui();
   refreshAll();
   schedule();

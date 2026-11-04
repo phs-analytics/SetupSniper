@@ -139,7 +139,7 @@ function renderStoreFilter() {
   const sel = new Set(storeFilterIds());
   $('#store-filter').innerHTML = S.stores.filter(s => ui.deep || !s.deepOnly).map(s =>
     `<button type="button" class="fchip ${sel.has(s.id) ? 'on' : ''}" data-store="${s.id}" aria-pressed="${sel.has(s.id)}"><i style="background:${s.color}"></i>${esc(s.name)}${s.deepOnly ? ' <small>profunda</small>' : ''}</button>`).join('');
-  $('#deep-hint').textContent = S.browser ? 'mais páginas por loja + navegador' : 'mais páginas por loja';
+  $('#deep-hint').textContent = 'mais páginas por loja';
 }
 $('#store-filter').addEventListener('click', (e) => {
   const b = e.target.closest('[data-store]'); if (!b) return;
@@ -328,10 +328,10 @@ function moreFooter(list) {
 }
 // Explicação do erro, no toque/mouse
 function errHelp(s) {
-  if (s.blocked) return `A loja recusou o acesso automático (${s.error}). O SetupSniper não tenta burlar a proteção. Toque para abrir a busca na loja. Dicas: rode o servidor em casa (internet residencial), ative a busca profunda se o PC tiver o navegador headless, ou fixe o link do produto.`;
+  if (s.blocked) return `A loja recusou o acesso automático (${s.error}). O SetupSniper não tenta burlar a proteção. Toque para abrir a busca na loja. Dicas: rode o servidor em casa (internet residencial), use a extensão ou o favorito "Enviar para o SetupSniper", ou fixe o link do produto.`;
   return s.error ?? '';
 }
-const shortErr = (e = '') => /bloqueio/.test(e) ? 'bloqueado' : /Playwright/.test(e) ? 'precisa navegador' : /abort|timeout/i.test(e) ? 'sem resposta' : e.length > 22 ? e.slice(0, 20) + '…' : e;
+const shortErr = (e = '') => /bloqueio/.test(e) ? 'bloqueado' : /abort|timeout/i.test(e) ? 'sem resposta' : e.length > 22 ? e.slice(0, 20) + '…' : e;
 
 $('#results').addEventListener('click', (e) => {
   if (e.target.id === 'more') { ui.shown += 40; return renderSearch(); }
@@ -873,7 +873,6 @@ function renderCompare(list, best) {
 let lastDiag = null;
 function diagText(d) {
   const L = [`SetupSniper ${d.versao}${d.commit ? ' (' + d.commit + ')' : ''} · Node ${d.node} · ${d.sistema}${d.demo ? ' · DEMO' : ''}`,
-    `navegador headless: ${d.navegador ? 'sim' : 'não'} · plano B navegador: ${d.browserFallback ? 'ligado' : 'desligado'}`,
     `APIs oficiais: ML ${d.apisOficiais.mercadolivre ? 'sim' : 'não'} · Shopee ${d.apisOficiais.shopee ? 'sim' : 'não'} · AliExpress ${d.apisOficiais.aliexpress ? 'sim' : 'não'}`,
     `busca de teste: "${d.busca}" · ${d.quando}`,
     ...(d.fontesOficiais ?? []).map(f => `fonte oficial ${store(f.loja).name} (${f.nome}): ${f.configurada ? 'configurada' : 'falta ' + f.faltam.join(', ')}`),
@@ -897,7 +896,7 @@ $('#diag-go').onclick = async () => {
         ${(l.tentativas ?? []).map(t => `<small>${t.ok ? '✓' : '✕'} ${esc(t.via)}: ${t.ok ? t.n + ' itens' : esc(t.error)}</small>`).join('')}</div>`).join('')}</div>
       ${(d.fontesOficiais ?? []).length ? `<ul class="howto">${d.fontesOficiais.map(f => `<li><b>${esc(store(f.loja).name)}</b> · ${esc(f.nome)}: ${f.configurada ? '✓ configurada' : `falta no .env: <code>${f.faltam.map(esc).join('</code>, <code>')}</code>`}</li>`).join('')}</ul>` : ''}
       ${d.telegram ? `<p class="muted"><b>Telegram:</b> ${d.telegram.canais.ok} de ${d.telegram.canais.total} canais lidos sem erro${d.telegram.canais.failing ? ` (${d.telegram.canais.failing} em recuo)` : ''} · ${d.telegram.grupos} grupo(s)/canal(is) com o bot · privacy mode <b>${esc(d.telegram.privacyMode)}</b> · último post ${d.telegram.ultimoPost ? ago(Date.parse(d.telegram.ultimoPost)) : 'nenhum'}</p>` : ''}
-      <p class="muted">Navegador headless neste aparelho: <b>${d.navegador ? 'sim' : 'não'}</b> · APIs oficiais configuradas: ${Object.entries(d.apisOficiais).filter(([, v]) => v).map(([k]) => store(k).name).join(', ') || 'nenhuma'}</p>`;
+      <p class="muted">APIs oficiais configuradas: ${Object.entries(d.apisOficiais).filter(([, v]) => v).map(([k]) => store(k).name).join(', ') || 'nenhuma'}</p>`;
     $('#diag-copy').hidden = false;
   } catch { toast('O diagnóstico falhou'); }
   finally { b.disabled = false; b.textContent = 'Testar as lojas de novo'; }

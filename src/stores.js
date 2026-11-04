@@ -2,7 +2,6 @@
 import { fetchText } from './http.js';
 import { collectJsonBlobs, extractFromJson, extractFromHtmlCards, pricesFromText, decode, sellerInfoFrom } from './extract.js';
 import { parseBRL } from './scraper.js';
-import { browserAvailable, renderPage } from './browser.js';
 import { providerFor, storeSources } from './sources/index.js';
 import { blockPause, startBlockPause, clearBlockPause } from './rate-limit.js';
 
@@ -185,25 +184,25 @@ function shopeeItems(j) {
 }
 
 // Busca numa loja, percorrendo as fontes de data/stores.json ("sources"), da mais oficial para a menos oficial:
-//   api-oficial → feed-afiliado → api-publica → pagina → navegador (veja src/sources/index.js).
+//   api-oficial → feed-afiliado → api-publica → pagina (veja src/sources/index.js).
 // Fontes sem credencial no .env são puladas. Para na primeira fonte que devolver itens.
 // page: página da loja (o scroll infinito pede 2, 3...). A busca profunda lê `pages` páginas de uma vez.
 // Retorna { items, searchUrl, page, hasMore, source, sourceLegacy, trace }.
-//   source: id da fonte que respondeu ('api-oficial', 'feed-afiliado', 'api-publica', 'pagina', 'navegador');
-//   sourceLegacy: o mesmo no formato da 2.x ('oficial', 'afiliado', 'api', 'html', 'navegador');
+//   source: id da fonte que respondeu ('api-oficial', 'feed-afiliado', 'api-publica', 'pagina');
+//   sourceLegacy: o mesmo no formato da 2.x ('oficial', 'afiliado', 'api', 'html');
 //   trace: o que cada tentativa devolveu, com { via, fonte, ok, n | error } (usado no diagnóstico das lojas).
 // Pausa após bloqueio: se a página bloquear (captcha ou HTTP 401/403/429/503), a loja fica
-// pausaAposBloqueioHoras (data/source-limits.json) sem tentar a página nem o navegador headless.
+// pausaAposBloqueioHoras (data/source-limits.json) sem tentar a página de novo.
 // noCache: true (diagnóstico pedido pelo usuário) ignora a pausa e tenta de novo.
-// deps: só para testes (fetchText, browserAvailable, renderPage, providerFor, sources, now).
-const LEGACY = { 'api-oficial': 'oficial', 'feed-afiliado': 'afiliado', 'api-publica': 'api', pagina: 'html', navegador: 'navegador' };
+// deps: só para testes (fetchText, providerFor, sources, now).
+const LEGACY = { 'api-oficial': 'oficial', 'feed-afiliado': 'afiliado', 'api-publica': 'api', pagina: 'html' };
 const BLOCK_RE = /HTTP (401|403|429|503)|verifica/;
 const hhmm = (iso) => new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
-export async function searchStore(storeId, query, { deep = false, page = 1, browserFallback = false, noCache = false, deps = {} } = {}) {
+export async function searchStore(storeId, query, { deep = false, page = 1, noCache = false, deps = {} } = {}) {
   const a = ADAPTERS[storeId];
   if (!a) throw new Error('loja desconhecida');
-  const d = { fetchText, browserAvailable, renderPage, providerFor, now: Date.now, ...deps };
+  const d = { fetchText, providerFor, now: Date.now, ...deps };
   const maxPages = a.pages ?? 10;
   if (page > maxPages) return { items: [], searchUrl: a.url(query, 1), page, hasMore: false };
   const last = deep ? Math.min(maxPages, page + (a.pages ?? 2) - 1) : page;
@@ -211,7 +210,7 @@ export async function searchStore(storeId, query, { deep = false, page = 1, brow
   const errors = [];
   let items = [], lastGot = 0, blocked = false, source = null, pausa = null;
   const trace = [];
-  // Pausa que já existia antes desta busca (a que começar agora não impede o navegador de tentar).
+  // Pausa que já existia antes desta busca: a página não é tentada de novo enquanto ela vale.
   const pausaAntes = noCache ? null : blockPause(storeId, { now: d.now() });
   const pausadaMsg = (p) => `pausada após bloqueio até ${hhmm(p.until)}${p.reason ? ` (${p.reason})` : ''}; sem nova tentativa antes disso`;
   for (let p = page; p <= last; p++) {
@@ -251,21 +250,6 @@ export async function searchStore(storeId, query, { deep = false, page = 1, brow
           }
           trace.push(t);
         }
-      } else if (fonte === 'navegador') {
-        if (pausaAntes) {
-          trace.push({ via: 'navegador', fonte, ok: false, skipped: true, pausadaAte: pausaAntes.until, error: pausadaMsg(pausaAntes) });
-          continue;
-        }
-        if ((deep || (browserFallback && blocked)) && d.browserAvailable()) {
-          try {
-            const r = await d.renderPage(a.url(query, p), { capture: a.browserCapture, cookies: a.browserCookies });
-            if (isChallenge(r.html)) throw new Error('a loja pediu verificação também no navegador');
-            got = a.fromCaptured?.(r.captured) ?? [];
-            if (!got.length) got = a.parse(r.html, a);
-            if (got.length) { blocked = false; source = fonte; pausa = null; clearBlockPause(storeId); }
-            trace.push({ via: 'navegador', fonte, ok: true, n: got.length });
-          } catch (e) { errors.push('navegador: ' + e.message); trace.push({ via: 'navegador', fonte, ok: false, error: e.message }); }
-        } else if (blocked) trace.push({ via: 'navegador', fonte, ok: false, error: d.browserAvailable() ? 'desligado (browserFallback)' : 'Playwright não instalado neste aparelho' });
       }
     }
     items.push(...got);

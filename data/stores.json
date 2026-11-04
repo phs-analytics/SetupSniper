@@ -1,5 +1,5 @@
 {
-  "_ajuda": "Valores de referência INICIAIS e aproximados — confira em reclameaqui.com.br e nas próprias lojas e ajuste. Se 'reclameAquiSlug' estiver preenchido, o servidor tenta atualizar os dados do Reclame Aqui sozinho (melhor esforço). \"enabled\": true coloca a loja no escopo padrão; para mudar só na sua máquina, use \"enabledStores\" em data/settings.json. \"sources\": ordem das fontes de preço, da mais oficial para a menos oficial (api-oficial, feed-afiliado, api-publica, pagina, navegador); as que precisam de credencial são puladas enquanto ela não estiver no .env. Veja docs/fontes-oficiais.md.",
+  "_ajuda": "Valores de referência INICIAIS e aproximados — confira em reclameaqui.com.br e nas próprias lojas e ajuste. Se 'reclameAquiSlug' estiver preenchido, o servidor tenta atualizar os dados do Reclame Aqui sozinho (melhor esforço). \"enabled\": true coloca a loja no escopo padrão; para mudar só na sua máquina, use \"enabledStores\" em data/settings.json. \"sources\": ordem das fontes de preço, da mais oficial para a menos oficial (api-oficial, feed-afiliado, api-publica, pagina); as que precisam de credencial são puladas enquanto ela não estiver no .env. Veja docs/fontes-oficiais.md.",
   "stores": [
     {
       "id": "kabum",
@@ -25,8 +25,7 @@
       "sources": [
         "api-publica",
         "feed-afiliado",
-        "pagina",
-        "navegador"
+        "pagina"
       ],
       "sourcesFonte": "SetupSniper 3.0 e diagnóstico real de 04/11/2026 (docs/diagnostico-2026-11.md)",
       "sourcesAtualizadoEm": "2026-11-04",
@@ -61,8 +60,7 @@
       "atualizadoEm": "2026-11-02",
       "fonte": "estimativa inicial",
       "sources": [
-        "pagina",
-        "navegador"
+        "pagina"
       ],
       "sourcesFonte": "SetupSniper 3.0 e diagnóstico real de 04/11/2026 (docs/diagnostico-2026-11.md)",
       "sourcesAtualizadoEm": "2026-11-04"
@@ -90,8 +88,7 @@
       "fonte": "estimativa inicial",
       "sources": [
         "feed-afiliado",
-        "pagina",
-        "navegador"
+        "pagina"
       ],
       "sourcesFonte": "SetupSniper 3.0 e diagnóstico real de 04/11/2026 (docs/diagnostico-2026-11.md)",
       "sourcesAtualizadoEm": "2026-11-04",
@@ -126,8 +123,7 @@
       "fonte": "estimativa inicial",
       "sources": [
         "api-oficial",
-        "pagina",
-        "navegador"
+        "pagina"
       ],
       "sourcesFonte": "SetupSniper 3.0 e diagnóstico real de 04/11/2026 (docs/diagnostico-2026-11.md)",
       "sourcesAtualizadoEm": "2026-11-04"
@@ -157,8 +153,7 @@
       "sources": [
         "api-oficial",
         "api-publica",
-        "pagina",
-        "navegador"
+        "pagina"
       ],
       "sourcesFonte": "SetupSniper 3.0 e diagnóstico real de 04/11/2026 (docs/diagnostico-2026-11.md)",
       "sourcesAtualizadoEm": "2026-11-04"
@@ -186,8 +181,7 @@
       "fonte": "estimativa inicial",
       "observacao": "Marketplace: verifique se é vendido e entregue pela Magalu.",
       "sources": [
-        "pagina",
-        "navegador"
+        "pagina"
       ],
       "sourcesFonte": "SetupSniper 3.0 e diagnóstico real de 04/11/2026 (docs/diagnostico-2026-11.md)",
       "sourcesAtualizadoEm": "2026-11-04"
@@ -216,8 +210,7 @@
       "observacao": "Importação: prazo longo e possível taxa. Prefira vendedores 'Choice' e com nota alta; desconfie de preços muito abaixo da média.",
       "sources": [
         "api-oficial",
-        "pagina",
-        "navegador"
+        "pagina"
       ],
       "sourcesFonte": "SetupSniper 3.0 e diagnóstico real de 04/11/2026 (docs/diagnostico-2026-11.md)",
       "sourcesAtualizadoEm": "2026-11-04"
@@ -247,8 +240,7 @@
       "sources": [
         "api-oficial",
         "api-publica",
-        "pagina",
-        "navegador"
+        "pagina"
       ],
       "sourcesFonte": "SetupSniper 3.0 e diagnóstico real de 04/11/2026 (docs/diagnostico-2026-11.md)",
       "sourcesAtualizadoEm": "2026-11-04"
