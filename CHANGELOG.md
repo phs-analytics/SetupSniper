@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.0.0 — 2026-11-04
+
+**SetupSniper 3.0: fontes oficiais, histórico, cupons oficiais, busca por loja, Telegram em tempo real e aba Ofertas**
+
+Esta versão junta tudo o que entrou da 2.12 à 2.17 e fecha com:
+- **Extensão 1.1.0:** o ícone mostra quantos cupons ativos a loja aberta tem, e a janela lista cada um (oficial ou divulgado, não verificado), com validade, regra e botão Copiar. Na página de produto, mostra "menor em 90 dias: R$ X" e o selo de provável preço inflado (estimativa). Ela nunca preenche o campo de cupom nem clica em nada, e não pede permissões novas. Novo endpoint `GET /api/extensao/loja`.
+- **Identificação honesta:** o servidor se apresenta às lojas como `SetupSniper/<versão>` em vez de imitar o navegador Chrome, e deixou de mandar cabeçalhos que imitavam o próprio site da loja. Lojas que respondiam podem passar a recusar: rode o diagnóstico de novo e use as fontes oficiais e a extensão.
+- **Documentação:** `docs/como-funciona.md` com as fontes por loja, o histórico, a busca por loja, a aba Ofertas, os endpoints novos e a lista do que ainda não foi conferido ao vivo; avisos sobre links de afiliado e dados de grupos do Telegram no README.
+- Testes de integração mais estáveis: o navegador e o servidor de teste são fechados antes de apagar as pastas temporárias.
+
 ## 2.17.0 — 2026-11-04
 
 **Aba Ofertas, só de tecnologia**

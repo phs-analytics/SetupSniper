@@ -3,13 +3,16 @@
 ## Visão geral
 
 ```
-navegador ──SSE──▶ server.js ──▶ src/stores.js (adaptadores) ──▶ lojas
+navegador ──SSE──▶ server.js ──▶ src/stores.js ──▶ fontes de cada loja (API oficial → feed de afiliado →
+                       │              │                 API pública → página → navegador) ──▶ lojas
                        │              └─ src/extract.js (extrator genérico + filtros)
-                       ├─ fixados: confere a cada N min ─▶ histórico ─▶ alertas ─▶ src/telegram.js
+                       ├─ fixados: confere a cada N min ─▶ histórico (data/history/) ─▶ alertas ─▶ src/telegram.js
+                       ├─ Telegram (canais, grupos, encaminhados) + cupons oficiais ─▶ aba Ofertas (src/offers.js)
                        └─ data/*.json (tudo local)
 ```
 
-- **Sem banco de dados:** tudo fica em arquivos JSON na pasta `data/`.
+- **Sem banco de dados:** tudo fica em arquivos JSON (e JSONL, no histórico) na pasta `data/`.
+- **Identificação honesta:** nas consultas diretas, o servidor se apresenta às lojas como `SetupSniper/<versão>`, e não como um navegador. Nada de captcha, proxy ou cookies de login. A exceção é o navegador automático opcional (Playwright, só no PC), que abre a página pública num Chromium de verdade quando você instala com `npm run navegador`.
 - **Sem dependências:** só a biblioteca padrão do Node.js. O Playwright é opcional.
 - **Tempo real:** a interface recebe atualizações por Server-Sent Events (`/api/stream`), e cada busca chega em streaming, loja por loja (`/api/search`).
 
@@ -179,8 +182,22 @@ Hoje os adaptadores leem poucos dados do vendedor (nome, loja oficial, origem do
 A cada `INTERVAL_MIN` minutos, o servidor:
 
 1. busca cada produto fixado nas lojas monitoradas. Para um link fixado, lê a página do próprio produto;
-2. guarda o menor preço de cada loja no histórico (`data/history.json`);
-3. verifica as regras de alerta (veja [telegram.md](telegram.md)).
+2. guarda o menor preço de cada loja no histórico (`data/history.json`, para os minigráficos por loja) e no histórico próprio (`data/history/AAAA-MM.jsonl`, veja [historico.md](historico.md));
+3. verifica as regras de alerta (veja [telegram.md](telegram.md)). Por padrão, só avisa quando o vendedor tem nota igual ou acima da mínima (70); dá para desligar na aba Lojas.
+
+Se a loja recusar o servidor, o último preço que o **seu navegador** enviou continua aparecendo por até 7 dias, com a idade ("visto por você há 3 h") e o botão para abrir na loja, mas não dispara alerta.
+
+## Fontes de cada loja
+
+Cada loja tem uma lista de fontes em `data/stores.json`, da mais oficial para a menos oficial. Fonte sem credencial é pulada; uma página que bloqueia fica 6 h sem nova tentativa. Detalhes, limites de chamadas e cadastros em [fontes-oficiais.md](fontes-oficiais.md) e [credenciais.md](credenciais.md).
+
+## Busca "Por loja"
+
+Ao lado de Comparativo e Lista, o modo **Por loja** mostra uma seção por loja com até 10 produtos relevantes, só de vendedores com nota 70 ou mais. Os outros ficam em "Mostrar ocultos (N)", com o motivo, e os sem dados do vendedor em grupo próprio. Se a 1ª página não tiver produtos bons suficientes, a busca pede até 3 páginas. Regras em `data/search-rules.json`.
+
+## Aba Ofertas
+
+Posts dos canais e grupos do Telegram, posts encaminhados, cupons oficiais e páginas com desconto enviadas pela extensão viram uma lista **só de tecnologia**, com o preço final estimado com cupom. Detalhes em [ofertas.md](ofertas.md).
 
 ## API local
 
@@ -194,7 +211,12 @@ A cada `INTERVAL_MIN` minutos, o servidor:
 | `POST /api/settings` · `POST /api/telegram/test` | configurações |
 | `GET /api/health` | saúde do servidor |
 | `POST /api/promo` | processa um post de promoção (link, página, cupom e totais) |
-| `POST /api/coupons` · `PATCH/DELETE /api/coupons/:id` | cadastro manual e "Funcionou" / "Não funcionou" |
+| `POST /api/coupons` · `PATCH/DELETE /api/coupons/:id` | cadastro manual e "Funcionou" / "Não funcionou" (cupom oficial não se apaga) |
+| `GET /api/coupons/feed` · `POST /api/coupons/feed/refresh` | cupons oficiais das redes de afiliados |
+| `GET /api/offers` · `PATCH /api/offers/:id` | aba Ofertas e o voto ✅/❌ |
+| `GET /api/extensao/loja?url=&titulo=&pix=` | cupons ativos e histórico da loja aberta, para a extensão |
+| `POST /api/diagnostico` | diagnóstico das lojas, das fontes oficiais e do Telegram |
+| `GET /api/search?...&modo=porloja` | busca do modo Por loja (pede mais páginas quando faltam produtos bons) |
 
 ## Comparativo: o mesmo produto em todas as lojas e vendedores
 
@@ -228,11 +250,11 @@ Cada loja mostra por que ficou sem ofertas:
 
 A KaBuM! é lida primeiro pelo catálogo público em JSON que a própria página de busca usa e, se ele recusar, pelo HTML.
 
-**Ainda bloqueado?** Rode o **diagnóstico** (aba Lojas → Testar as lojas agora, ou `/diagnostico` no bot) e veja `docs/fontes-oficiais.md`: lá estão as APIs oficiais (Mercado Livre, Shopee, AliExpress) e as outras saídas.
+**Ainda bloqueado?** Rode o **diagnóstico** (aba Lojas → Testar as lojas agora, ou `/diagnostico` no bot) e veja `docs/fontes-oficiais.md`: lá estão as APIs oficiais (Mercado Livre, Shopee, AliExpress, Awin, Lomadee, Amazon) e as outras saídas.
 
+## O que ainda não foi conferido
 
-
-O SetupSniper foi desenvolvido num ambiente cuja rede bloqueava os sites das lojas, do Telegram, do Banco Central, do gov.br e do Reclame Aqui. Por isso:
+Em 04/11/2026, um diagnóstico real foi feito num servidor em casa (`docs/diagnostico-2026-11.md`): KaBuM!, Amazon e AliExpress responderam; as outras cinco lojas recusaram o acesso automático. Fora isso, o SetupSniper foi desenvolvido num ambiente cuja rede bloqueava os sites das lojas, do Telegram, do Banco Central, do gov.br e do Reclame Aqui. Por isso:
 
 | Parte | Situação | Próximo passo |
 |---|---|---|
@@ -244,4 +266,10 @@ O SetupSniper foi desenvolvido num ambiente cuja rede bloqueava os sites das loj
 | Dados do vendedor | os adaptadores leem nome, loja oficial e origem do envio. Idade da loja, vendas e avaliações do vendedor ainda não são lidas | ler esses campos onde a página mostrar e preencher `sellerInfo` |
 | Impostos | a regra de US$ 50,01 a US$ 3.000 e o ICMS de 17 UFs estão marcados `"verificar": true` em `data/taxes.json` | conferir nas fontes citadas no arquivo e trocar para `false` |
 | TikTok Shop | só pesquisa, sem nenhum teste de acesso | os passos estão em `docs/tiktok-shop.md` |
+| Awin, Lomadee e Amazon Creators API (produtos e cupons) | testadas com respostas simuladas, no formato da documentação de 04/11/2026; nenhuma conta foi usada | cadastrar as credenciais ([credenciais.md](credenciais.md)) e rodar o diagnóstico |
+| Identificação honesta (`SetupSniper/<versão>`) | trocada na versão 3.0.0, depois do diagnóstico | rodar o diagnóstico de novo: lojas que respondiam podem passar a recusar; aí valem as fontes oficiais e a extensão |
+| Grupos e canais com o bot, privacy mode | testados com atualizações simuladas do Bot API | seguir o passo a passo de [telegram.md](telegram.md) e mandar `/grupo_add` num grupo seu |
+| Aba Ofertas | testada com 34 posts escritos no estilo dos canais | conferir com posts reais; formatos novos viram fixtures |
+| Extensão: cupons e histórico | testada no Chromium com um servidor falso | testar numa loja real e no Firefox (PC e Android) |
+| Keepa | testado só com uma resposta salva | só se você tiver a chave paga |
 
