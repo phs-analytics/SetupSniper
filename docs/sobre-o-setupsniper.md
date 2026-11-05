@@ -1,6 +1,6 @@
-# SetupSniper: o projeto e tudo o que mudou até a 3.2.0
+# SetupSniper: o projeto e tudo o que mudou até a 3.3.0
 
-> Situação em 05/11/2026: versão **3.2.0**, com **380 testes** passando e zero dependências.
+> Situação em 05/11/2026: versão **3.3.0**, com **382 testes** passando e zero dependências.
 
 ## O que é
 
@@ -121,6 +121,10 @@ O primeiro teste com a rede de verdade, feito num servidor em casa, mostrou que 
 - O **cálculo do total final** foi para a aba **Alertas**, com três correções: a cotação aceita "R$ 5,40" e recusa valor inválido com aviso, a data da PTAX é a do Banco Central e os Fixados são recalculados ao salvar.
 - O Compartilhar do app instalado abre uma janela com o preço lido.
 - A aba Lojas perdeu o favorito "Enviar para o SetupSniper" e a opção de links de afiliado. O "Ver na loja" abre sempre a página limpa.
+
+### 3.3.0: coleta automática do Mercado Livre para planilha
+- Novo `npm run coletar`: coleta sozinho as ofertas das buscas escolhidas e grava em `data/coletas/AAAA-MM-DD.csv` (um arquivo por dia). Configurado pelo `.env` (`COLETA_BUSCAS`, `COLETA_PAGINAS`, `COLETA_INTERVALO_MIN`, `COLETA_CEP`).
+- Cada oferta do Mercado Livre passou a trazer a tarifa de venda do anúncio, a % de avaliações positivas do vendedor e, com CEP, o frete pago. Tudo pela API oficial.
 
 ## O que ainda falta ou depende de você
 

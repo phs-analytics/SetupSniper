@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.3.0 — 2026-11-05
+
+**Coleta automática do Mercado Livre para planilha**
+- **Novo `npm run coletar`:** com as credenciais do Mercado Livre, o SetupSniper coleta sozinho, de tempos em tempos, as ofertas das buscas que você escolher e grava em `data/coletas/AAAA-MM-DD.csv` (um arquivo por dia, abre no Excel ou no Google Sheets). No `.env`: `COLETA_BUSCAS` (buscas separadas por `;`), `COLETA_PAGINAS`, `COLETA_INTERVALO_MIN` (`0` = roda uma vez e para) e, opcional, `COLETA_CEP` para o frete pago. As buscas rodam uma por vez, com pausa entre elas, e um erro numa busca não para a coleta.
+- **Cada oferta do Mercado Livre agora traz também:** a **tarifa de venda** do anúncio (tipo de anúncio, valor em R$ e %), a **% de avaliações positivas** do vendedor e, quando você informa um CEP, o **frete pago** mais barato até ele. Tudo pela API oficial, com no máximo cinco consultas ao mesmo tempo para respeitar o limite do Mercado Livre.
+- No Termux, rode `termux-wake-lock` antes da coleta para o Android não pausá-la.
+
 ## 3.2.0 — 2026-11-05
 
 **Menos abas, cálculo do total corrigido**

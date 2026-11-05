@@ -53,6 +53,49 @@ test('Mercado Livre: busca + catálogo trazem vários vendedores do mesmo produt
   assert.equal(calls.filter(u => u.endsWith('/oauth/token')).length, 1);
 });
 
+test('Mercado Livre: tarifa de venda, % positivas do vendedor e frete até o CEP', async (t) => {
+  process.env.ML_CLIENT_ID = 'id'; process.env.ML_CLIENT_SECRET = 'segredo';
+  t.after(() => { delete process.env.ML_CLIENT_ID; delete process.env.ML_CLIENT_SECRET; resetMlToken(); });
+  resetMlToken();
+  const calls = [];
+  const fetchImpl = async (url) => {
+    calls.push(url);
+    if (url.endsWith('/oauth/token')) return resp({ access_token: 'TOK', expires_in: 21600 });
+    if (url.includes('/sites/MLB/search')) return resp({ results: [
+      { id: 'MLB1', title: 'SSD 1TB', price: 400, listing_type_id: 'gold_special', category_id: 'MLB1672', seller: { id: 10 }, shipping: { free_shipping: true } },
+      { id: 'MLB2', title: 'SSD 1TB', price: 400, listing_type_id: 'gold_special', category_id: 'MLB1672', seller: { id: 10 }, shipping: { free_shipping: false } },
+    ] });
+    if (url.includes('/users?ids=')) return resp([{ code: 200, body: { id: 10, nickname: 'LOJA', seller_reputation: { level_id: '5_green', transactions: { ratings: { positive: 0.973 } } } } }]);
+    if (url.includes('/listing_prices?')) {
+      assert.match(url, /price=400&listing_type_id=gold_special&category_id=MLB1672/);
+      return resp({ listing_type_id: 'gold_special', sale_fee_amount: 64, sale_fee_details: { percentage_fee: 16, fixed_fee: 0 } });
+    }
+    if (url.includes('/items/MLB2/shipping_options?zip_code=01310100')) return resp({ options: [{ cost: 24.9 }, { cost: 18.5 }] });
+    throw new Error('URL inesperada ' + url);
+  };
+  const offers = await mlSearch('ssd 1tb', 1, { fetchImpl, cep: '01310100' });
+  assert.deepEqual(offers[0].fee, { listingType: 'gold_special', amount: 64, percent: 16, fixed: 0 });
+  assert.equal(offers[0].sellerInfo.nativeReputation.percentPositive, 97.3);
+  assert.equal(offers[0].shipping, undefined);   // frete grátis: nem consulta
+  assert.equal(offers[1].shipping.cost, 18.5);
+  assert.equal(calls.filter(u => u.includes('listing_prices')).length, 1);   // mesma tarifa, uma consulta
+  assert.equal(calls.filter(u => u.includes('shipping_options')).length, 1);
+  const n = normalizeOffer(offers[1], 'mercadolivre');
+  assert.equal(n.fee.amount, 64);
+  assert.equal(n.shipping.cost, 1850);
+});
+
+test('coleta automática: linhas CSV com ";" e vírgula decimal, aspas escapadas', async () => {
+  const { toCsvRows } = await import('../scripts/coletar-ml.js');
+  const csv = toCsvRows([{
+    title: 'SSD "Pro"; 1TB', card: 399.9, url: 'https://x/1', freeShipping: false, shipping: { cost: 18.5 },
+    seller: { id: 10, name: 'LOJA', official: false },
+    sellerInfo: { sales: 900, nativeReputation: { level: '5_green', powerSeller: null, percentPositive: 97.3 } },
+    fee: { listingType: 'gold_special', amount: 64, percent: 16 },
+  }], { at: '2026-11-05T12:00:00.000Z', q: 'ssd', page: 1 });
+  assert.equal(csv, '2026-11-05T12:00:00.000Z;ssd;1;"SSD ""Pro""; 1TB";399,9;false;18,5;10;LOJA;false;97,3;;5_green;900;gold_special;64;16;https://x/1');
+});
+
 test('Shopee Affiliate: assinatura SHA256 e loja Mall como oficial', async (t) => {
   process.env.SHOPEE_AFFILIATE_APP_ID = '123'; process.env.SHOPEE_AFFILIATE_SECRET = 's3';
   t.after(() => { delete process.env.SHOPEE_AFFILIATE_APP_ID; delete process.env.SHOPEE_AFFILIATE_SECRET; });

@@ -56,8 +56,32 @@ export function mlSellerInfo(u) {
   return {
     openedAt: u.registration_date ?? null,
     sales: rep.transactions?.completed ?? rep.transactions?.total ?? null,
-    nativeReputation: { level: rep.level_id ?? null, powerSeller: rep.power_seller_status ?? null },
+    nativeReputation: {
+      level: rep.level_id ?? null, powerSeller: rep.power_seller_status ?? null,
+      // % de avaliações positivas (0–100); o ML dá a fração 0–1
+      percentPositive: typeof rep.transactions?.ratings?.positive === 'number' ? Math.round(rep.transactions.ratings.positive * 1000) / 10 : null,
+    },
   };
+}
+
+// Tarifa de venda do ML para este anúncio (resposta de /sites/MLB/listing_prices).
+export function mlFee(f, listingType) {
+  if (!f) return null;
+  return {
+    listingType: listingType ?? f.listing_type_id ?? null,
+    amount: f.sale_fee_amount ?? null,
+    percent: f.sale_fee_details?.percentage_fee ?? null,
+    fixed: f.sale_fee_details?.fixed_fee ?? null,
+  };
+}
+
+// Roda fn com no máximo `limit` chamadas ao mesmo tempo (o ML limita requisições por minuto).
+async function mapLimit(items, limit, fn) {
+  const out = new Array(items.length);
+  let next = 0;
+  const worker = async () => { while (next < items.length) { const i = next++; out[i] = await fn(items[i]); } };
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return out;
 }
 
 function mlOffer(r, users, catalogTitle) {
@@ -73,7 +97,8 @@ function mlOffer(r, users, catalogTitle) {
 }
 
 // Busca + catálogo: para os produtos de catálogo mais relevantes, traz as ofertas de todos os vendedores.
-export async function mlSearch(q, page = 1, { fetchImpl = fetch, catalogs = 5 } = {}) {
+// Cada oferta traz a tarifa de venda (fee). Com `cep`, também o frete pago mais barato até esse CEP.
+export async function mlSearch(q, page = 1, { fetchImpl = fetch, catalogs = 5, cep = null } = {}) {
   const token = await mlAuth(fetchImpl);
   const H = { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } };
   const s = await getJson(fetchImpl, `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(q)}&offset=${(page - 1) * 50}&limit=50`, H);
@@ -98,7 +123,36 @@ export async function mlSearch(q, page = 1, { fetchImpl = fetch, catalogs = 5 } 
       for (const x of [].concat(j)) { const u = x.body ?? x; if (u?.id) users.set(String(u.id), u); }
     } catch { /* sem reputação: a nota usa só o que houver */ }
   }
-  return all.map(r => mlOffer(r, users, r.title));
+  // Tarifas: uma consulta por combinação preço + tipo de anúncio + categoria (muitas ofertas repetem).
+  // [não verificado ao vivo] Itens do catálogo podem não trazer listing_type_id/category_id: aí fica sem tarifa.
+  const feeKey = (r) => `${r.price}|${r.listing_type_id}|${r.category_id}`;
+  const feeItems = [...new Map(all.filter(r => r.price != null && r.listing_type_id && r.category_id).map(r => [feeKey(r), r])).values()];
+  const fees = new Map();
+  await mapLimit(feeItems, 5, async (r) => {
+    try {
+      const qs = new URLSearchParams({ price: r.price, listing_type_id: r.listing_type_id, category_id: r.category_id });
+      const j = await getJson(fetchImpl, `https://api.mercadolibre.com/sites/MLB/listing_prices?${qs}`, H);
+      fees.set(feeKey(r), mlFee(Array.isArray(j) ? j.find(x => x.listing_type_id === r.listing_type_id) : j, r.listing_type_id));
+    } catch { /* sem tarifa para esta oferta */ }
+  });
+  // Frete pago até o CEP (só quando pedido: é uma consulta por oferta).
+  const shipping = new Map();
+  if (cep) {
+    await mapLimit(all.filter(r => r.shipping?.free_shipping !== true), 5, async (r) => {
+      try {
+        const j = await getJson(fetchImpl, `https://api.mercadolibre.com/items/${r.id}/shipping_options?zip_code=${encodeURIComponent(cep)}`, H);
+        const costs = (j.options ?? []).map(o => o.cost).filter(c => typeof c === 'number');
+        if (costs.length) shipping.set(r.id, Math.min(...costs));
+      } catch { /* sem frete calculado */ }
+    });
+  }
+  return all.map(r => {
+    const o = mlOffer(r, users, r.title);
+    const fee = fees.get(feeKey(r));
+    if (fee) o.fee = fee;
+    if (shipping.has(r.id)) o.shipping = { cost: shipping.get(r.id) };
+    return o;
+  });
 }
 
 // ---------------- Shopee Affiliate ----------------
