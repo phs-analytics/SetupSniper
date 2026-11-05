@@ -3,7 +3,7 @@
 // Entradas (uma função por tipo; todas devolvem uma LISTA de ofertas no formato único):
 //   fromPost(text, meta, deps)   post de canal, grupo ou encaminhado (async: o link encurtado pode ser resolvido)
 //   fromApiItem(offer, deps)     item com desconto das APIs (oferta normalizada de src/offer.js + precoDe em centavos)
-//   fromCapture(offer, deps)     oferta enviada pela extensão ou pelo favorito (página aberta pelo próprio usuário)
+//   fromCapture(offer, deps)     oferta enviada pela extensão (página aberta pelo próprio usuário)
 //
 // Formato único (dinheiro em centavos inteiros):
 //   { id, tipo: 'produto'|'cupom'|'desconto', origem: 'telegram'|'api'|'extensao',

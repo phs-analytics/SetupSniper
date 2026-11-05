@@ -1,4 +1,4 @@
-// Link de afiliado: fica guardado à parte, nunca no lugar da URL canônica limpa (decisão já tomada).
+// Link de afiliado: fica guardado à parte e nunca vai para o "Ver na loja", que abre sempre a URL canônica limpa.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { normalizeOffer } from '../src/offer.js';

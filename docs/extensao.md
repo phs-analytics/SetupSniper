@@ -1,6 +1,6 @@
 # Extensão do navegador: preços enviados sozinhos, cupons e histórico da loja aberta (PC e celular)
 
-A extensão faz o mesmo que o favorito "Enviar para o SetupSniper", mas **sem você tocar em nada**. Sempre que você abrir a página de um produto ou de uma busca numa das 8 lojas, ela manda os preços para o **seu** servidor. Ela também mostra os **cupons ativos** e o **histórico de preço** da loja aberta (veja "Cupons e histórico da loja aberta").
+A extensão envia ao seu servidor os preços das páginas que você abre, **sem você tocar em nada**. Sempre que você abrir a página de um produto ou de uma busca numa das 8 lojas, ela manda os preços para o **seu** servidor. Ela também mostra os **cupons ativos** e o **histórico de preço** da loja aberta (veja "Cupons e histórico da loja aberta").
 
 O que acontece com cada página enviada:
 
@@ -88,5 +88,4 @@ A partir daí, toda página de produto ou de busca que você abrir no Firefox do
 
 ## Sem extensão no celular
 
-- **Favorito "Enviar para o SetupSniper"** (aba Lojas): funciona no Chrome do Android, com um toque por página.
 - **App instalado + Compartilhar:** no app da loja, toque em **Compartilhar → SetupSniper** (veja `docs/app-celular.md`).

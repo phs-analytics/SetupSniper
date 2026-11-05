@@ -1,4 +1,4 @@
-// Rótulos e cartões da aba Cupons: funções puras que devolvem texto ou HTML (sem DOM, sem rede).
+// Rótulos e cartões de cupom: funções puras que devolvem texto ou HTML (sem DOM, sem rede).
 // Usado pela interface (public/app.js), pelo servidor (endpoint da extensão) e por src/offers.js.
 //
 // Os cupons vêm dos canais e grupos do Telegram (e dos cadastrados à mão):
@@ -63,7 +63,7 @@ export function couponLabel(c, { now = Date.now() } = {}) {
 }
 
 // Cartão HTML de um cupom (oficial ou divulgado). opts: { now, lojaNome, cor }
-// Botões (os mesmos data-* da aba Cupons): data-ccopy (copiar código), data-cok (✅), data-cno (❌) e, só nos
+// Botões: data-ccopy (copiar código), data-cok (✅), data-cno (❌) e, só nos
 // divulgados, data-cdel (apagar). "Ver na loja" usa a URL limpa (pageUrl ou productUrl), nunca o link de afiliado.
 export function couponCard(c, { now = Date.now(), lojaNome = null, cor = null } = {}) {
   const oficial = isOficial(c);

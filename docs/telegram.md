@@ -46,11 +46,11 @@ Encaminhe ao bot um post de grupo ou canal de promoções, com link e cupom. O b
    - **📌 Fixar:** passa a acompanhar o produto;
    - **✅ Funcionou** e **❌ Não funcionou:** marcam o cupom como confirmado ou expirado.
 
-Também dá para colar o post na aba **🎟️ Cupons** do site. O comando `/cupons` lista os cupons ativos.
+O comando `/cupons` lista os cupons ativos.
 
 ### Canais públicos (opcional)
 
-Abra a aba **🛒 Ofertas** e toque em **Ativar os canais sugeridos**. A lista dos 26 canais fica em `data/telegram-channels.json` e pode ser editada na aba 🎟️ Cupons (até 40, um por linha).
+Abra a aba **🛒 Ofertas** e toque em **Ativar os canais sugeridos**. A lista dos 26 canais fica em `data/telegram-channels.json` e pode ser editada em **🛒 Ofertas → Editar a lista de canais** (até 40, um por linha).
 
 - **Como lê:** pela prévia pública `https://t.me/s/<canal>`, sem login e sem conta do Telegram. Um canal de cada vez, com pausa entre eles.
 - **Com que frequência:** cada canal tem o seu intervalo (`intervaloMin` em `data/telegram-channels.json`): 5 min para os canais de promoções, que postam mais, e 30 min para os de cupons e de lojas. Canal adicionado por você começa em 30 min. Um canal que fica 24 h sem post novo passa a ser lido a cada 30 min e volta ao ritmo normal quando posta de novo. As regras ficam no bloco `agendamento` do mesmo arquivo, com fonte e data. A atividade de cada canal foi estimada pelo tipo, não medida [não verificado].

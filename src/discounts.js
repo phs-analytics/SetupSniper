@@ -11,7 +11,7 @@
 // { kind: 'cupom'|'promocao', startsAt, divulgadoEm, lidoEm,
 //   verificado, pageUrl, affiliateUrl, title, description, terms, exclusivo, regraDoTexto }
 // e a condição 'selected_items' (vale só em parte da loja: não entra sozinho no total).
-// Promoção sem código (kind 'promocao') aparece na aba Cupons, mas nunca entra no total.
+// Promoção sem código (kind 'promocao') nunca entra no total.
 import { formatBRL } from './offer.js';
 
 // Rótulos para a interface e para o bot

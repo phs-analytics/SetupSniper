@@ -20,7 +20,7 @@ O tipo é decidido por `src/post-oferta.js`, testado com posts reais de canais (
 |---|---|---|
 | Canais, grupos e posts encaminhados ao bot | `fromPost(text, meta, deps)` | todo post com link de loja do escopo ou link encurtado |
 | APIs das lojas | `fromApiItem(offer)` | só itens com desconto (preço "de" maior que o preço) |
-| Extensão e favorito | `fromCapture(offer)` | as páginas que **você** abriu no seu navegador |
+| Extensão do navegador | `fromCapture(offer)` | as páginas que **você** abriu no seu navegador |
 
 Tudo vira o mesmo formato, com dinheiro em centavos (veja o topo de `src/offers.js`).
 

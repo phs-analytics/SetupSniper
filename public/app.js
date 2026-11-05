@@ -2,7 +2,6 @@ import { groupOffers, sellerLabel } from '/lib/compare.js';
 import { sparklineSvg, historyBadges } from '/historico.js';
 import { porLoja } from '/lib/por-loja.js';
 import { renderPorLoja } from '/por-loja.js';
-import { couponCard } from '/cupons.js';
 import { renderOfertas, novasPendentes, avisoNovas, filtrosDe } from '/ofertas.js';
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
@@ -122,7 +121,7 @@ function sparkline(hist) {
 // ================= ABAS =================
 function showTab() {
   const tab = (location.hash.slice(1) || 'busca');
-  const valid = tab === 'monitorados' ? 'fixados' : tab === 'promos' ? 'ofertas' : ['busca', 'fixados', 'ofertas', 'cupons', 'lojas', 'alertas'].includes(tab) ? tab : 'busca';
+  const valid = tab === 'monitorados' ? 'fixados' : tab === 'promos' || tab === 'cupons' ? 'ofertas' : ['busca', 'fixados', 'ofertas', 'lojas', 'alertas'].includes(tab) ? tab : 'busca';
   $$('.tab').forEach(t => t.hidden = t.id !== 'tab-' + valid);
   $$('.tabs a').forEach(a => a.classList.toggle('on', a.dataset.tab === valid));
   if (valid === 'ofertas') loadOfertas({ aplicar: true });
@@ -303,17 +302,14 @@ function renderSearch() {
   const sentinel = $('#more-sentinel');
   if (sentinel && moreObserver) { moreObserver.disconnect(); moreObserver.observe(sentinel); }
 }
-// "Ver na loja" abre a URL canônica limpa. Só com a opção "links de afiliado" ligada (aba Lojas) usa o link
-// rastreado que a API oficial devolveu, e o botão avisa isso.
-const linkOf = (o) => (S.settings?.affiliateLinks && /^https?:\/\//i.test(o?.affiliateUrl ?? '') ? { url: o.affiliateUrl, affiliate: true } : o?.url);
+const linkOf = (o) => o?.url;   // "Ver na loja" abre sempre a página limpa do produto
 // Botão que leva direto à página do produto na loja (ou, sem link direto, à busca da loja)
 function storeLink(url, s, fallbackUrl) {
-  const affiliate = !!url?.affiliate; if (affiliate) url = url.url;
   const safe = (u) => /^https?:\/\//i.test(u ?? '') ? u : null;
   const u = safe(url), f = safe(fallbackUrl);
   const hex = (s.color ?? '#ff5a1f').replace('#', ''), [r, g, b] = [0, 2, 4].map(i => parseInt(hex.slice(i, i + 2), 16));
   const ink = (0.299 * r + 0.587 * g + 0.114 * b) > 150 ? '#111' : '#fff';   // texto legível sobre a cor da loja
-  if (u) return `<a class="btn small shop" href="${esc(u)}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer" style="--sc:${s.color};--ink:${ink}" aria-label="Ver produto na ${esc(s.name)}">${s.agregador ? 'Ver ofertas' : 'Ver na loja'} ↗</a>${affiliate ? '<small class="tag warn" title="Este botão usa o link de afiliado da rede (opção ligada na aba Lojas). O preço é o mesmo; a rede registra a visita.">link de afiliado</small>' : ''}`;
+  if (u) return `<a class="btn small shop" href="${esc(u)}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer" style="--sc:${s.color};--ink:${ink}" aria-label="Ver produto na ${esc(s.name)}">${s.agregador ? 'Ver ofertas' : 'Ver na loja'} ↗</a>`;
   if (f) return `<a class="btn small" href="${esc(f)}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer" title="Sem link direto: abre a busca da loja">Buscar na loja ↗</a>`;
   return '';
 }
@@ -327,7 +323,7 @@ function moreFooter(list) {
 }
 // Explicação do erro, no toque/mouse
 function errHelp(s) {
-  if (s.blocked) return `A loja recusou o acesso automático (${s.error}). O SetupSniper não tenta burlar a proteção. Toque para abrir a busca na loja. Dicas: rode o servidor em casa (internet residencial), use a extensão ou o favorito "Enviar para o SetupSniper", ou fixe o link do produto.`;
+  if (s.blocked) return `A loja recusou o acesso automático (${s.error}). O SetupSniper não tenta burlar a proteção. Toque para abrir a busca na loja. Dicas: rode o servidor em casa (internet residencial), use a extensão do navegador, ou fixe o link do produto.`;
   return s.error ?? '';
 }
 const shortErr = (e = '') => /bloqueio/.test(e) ? 'bloqueado' : /abort|timeout/i.test(e) ? 'sem resposta' : e.length > 22 ? e.slice(0, 20) + '…' : e;
@@ -426,7 +422,7 @@ function renderWatch() {
         <div class="pcell">${priceCell}</div>
         <div class="score">${ring(o.sc, false, s.estimado !== false, o.offer?.trust)}<div class="tier">${o.offer?.trust?.tier ?? s.reliability?.tier ?? ''}</div></div>
         <div class="spk">${sparkline(o.history)}</div>
-        <div class="actions">${storeLink(linkOf({ url: o.url, affiliateUrl: o.offer?.affiliateUrl }), s, o.searchUrl)}</div>
+        <div class="actions">${storeLink(linkOf(o), s, o.searchUrl)}</div>
         ${o.status === 'ok' && o.others?.length ? `<details class="others"><summary>Outros ${o.others.length} vendedor(es) na ${esc(s.name)}</summary>${o.others.map(x => `
           <div class="orow"><span class="owho">${esc(sellerLabel({ storeId: o.storeId, seller: x.seller }))}</span>
             <span class="osc" title="${esc((x.trust?.reasons ?? []).join('; '))}">${x.trust?.score != null ? `<b style="color:${scoreColor(x.trust.score)}">${x.trust.score}</b> ${esc(x.trust.tier ?? '')}` : 'sem nota'}</span>
@@ -549,16 +545,11 @@ function renderPinned() {
 $('#pl-nota').onchange = (e) => savePorLoja({ notaMinima: Number(e.target.value) });
 $('#pl-n').onchange = (e) => savePorLoja({ produtosPorLoja: Number(e.target.value) });
 $('#pl-alerta').onchange = (e) => savePorLoja({ alertasSoVendedorBom: e.target.checked });
-$('#aff-on').onchange = async (e) => {
-  try { await api('/api/settings', { method: 'POST', body: { affiliateLinks: e.target.checked } }); toast(e.target.checked ? 'Ver na loja vai usar o link de afiliado, com aviso' : 'Ver na loja volta a abrir a página limpa'); }
-  catch (err) { toast(err.message); e.target.checked = !e.target.checked; }
-};
 function render() {
   if (!S) return;
-  $('#aff-on').checked = !!S.settings?.affiliateLinks;
   if (!document.activeElement?.closest('#pl-panel')) { const pl = S.settings?.porLoja ?? {}; $('#pl-nota').value = pl.notaMinima ?? 70; $('#pl-n').value = pl.produtosPorLoja ?? 10; $('#pl-alerta').checked = pl.alertasSoVendedorBom !== false; }
   ofertasMudaram();
-  renderStatus(); renderWatch(); renderPinned(); renderCoupons(); if (search.q && !search.running) renderSearch(); renderStores(); renderAlerts(); renderCanais(); renderMl();
+  renderStatus(); renderWatch(); renderPinned(); renderCalc(); if (search.q && !search.running) renderSearch(); renderStores(); renderAlerts(); renderCanais(); renderMl();
   if (first) { renderStoreFilter(); renderSearch(); first = false;
     const sugg = [...new Set([...S.items.map(i => i.query), 'RTX 4060', 'SSD 2TB NVMe', 'Ryzen 5 7600'])].slice(0, 6);
     $('#suggest').innerHTML = sugg.map(q => `<button type="button" class="fchip on" data-q="${esc(q)}">${esc(q)}</button>`).join('');
@@ -582,78 +573,66 @@ const brlInput = (v) => {   // "1.234,56" → centavos (mesma regra do servidor)
   if (t.includes(',')) t = t.replace(/\./g, '').replace(',', '.'); else if (/^\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, '');
   const n = parseFloat(t); return Number.isFinite(n) && n > 0 ? Math.round(n * 100) : null;
 };
-let cfgFilled = false;
-function renderCoupons() {
-  const list = S.coupons ?? [];
-  const ativos = list.filter(c => c.status !== 'expired' && (!c.expiresAt || Date.parse(c.expiresAt) > Date.now()));
-  $('#count-cup').textContent = ativos.length;
-  $('#coupon-list').innerHTML = list.length ? list.map(c => couponCard(c, { now: Date.now(), lojaNome: store(c.store).name, cor: store(c.store).color })).join('')
-    : '<p class="muted">Nenhum cupom ainda. Os cupons chegam dos canais e grupos do Telegram; você também pode colar um post acima ou encaminhar um para o bot.</p>';
-  if (!$('#c-store').options.length) $('#c-store').innerHTML = S.stores.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
-  if (!cfgFilled || !document.activeElement?.closest('#tab-cupons')) {
-    const st = S.settings;
-    $('#cfg-cep').value = st.cep ? st.cep.replace(/^(\d{5})(\d{3})$/, '$1-$2') : '';
-    $('#cfg-fx').value = st.fx?.usdBrl ? String(st.fx.usdBrl).replace('.', ',') : '';
-    $('#cfg-ptax').checked = st.fx?.mode === 'ptax';
-    $('#cfg-fx').disabled = st.fx?.mode === 'ptax';
-    $('#cfg-fx-info').textContent = st.fx?.usdBrl ? `Cotação usada: R$ ${String(st.fx.usdBrl).replace('.', ',')}${st.fx.mode === 'ptax' ? ` (PTAX ${st.fx.updatedAt ?? ''})` : ' (manual)'}` : 'Sem cotação: os importados mostram "informe a cotação".';
-    const bought = new Set(st.profile?.boughtAt ?? []), subs = new Set(st.profile?.subscriptions ?? []);
-    $('#cfg-bought').innerHTML = S.stores.map(s => `<button type="button" class="fchip ${bought.has(s.id) ? 'on' : ''}" data-bought="${s.id}" aria-pressed="${bought.has(s.id)}"><i style="background:${s.color}"></i>${esc(s.name)}</button>`).join('');
-    $$('#cfg-subs [data-sub]').forEach(b => { b.classList.toggle('on', subs.has(b.dataset.sub)); b.setAttribute('aria-pressed', subs.has(b.dataset.sub)); });
-    $('#cfg-channels').value = (st.channels ?? []).join('\n');
-    cfgFilled = true;
-  }
+// ================= CÁLCULO DO TOTAL FINAL (aba Alertas) =================
+// CEP (ICMS dos importados), cotação do dólar (manual ou PTAX), lojas onde já comprou e assinaturas.
+const reaisFmt = (v) => Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+const dataFmt = (d) => { const t = Date.parse(d ?? ''); return Number.isFinite(t) ? new Date(t).toLocaleDateString('pt-BR', { timeZone: /^\d{4}-\d{2}-\d{2}$/.test(d) ? 'UTC' : undefined }) : null; };
+function renderCalc() {
+  if (!document.activeElement?.closest('.ch-panel')) $('#cfg-channels').value = (S.settings.channels ?? []).join('\n');
+  if (document.activeElement?.closest('#calc-panel')) return;   // não apaga o que a pessoa está digitando
+  const st = S.settings;
+  $('#cfg-cep').value = st.cep ? st.cep.replace(/^(\d{5})(\d{3})$/, '$1-$2') : '';
+  const ptax = st.fx?.mode === 'ptax', v = st.fx?.usdBrl;
+  $('#cfg-fx').value = v ? reaisFmt(v) : '';
+  $('#cfg-ptax').checked = ptax;
+  $('#cfg-fx').disabled = ptax;
+  $('#cfg-fx-info').textContent = ptax
+    ? (st.fx?.updatedAt ? `Cotação usada: R$ ${reaisFmt(v)} (PTAX de ${dataFmt(st.fx.updatedAt)})` : `Buscando a PTAX do Banco Central…${v ? ` Até lá, vale R$ ${reaisFmt(v)}.` : ''}`)
+    : v ? `Cotação usada: R$ ${reaisFmt(v)} (informada por você)` : 'Sem cotação: os importados mostram "informe a cotação".';
+  const bought = new Set(st.profile?.boughtAt ?? []), subs = new Set(st.profile?.subscriptions ?? []);
+  $('#cfg-bought').innerHTML = S.stores.map(s => `<button type="button" class="fchip ${bought.has(s.id) ? 'on' : ''}" data-bought="${s.id}" aria-pressed="${bought.has(s.id)}"><i style="background:${s.color}"></i>${esc(s.name)}</button>`).join('');
+  $$('#cfg-subs [data-sub]').forEach(b => { b.classList.toggle('on', subs.has(b.dataset.sub)); b.setAttribute('aria-pressed', subs.has(b.dataset.sub)); });
 }
 $('#cfg-bought').addEventListener('click', (e) => { const b = e.target.closest('[data-bought]'); if (b) { b.classList.toggle('on'); b.setAttribute('aria-pressed', b.classList.contains('on')); } });
 $('#cfg-subs').addEventListener('click', (e) => { const b = e.target.closest('[data-sub]'); if (b) { b.classList.toggle('on'); b.setAttribute('aria-pressed', b.classList.contains('on')); } });
 $('#cfg-ptax').onchange = (e) => { $('#cfg-fx').disabled = e.target.checked; };
 $('#cfg-save').onclick = async () => {
   try {
-    await api('/api/settings', { method: 'POST', body: {
+    const r = await api('/api/settings', { method: 'POST', body: {
       cep: $('#cfg-cep').value,
       fx: { mode: $('#cfg-ptax').checked ? 'ptax' : 'manual', usdBrl: $('#cfg-fx').value },
       profile: { boughtAt: $$('#cfg-bought .fchip.on').map(b => b.dataset.bought), subscriptions: $$('#cfg-subs .fchip.on').map(b => b.dataset.sub) },
-      channels: $('#cfg-channels').value.split(/\s+/).map(x => x.trim()).filter(Boolean),
     } });
-    cfgFilled = false; toast('Ajustes salvos. Os totais são recalculados na próxima busca ou verificação.');
+    document.activeElement?.blur?.();
+    if (r?.fx) { S.settings = { ...S.settings, cep: r.cep, fx: r.fx, profile: r.profile }; renderCalc(); }
+    toast(r?.recalculados ? `Salvo. ${r.recalculados} preço(s) dos Fixados recalculado(s); na busca, vale a partir da próxima.` : 'Salvo. Vale a partir da próxima busca ou verificação.');
   } catch (e) { toast(e.message); }
 };
-$('#promo-go').onclick = async () => {
-  const text = $('#promo-text').value.trim(); if (!text) return toast('Cole o post de promoção');
-  const out = $('#promo-out'); out.hidden = false; out.innerHTML = '<span class="muted">Abrindo o link e lendo o preço…</span>';
+$('#ch-save').onclick = async () => {
   try {
-    const r = await api('/api/promo', { method: 'POST', body: { text } });
+    const channels = $('#cfg-channels').value.split(/\s+/).map(x => x.trim()).filter(Boolean);
+    await api('/api/settings', { method: 'POST', body: { channels } });
+    document.activeElement?.blur?.();
+    toast(`${channels.length} canal(is) salvo(s): lendo agora…`); setTimeout(() => loadOfertas({ aplicar: true }), 6000);
+  } catch (e) { toast(e.message); }
+};
+
+// ================= COMPARTILHAR (app instalado) =================
+// O link compartilhado pelo app da loja abre uma janela com o preço lido, os totais e o botão Fixar.
+async function processarCompartilhado(texto) {
+  const dlg = $('#share-dlg'), out = $('#share-out');
+  out.innerHTML = '<span class="muted">Abrindo o link e lendo o preço…</span>';
+  if (!dlg.open) dlg.showModal?.();
+  try {
+    const r = await api('/api/promo', { method: 'POST', body: { text: texto } });
     // r.text é HTML gerado pelo servidor só com texto escapado (o mesmo enviado ao Telegram)
     out.innerHTML = `<div class="promo-msg">${r.text.replace(/\n/g, '<br>')}</div>${r.offer?.totals ? totalsHtml(r.offer) : ''}
-      <div class="pc-actions">${r.offer?.title ? '<button type="button" class="btn small" id="promo-fix">📌 Fixar</button>' : ''}${r.offer?.url ? storeLink(r.offer.url, store(r.offer.store)) : ''}</div>`;
-    const fx = $('#promo-fix');
-    if (fx) fx.onclick = () => openWatchDialog({ name: r.offer.title.slice(0, 80), query: r.offer.title.split(/\s+/).slice(0, 6).join(' '), refPrice: refOf(r.offer), pin: r.offer.url ? { storeId: r.offer.store, url: r.offer.url } : null });
+      <div class="pc-actions">${r.offer?.title ? '<button type="button" class="btn small" id="share-fix">📌 Fixar</button>' : ''}${r.offer?.url ? storeLink(r.offer.url, store(r.offer.store)) : ''}</div>`;
+    const fx = $('#share-fix');
+    if (fx) fx.onclick = () => { dlg.close(); openWatchDialog({ name: r.offer.title.slice(0, 80), query: r.offer.title.split(/\s+/).slice(0, 6).join(' '), refPrice: refOf(r.offer), pin: r.offer.url ? { storeId: r.offer.store, url: r.offer.url } : null }); };
   } catch (e) { out.innerHTML = `<span class="tag err">${esc(e.message)}</span>`; }
-};
-$('#coupon-list').addEventListener('click', async (e) => {
-  const cp = e.target.closest('[data-ccopy]');
-  if (cp) { try { await navigator.clipboard.writeText(cp.dataset.ccopy); toast(`Cupom ${cp.dataset.ccopy} copiado: cole no carrinho da loja`); } catch { prompt('Copie o cupom:', cp.dataset.ccopy); } return; }
-  const ok = e.target.closest('[data-cok]'), no = e.target.closest('[data-cno]'), del = e.target.closest('[data-cdel]');
-  try {
-    if (ok) { await api(`/api/coupons/${ok.dataset.cok}`, { method: 'PATCH', body: { status: 'confirmed_by_user' } }); toast('Anotado: o cupom funcionou'); }
-    if (no) { await api(`/api/coupons/${no.dataset.cno}`, { method: 'PATCH', body: { status: 'expired' } }); toast('Cupom marcado como expirado'); }
-    if (del) { await api(`/api/coupons/${del.dataset.cdel}`, { method: 'DELETE' }); toast('Cupom apagado'); }
-  } catch (err) { toast(err.message); }
-});
-$('#coupon-form').onsubmit = async (e) => {
-  e.preventDefault();
-  const type = $('#c-type').value;
-  try {
-    await api('/api/coupons', { method: 'POST', body: {
-      store: $('#c-store').value, codes: $('#c-codes').value, type,
-      value: type === 'percent' ? Number(String($('#c-value').value).replace(',', '.')) : brlInput($('#c-value').value),
-      minOrder: brlInput($('#c-min').value), maxDiscount: brlInput($('#c-max').value),
-      appliesTo: $('#c-applies').value ? [$('#c-applies').value] : null,
-      expiresAt: $('#c-expires').value || null, productUrl: $('#c-url').value || null,
-    } });
-    e.target.reset(); toast('Cupom salvo');
-  } catch (err) { toast(err.message); }
-};
+}
+$('#share-close').onclick = () => $('#share-dlg').close();
 
 // ================= CANAIS DO TELEGRAM (dentro da aba Ofertas) =================
 // Os posts dos canais e grupos viram ofertas (produto, cupom ou desconto); aqui ficam só a situação e os botões.
@@ -665,7 +644,7 @@ function renderCanais() {
   const ok = st.filter(([, v]) => v.ok).length;
   const last = Math.max(0, ...st.map(([, v]) => Date.parse(v.at) || 0));
   $('#ch-summary').innerHTML = !ativos.length
-    ? `<p>Nenhum canal ativado.</p><button type="button" class="btn primary" id="ch-enable">Ativar os ${ch.suggested.length} canais sugeridos</button> <small class="muted-i">dá para editar a lista na aba 🎟️ Cupons</small>`
+    ? `<p>Nenhum canal ativado.</p><button type="button" class="btn primary" id="ch-enable">Ativar os ${ch.suggested.length} canais sugeridos</button> <small class="muted-i">dá para editar a lista em "Editar a lista de canais"</small>`
     : `<span><b>${ok}</b> de <b>${ativos.length}</b> canais lidos${last ? ' · última leitura ' + ago(last) : ''}${ch.reading ? ' · <b>lendo agora…</b>' : ''}</span>
        <button type="button" class="btn small" id="ch-read" ${ch.reading ? 'disabled' : ''}>Ler agora</button>`;
   $('#ch-list').innerHTML = ativos.map(c => {
@@ -857,26 +836,6 @@ $('#diag-copy').onclick = async () => {
   catch { const ta = Object.assign(document.createElement('textarea'), { value: txt, rows: 12 }); ta.className = 'diag-txt'; $('#diag-out').append(ta); ta.select(); toast('Selecione e copie o texto'); }
 };
 
-// ================= ENVIAR DA LOJA (favorito) =================
-// O favorito roda na aba da loja: abre /receber.html deste servidor e entrega o HTML da tela por postMessage
-// (só para a origem deste servidor). Funciona mesmo com o site em http, porque não faz requisição da página da loja.
-function bookmarkletCode() {
-  const O = location.origin;
-  return `javascript:(()=>{const O=${JSON.stringify(O)};const w=window.open(O+'/receber.html','setupsniper');if(!w){alert('Permita pop-ups para enviar ao SetupSniper');return}` +
-    `const d={type:'setupsniper-capture',url:location.href,title:document.title,html:document.documentElement.outerHTML};let n=0;` +
-    `const t=setInterval(()=>{try{w.postMessage(d,O)}catch(e){}if(++n>60)clearInterval(t)},500);` +
-    `addEventListener('message',e=>{if(e.origin===O&&e.data&&e.data.type==='setupsniper-ok')clearInterval(t)})})()`;
-}
-{
-  const a = $('#bm-link');
-  a.href = bookmarkletCode();
-  a.onclick = (e) => { e.preventDefault(); toast('Arraste este botão para a barra de favoritos (no celular, use "Copiar o código")'); };
-  $('#bm-copy').onclick = async () => {
-    try { await navigator.clipboard.writeText(bookmarkletCode()); toast('Código copiado: cole como endereço de um favorito'); }
-    catch { prompt('Copie o código do favorito:', bookmarkletCode()); }
-  };
-}
-
 // ================= CONTA DO MERCADO LIVRE =================
 function renderMl() {
   const m = S?.ml; if (!m) return;
@@ -928,11 +887,9 @@ function receberCompartilhado() {
   const m = location.hash.match(/^#compartilhar=(.*)$/);
   if (!m) return;
   const texto = decodeURIComponent(m[1]);
-  history.replaceState(null, '', '/#cupons');
+  history.replaceState(null, '', '/#busca');
   showTab();
-  $('#promo-text').value = texto;
-  $('#promo-go').click();
-  toast('Link recebido: calculando o total');
+  processarCompartilhado(texto);
 }
 receberCompartilhado();
 addEventListener('hashchange', receberCompartilhado);

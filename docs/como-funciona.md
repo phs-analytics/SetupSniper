@@ -106,7 +106,7 @@ TOTAL               R$ 547,20          R$ 629,10    10x R$ 62,91 sem juros
 ## Cupons (`src/discounts.js`, `src/promo-parser.js`)
 
 - **Fontes, em ordem:**
-  - posts **encaminhados ao bot** ou colados na aba Cupons;
+  - posts **encaminhados ao bot**;
   - **canais públicos** do Telegram (opt-in, lidos pela prévia `t.me/s/<canal>` a cada 30 min; as promoções aparecem na aba 🛒 Ofertas, veja `docs/telegram.md`);
   - **cadastro manual**.
 - **Como cada fonte foi escolhida:** a pesquisa de fontes está em [cupons.md](cupons.md).
@@ -242,7 +242,7 @@ Cada loja mostra por que ficou sem ofertas:
 
 | Na tela | O que quer dizer | O que fazer |
 |---|---|---|
-| **bloqueado** | a loja recusou o acesso automático (HTTP 403/429/503) ou mostrou uma página de verificação (captcha) | O SetupSniper **não tenta burlar** a proteção. Rode o servidor em casa (internet residencial é bloqueada bem menos que servidor na nuvem), use a extensão ou o favorito "Enviar para o SetupSniper", ou fixe o link do produto. |
+| **bloqueado** | a loja recusou o acesso automático (HTTP 403/429/503) ou mostrou uma página de verificação (captcha) | O SetupSniper **não tenta burlar** a proteção. Rode o servidor em casa (internet residencial é bloqueada bem menos que servidor na nuvem), use a extensão do navegador, ou fixe o link do produto. |
 | **nada parecido** | a loja mostrou produtos, mas nenhum parece ser o buscado | refaça a busca com menos termos (marca + modelo) |
 | **sem resultados** | a loja não mostrou nenhum produto | toque no chip para abrir a busca na loja e conferir |
 
@@ -258,7 +258,7 @@ Em 04/11/2026, um diagnóstico real foi feito num servidor em casa (`docs/diagno
 |---|---|---|
 | Busca e página de produto das 8 lojas | testadas com páginas salvas (`tests/fixtures`), montadas a partir da estrutura conhecida de cada loja, não com acesso ao vivo | rodar `npm start`, buscar "rtx 4060" e conferir loja a loja. Onde aparecer "Preço não encontrado nesta página", salvar o HTML como fixture nova e ajustar o adaptador |
 | Links encurtados (meli.la, amzn.to, shopee.ee, tidd.ly...) | testados com respostas simuladas | encaminhar ao bot 2 ou 3 posts reais de cada loja |
-| Canais públicos do Telegram (`t.me/s`) | testados com uma página salva | ativar um canal na aba Cupons e conferir o resultado |
+| Canais públicos do Telegram (`t.me/s`) | testados com uma página salva | ativar um canal na aba Ofertas e conferir o resultado |
 | Cotação PTAX (Banco Central) | não acessada | usar o botão PTAX. Se falhar, a cotação manual continua valendo |
 | Reclame Aqui | nem a atualização diária nem a pesquisa de cupons (REA) rodaram | conferir as notas em `data/stores.json`. Elas são estimativas iniciais |
 | Dados do vendedor | os adaptadores leem nome, loja oficial e origem do envio. Idade da loja, vendas e avaliações do vendedor ainda não são lidas | ler esses campos onde a página mostrar e preencher `sellerInfo` |

@@ -22,7 +22,7 @@ Roda num **servidor próprio**, do jeito que você preferir: o seu PC, um mini P
 | | |
 |---|---|
 | 🔎 **Busca livre** | Digite qualquer produto e os resultados de cada loja aparecem conforme ela responde. O scroll infinito traz mais páginas de cada loja, com as ofertas mais baratas dos vendedores mais confiáveis primeiro. |
-| ⇪ **Extensão do navegador** | Loja bloqueou o servidor? Com a extensão (PC e Firefox do Android), toda página de produto ou busca que você abre manda os preços sozinha para o comparativo e os Fixados. Sem extensão, use o favorito "Enviar para o SetupSniper". No ícone, ela mostra quantos cupons ativos a loja aberta tem e, na página do produto, o menor preço dos últimos 90 dias. Ela nunca preenche cupom nem clica em nada. |
+| ⇪ **Extensão do navegador** | Loja bloqueou o servidor? Com a extensão (PC e Firefox do Android), toda página de produto ou busca que você abre manda os preços sozinha para o comparativo e os Fixados. No celular sem extensão, use o **Compartilhar → SetupSniper** do app instalado. No ícone, ela mostra quantos cupons ativos a loja aberta tem e, na página do produto, o menor preço dos últimos 90 dias. Ela nunca preenche cupom nem clica em nada. |
 | 📱 **App no celular** | Instale o site como app (PWA): ícone na tela inicial, tela cheia e **Compartilhar → SetupSniper** direto do app da loja. |
 | ⚖️ **Comparativo** | O mesmo produto em todas as lojas e em **cada vendedor** dos marketplaces, lado a lado, do mais barato e confiável para o menos. |
 | 🛒 **8 lojas** | KaBuM!, Pichau, Terabyte, Amazon, Mercado Livre, Magalu, Shopee e AliExpress. A **busca profunda** lê mais páginas de cada loja. O conjunto de lojas é configurável. |
@@ -91,7 +91,7 @@ Lojas mudam de layout o tempo todo, então correções de adaptadores são muito
 - **Uso pessoal.** O SetupSniper foi feito para uso pessoal e não comercial. Respeite os termos de uso de cada loja, mantenha intervalos conservadores entre as consultas e use a busca profunda só quando precisar.
 - **Nomes e marcas** das lojas pertencem aos seus donos e aparecem só para identificar a origem de cada oferta, sem logotipos.
 - **Sinais de risco não são acusação.** "Alto risco" quer dizer que os dados públicos lidos pedem cautela, não que o vendedor cometeu fraude.
-- **Links de afiliado:** por padrão, "Ver na loja" abre a página limpa. Se você ligar a opção de link de afiliado, o botão mostra o aviso "link de afiliado" (transparência na publicidade, CDC art. 37).
+- **Links de afiliado:** o "Ver na loja" abre sempre a página limpa do produto, nunca um link de afiliado.
 - **Grupos do Telegram:** o bot só lê grupos e canais que você aprovar e nunca guarda nome ou id de quem postou, só o nome do grupo (LGPD).
 - **Cupons divulgados não são verificados.** Eles aparecem como "divulgado por X em data, não verificado" até você marcar "Funcionou". O SetupSniper nunca testa, gera ou aplica cupons na loja.
 - **Projeto pessoal, sem vínculo com as lojas citadas.** Confira sempre preço, vendedor e frete na loja antes de comprar.

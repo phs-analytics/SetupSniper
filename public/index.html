@@ -53,7 +53,6 @@
       <a href="#busca" data-tab="busca">Busca</a>
       <a href="#fixados" data-tab="fixados">📌 Fixados <span class="count" id="count-mon">0</span></a>
       <a href="#ofertas" data-tab="ofertas">🛒 Ofertas <span class="count" id="count-of">0</span></a>
-      <a href="#cupons" data-tab="cupons">🎟️ Cupons <span class="count" id="count-cup">0</span></a>
       <a href="#lojas" data-tab="lojas">Lojas</a>
       <a href="#alertas" data-tab="alertas">Alertas <span class="dot" id="tg-dot" hidden></span></a>
     </nav>
@@ -114,64 +113,14 @@
           <p class="muted">Os posts lidos da prévia pública dos canais (<code>t.me/s</code>, sem login), dos grupos com o bot e os que você encaminha viram as ofertas abaixo. Preços e cupons são os <b>divulgados no post</b>, não verificados.</p></div>
         <div id="ch-summary" class="ch-summary"></div>
         <details class="ch-details"><summary>Situação de cada canal</summary><div id="ch-list" class="ch-list"></div></details>
-      </div>
-      <div id="ofertas-root"></div>
-    </section>
-
-    <section id="tab-cupons" class="tab" hidden>
-      <div class="alert-grid">
-        <div class="panel">
-          <div class="panel-head"><h2>Colar post de promoção</h2></div>
-          <p class="muted">Cole um post de grupo ou canal (com link e cupom). O SetupSniper abre o link, lê o preço na loja, salva o cupom e calcula os totais. No Telegram, basta encaminhar o post para o seu bot.</p>
-          <label class="field" for="promo-text">Post<textarea id="promo-text" rows="6" placeholder="🔥 Monitor Gamer 27&quot;&#10;Preço: R$ 547&#10;🎟️ Cupom: VOLTESEMPRE OU SEMPREPROMO&#10;https://meli.la/..."></textarea></label>
-          <button type="button" class="btn primary" id="promo-go">Calcular com o cupom</button>
-          <div id="promo-out" class="promo-out" hidden></div>
-        </div>
-        <div class="panel">
-          <div class="panel-head"><h2>Cálculo do total</h2></div>
-          <div class="form-grid">
-            <label class="field" for="cfg-cep">Seu CEP <small class="muted-i">para o ICMS de importados (fica só no seu servidor)</small>
-              <input id="cfg-cep" inputmode="numeric" autocomplete="postal-code" maxlength="9" placeholder="00000-000"></label>
-            <div class="field">Cotação do dólar <small class="muted-i">para o imposto de Amazon, AliExpress e Shopee (importados)</small>
-              <span class="with-unit">R$ <input id="cfg-fx" inputmode="decimal" placeholder="5,40"> por US$</span>
-              <label class="check"><input type="checkbox" id="cfg-ptax"> usar a PTAX do Banco Central (atualiza 1x por dia)</label>
-              <small class="muted-i" id="cfg-fx-info"></small></div>
-            <div class="field">Já comprei em <small class="muted-i">esconde cupons de "primeira compra"</small><div class="chips" id="cfg-bought"></div></div>
-            <div class="field">Assinaturas<div class="chips" id="cfg-subs">
-              <button type="button" class="fchip" data-sub="meli+">Meli+</button><button type="button" class="fchip" data-sub="prime">Amazon Prime</button></div></div>
-            <label class="field" for="cfg-channels">Canais públicos do Telegram <small class="muted-i">opcional: lidos a cada 30 min pela prévia pública t.me/s, um por linha (até 40). Os posts viram ofertas na aba 🛒 Ofertas.</small>
-              <textarea id="cfg-channels" rows="4" placeholder="canal_de_promocoes"></textarea>
-              <button type="button" class="btn small" id="cfg-suggested">Usar os canais sugeridos</button></label>
-            <button type="button" class="btn primary" id="cfg-save">Salvar</button>
-          </div>
-        </div>
-      </div>
-      <div class="panel">
-        <div class="panel-head"><h2>Cupons salvos</h2><p class="muted">Cupom de post ou canal vale por 24 h e aparece como "não verificado" até você marcar se funcionou.</p></div>
-        <div id="coupon-list" class="alert-log"></div>
-        <details class="addc"><summary>Cadastrar cupom manualmente</summary>
-          <form id="coupon-form" class="form-grid">
-            <div class="two">
-              <label class="field" for="c-store">Loja<select id="c-store"></select></label>
-              <label class="field" for="c-codes">Código(s) <small class="muted-i">alternativas separadas por "ou"</small><input id="c-codes" required placeholder="VOLTESEMPRE ou SEMPREPROMO"></label>
-            </div>
-            <div class="two">
-              <label class="field" for="c-type">Tipo<select id="c-type"><option value="percent">% de desconto</option><option value="fixed">valor fixo (R$)</option><option value="shipping">frete grátis</option></select></label>
-              <label class="field" for="c-value">Valor <small class="muted-i">% ou R$</small><input id="c-value" inputmode="decimal" placeholder="10"></label>
-            </div>
-            <div class="two">
-              <label class="field" for="c-min">Pedido mínimo (R$)<input id="c-min" inputmode="decimal"></label>
-              <label class="field" for="c-max">Desconto máximo (R$)<input id="c-max" inputmode="decimal"></label>
-            </div>
-            <div class="two">
-              <label class="field" for="c-applies">Vale no<select id="c-applies"><option value="">Pix e cartão</option><option value="pix">só no Pix</option><option value="card">só no cartão</option></select></label>
-              <label class="field" for="c-expires">Válido até<input id="c-expires" type="datetime-local"></label>
-            </div>
-            <label class="field" for="c-url">Link do produto <small class="muted-i">opcional: vazio vale para a loja toda</small><input id="c-url" type="url"></label>
-            <button type="submit" class="btn primary">Salvar cupom</button>
-          </form>
+        <details class="ch-details"><summary>Editar a lista de canais</summary>
+          <label class="field" for="cfg-channels">Canais públicos do Telegram <small class="muted-i">lidos pela prévia pública t.me/s, um por linha (até 40)</small>
+            <textarea id="cfg-channels" rows="5" placeholder="canal_de_promocoes"></textarea></label>
+          <p><button type="button" class="btn small" id="cfg-suggested">Usar os canais sugeridos</button>
+            <button type="button" class="btn small primary" id="ch-save">Salvar canais</button></p>
         </details>
       </div>
+      <div id="ofertas-root"></div>
     </section>
 
     <section id="tab-lojas" class="tab" hidden>
@@ -180,19 +129,6 @@
         <p class="muted">Reclame Aqui 40% · Avaliação da loja 25% · Volume de vendas 20% · Reviews 15%</p>
       </div>
       <p class="disclaimer">As notas são calculadas pelo SetupSniper a partir de indicadores públicos e, enquanto marcadas como <b>estimativa</b>, usam valores aproximados. Não são certificações nem dados oficiais do Reclame Aqui ou das lojas. Confira sempre na fonte antes de comprar.</p>
-      <div class="panel" id="send-panel">
-        <div class="panel-head"><h2>Enviar da loja para o SetupSniper</h2>
-          <p class="muted">Para as lojas que bloqueiam o servidor: abra a página do produto ou da busca <b>no seu navegador</b>, como sempre, e toque no favorito. Os preços que estão na sua tela vão para o seu servidor, entram no comparativo e atualizam os Fixados daquele link. Nada é acessado automaticamente.</p></div>
-        <p><a class="btn primary" id="bm-link" href="#" title="Arraste para a barra de favoritos">⇪ Enviar para o SetupSniper</a>
-          <button type="button" class="btn" id="bm-copy">Copiar o código do favorito</button></p>
-        <details><summary>Como instalar</summary>
-          <ul class="howto">
-            <li><b>No PC:</b> arraste o botão amarelo para a barra de favoritos. Na loja, clique nele.</li>
-            <li><b>No celular (Chrome):</b> toque em "Copiar o código do favorito". Salve qualquer página nos favoritos, edite o favorito, troque o nome para <code>SetupSniper</code> e cole o código no lugar do endereço. Na loja, digite <code>SetupSniper</code> na barra de endereço e toque no favorito que aparecer.</li>
-            <li>Se o navegador bloquear a janela, permita pop-ups para a loja.</li>
-            <li><b>Pelo app da loja:</b> toque em Compartilhar e mande o link para o seu bot do Telegram. Ele fixa o produto mesmo quando não consegue ler o preço na hora.</li>
-          </ul></details>
-      </div>
       <div class="panel" id="ml-panel">
         <div class="panel-head"><h2>Conta do Mercado Livre</h2>
           <p class="muted">Login oficial (OAuth) na <b>sua</b> conta, só para leitura: a API passa a trazer todos os vendedores de cada produto. O SetupSniper não compra, não vê seus pedidos e não guarda a sua senha.</p></div>
@@ -204,11 +140,6 @@
         <p><label class="check">Nota mínima <input type="number" id="pl-nota" min="0" max="100" step="5" style="width:5em"></label>
           <label class="check">Produtos por loja <input type="number" id="pl-n" min="1" max="30" style="width:4em"></label></p>
         <label class="check"><input type="checkbox" id="pl-alerta"> Alertas dos Fixados só para vendedor acima da nota mínima</label>
-      </div>
-      <div class="panel" id="aff-panel">
-        <div class="panel-head"><h2>Links de afiliado</h2>
-          <p class="muted">As APIs oficiais (Awin, Lomadee, Amazon e outras) devolvem links rastreados. Por padrão, o botão <b>Ver na loja</b> abre a página limpa do produto. Se você ligar a opção abaixo, ele usa o link da rede de afiliados e mostra o aviso <b>link de afiliado</b> ao lado.</p></div>
-        <label class="check"><input type="checkbox" id="aff-on"> Usar links de afiliado no botão Ver na loja</label>
       </div>
       <div class="panel diag">
         <div class="panel-head"><h2>Diagnóstico das lojas</h2>
@@ -260,6 +191,22 @@
             <button type="button" class="btn primary" id="al-save">Salvar regras</button>
           </div>
         </div>
+        <div class="panel" id="calc-panel">
+          <div class="panel-head"><h2>Cálculo do total final</h2></div>
+          <p class="muted">Usados no <b>Total Pix</b> e no <b>Total Crédito</b> de cada oferta. O frete entra quando a loja informa na página ou na API; o CEP serve para o ICMS dos importados. Tudo fica só no seu servidor.</p>
+          <div class="form-grid">
+            <label class="field" for="cfg-cep">Seu CEP <small class="muted-i">para o ICMS dos importados (Amazon, AliExpress e Shopee)</small>
+              <input id="cfg-cep" inputmode="numeric" autocomplete="postal-code" maxlength="9" placeholder="00000-000"></label>
+            <div class="field">Cotação do dólar <small class="muted-i">para o imposto de importação</small>
+              <span class="with-unit">R$ <input id="cfg-fx" inputmode="decimal" placeholder="5,40"> por US$</span>
+              <label class="check"><input type="checkbox" id="cfg-ptax"> usar a PTAX do Banco Central (atualiza 1x por dia)</label>
+              <small class="muted-i" id="cfg-fx-info"></small></div>
+            <div class="field">Já comprei em <small class="muted-i">esconde cupons de "primeira compra"</small><div class="chips" id="cfg-bought"></div></div>
+            <div class="field">Assinaturas<div class="chips" id="cfg-subs">
+              <button type="button" class="fchip" data-sub="meli+">Meli+</button><button type="button" class="fchip" data-sub="prime">Amazon Prime</button></div></div>
+            <button type="button" class="btn primary" id="cfg-save">Salvar</button>
+          </div>
+        </div>
       </div>
       <div class="panel">
         <div class="panel-head"><h2>Últimos alertas</h2></div>
@@ -268,6 +215,11 @@
     </section>
   </main>
 
+  <dialog id="share-dlg" aria-labelledby="share-title">
+    <h2 id="share-title">Link recebido</h2>
+    <div id="share-out" class="promo-out"></div>
+    <p><button type="button" class="btn" id="share-close">Fechar</button></p>
+  </dialog>
   <dialog id="watch-dlg">
     <form id="watch-form">
       <h3 id="watch-title">Fixar produto</h3>

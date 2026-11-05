@@ -70,7 +70,6 @@ const alertState = await readJson('alerts.json', { last: {}, log: [] });
 
 // Preço de referência para ordenar, comparar metas e alertar: Pix (padrão) ou crédito.
 settings.priceReference ??= 'pix';
-settings.affiliateLinks ??= false;                               // "Ver na loja" com link de afiliado: só se o dono ligar (aviso visível)
 settings.porLoja ??= {};                                        // { soVendedorBom, notaMinima, produtosPorLoja, ordem, alertasSoVendedorBom }
 
 // ---------- Fases 2 e 3: cupons, perfil, CEP, cotação e regras configuráveis ----------
@@ -416,6 +415,20 @@ async function refreshAll() {
   } finally { refreshing = false; broadcast(); }
 }
 
+// Total Pix e Total Crédito dos Fixados com o CEP, a cotação e o perfil atuais (sem consultar as lojas de novo)
+function recalcularTotais() {
+  let n = 0;
+  for (const porLoja of Object.values(offers)) {
+    for (const o of Object.values(porLoja ?? {})) {
+      if (!o?.offer?.price) continue;
+      o.offer = withTotals(o.offer);
+      if (o.status === 'ok' || o.status === 'stale') o.price = refOf(o.offer) ?? o.price;
+      n++;
+    }
+  }
+  return n;
+}
+
 // ---------- alertas ----------
 function avg30(it) {
   const h = (history[`${it.id}:__best`] ?? []).filter(x => Date.now() - x.t < 30 * 864e5);
@@ -507,7 +520,7 @@ function titleFromUrl(u) {
   } catch { return null; }
 }
 
-// ---------- preços enviados pelo navegador do usuário (favorito ou extensão) ----------
+// ---------- preços enviados pelo navegador do usuário (extensão) ----------
 // Ficam 24 h em memória e entram na busca e nos Fixados quando a loja não responde ao servidor.
 const CAPTURE_TTL = 24 * 3600e3;
 const STALE_MAX = 7 * 24 * 3600e3;   // Fixados: até quanto tempo o último preço visto por você aparece (sem alerta)
@@ -607,7 +620,7 @@ async function processPromo(text, opts = {}) {
     + (coupon.minOrder ? ` acima de ${brl(coupon.minOrder)}` : '') + (coupon.maxDiscount ? ` (até ${brl(coupon.maxDiscount)})` : '') + (coupon.inferred ? ' · inferida pelo preço anunciado' : '') : '';
   const html = [
     `🛒 <b>${escHtml(o.title ?? p.product ?? 'Produto')}</b> · ${escHtml(storeName(r.store))}`,
-    erroPagina ? `⚠️ Não consegui ler o preço na página da loja agora (${escHtml(erroPagina)}).\nToque em 📌 Fixar: eu tento de novo nas próximas verificações. Ou abra a página no navegador e use o favorito "Enviar para o SetupSniper".` : `Na página: Pix ${brl(pr.pix)} · Cartão ${brl(pr.card)}`,
+    erroPagina ? `⚠️ Não consegui ler o preço na página da loja agora (${escHtml(erroPagina)}).\nToque em 📌 Fixar: eu tento de novo nas próximas verificações. Ou abra a página no navegador com a extensão do SetupSniper instalada.` : `Na página: Pix ${brl(pr.pix)} · Cartão ${brl(pr.card)}`,
     p.announcedPrice ? `Anunciado no post: ${brl(p.announcedPrice)}` : '',
     coupon ? `🎟️ Cupom: <code>${coupon.codes.map(escHtml).join('</code> ou <code>')}</code> — ${escHtml(regraTxt)}\n<i>divulgado por ${escHtml(coupon.sourceName)} em ${new Date(coupon.seenAt).toLocaleString('pt-BR')}, não verificado</i>` : 'Nenhum cupom no post.',
     '',
@@ -1030,7 +1043,6 @@ const server = http.createServer(async (req, res) => {
         if ('minScore' in a) settings.alerts.minScore = Math.min(100, Math.max(0, Number(a.minScore) || 0));
       }
       if ('priceReference' in b) settings.priceReference = b.priceReference === 'card' ? 'card' : 'pix';
-      if ('affiliateLinks' in b) settings.affiliateLinks = !!b.affiliateLinks;
       if (b.porLoja && typeof b.porLoja === 'object') {
         const pl = b.porLoja, cur = settings.porLoja;
         if ('soVendedorBom' in pl) cur.soVendedorBom = !!pl.soVendedorBom;
@@ -1049,9 +1061,17 @@ const server = http.createServer(async (req, res) => {
       }
       if (b.fx) {
         const mode = b.fx.mode === 'ptax' ? 'ptax' : 'manual';
-        const v = Number(String(b.fx.usdBrl ?? '').replace(',', '.'));
-        settings.fx = { ...settings.fx, mode, ...(mode === 'manual' ? { usdBrl: v > 0 && v < 100 ? v : null, updatedAt: new Date().toISOString() } : {}) };
-        if (mode === 'ptax') refreshPtax();
+        if (mode === 'manual') {
+          // aceita "5,40", "5.40" e "R$ 5,40"; vazio apaga a cotação; o resto é recusado (antes virava vazio sem aviso)
+          const txt = String(b.fx.usdBrl ?? '').replace(/R\$|\s/gi, '');
+          const v = txt === '' ? null : Number(txt.replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.'));
+          if (v !== null && !(v > 0 && v < 100)) return json(res, 400, { error: 'Cotação inválida: use algo como 5,40 (reais por dólar).' });
+          settings.fx = { ...settings.fx, mode, usdBrl: v, updatedAt: v === null ? null : new Date().toISOString() };
+        } else {
+          // PTAX: a data passa a ser a da cotação do Banco Central (preenchida por refreshPtax), não a do salvamento
+          if (settings.fx?.mode !== 'ptax') settings.fx = { ...settings.fx, mode, updatedAt: null };
+          refreshPtax();
+        }
       }
       if (b.profile) {
         settings.profile = {
@@ -1067,8 +1087,10 @@ const server = http.createServer(async (req, res) => {
         setTimeout(readChannels, 1000);
       }
       if (b.channelIntervalMin != null) settings.channelIntervalMin = Math.max(15, Math.min(1440, Number(b.channelIntervalMin) || 30));
+      // CEP, cotação ou perfil mudaram: refaz na hora o total das ofertas principais dos Fixados
+      const recalculados = ('cep' in b || b.fx || b.profile) ? recalcularTotais() : 0;
       await writeJson('settings.json', settings); broadcast();
-      return json(res, 200, publicSettings());
+      return json(res, 200, { ...publicSettings(), recalculados });
     }
     // ---- cupons (Fase 2) ----
     if (pathname === '/api/promo' && req.method === 'POST') {

@@ -1,5 +1,5 @@
 // "Enviar para o SetupSniper": a pessoa abre a página da loja no PRÓPRIO navegador (como sempre faz)
-// e toca no favorito. O favorito manda o HTML que já está na tela para o servidor dela, que lê os
+// e a extensão manda o HTML que já está na tela para o servidor dela, que lê os
 // preços com os mesmos leitores da busca. Não há acesso automático à loja: quem abriu a página foi a pessoa.
 import { storeFromUrl } from './promo-parser.js';
 import { ADAPTERS, isChallenge } from './stores.js';

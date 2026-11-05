@@ -23,8 +23,8 @@ Baseada no diagnóstico real feito no celular em 04/11/2026 (`docs/diagnostico-2
 | Mercado Livre | API oficial → API pública → página → navegador | bloqueada (403 na API pública, página sem itens) | só as credenciais `ML_CLIENT_ID` e `ML_CLIENT_SECRET` |
 | Shopee | API de afiliados → API pública → página → navegador | bloqueada (403 na API pública, página sem itens) | só as credenciais `SHOPEE_AFFILIATE_APP_ID` e `SHOPEE_AFFILIATE_SECRET` |
 | AliExpress | API de afiliados → página → navegador | funciona (página, 7 itens) | opcional: `ALIEXPRESS_APP_KEY` e `ALIEXPRESS_APP_SECRET` traz mais itens |
-| Pichau | página → navegador | bloqueada (HTTP 403) | nenhuma fonte oficial encontrada \[não verificado\]; use a extensão ou o favorito |
-| Magalu | página → navegador | bloqueada (HTTP 403) | nenhuma API de busca encontrada \[não verificado\]; use a extensão ou o favorito |
+| Pichau | página → navegador | bloqueada (HTTP 403) | nenhuma fonte oficial encontrada \[não verificado\]; use a extensão |
+| Magalu | página → navegador | bloqueada (HTTP 403) | nenhuma API de busca encontrada \[não verificado\]; use a extensão |
 
 Mercado Livre, Shopee e AliExpress **já têm o código pronto**: só faltam as credenciais no `.env` (passo a passo abaixo).
 
@@ -69,19 +69,6 @@ Toque em **Copiar relatório** e envie para quem estiver ajudando. O relatório 
 ## Automático: extensão do navegador
 
 A forma mais automática para as lojas sem API é a **extensão** (`docs/extensao.md`). Ela envia sozinha os preços de toda página de produto ou de busca que você abrir, no PC e no Firefox do Android. Os itens abaixo são as alternativas sem extensão.
-
-## Enviar da loja pelo seu navegador (funciona em todas as lojas)
-
-Esta é a saída para as lojas sem fonte oficial (Pichau e Magalu) e para as outras enquanto você não tiver as credenciais. Você abre a página **no seu navegador**, como sempre: logado ou não, resolvendo a verificação da loja se ela aparecer. Depois toca no favorito **Enviar para o SetupSniper**.
-
-1. **Instale o favorito** na aba **Lojas**, em "Enviar da loja para o SetupSniper":
-   - **no PC:** arraste o botão para a barra de favoritos;
-   - **no celular:** toque em "Copiar o código do favorito", crie um favorito chamado `SetupSniper` e cole o código no lugar do endereço.
-2. **Abra a página** de um produto ou de uma busca na loja e toque no favorito. No celular, digite `SetupSniper` na barra de endereço e toque no favorito.
-3. **Uma janela do SetupSniper abre** com as ofertas lidas da sua tela, a nota de confiança e o botão 📌 Fixar.
-4. **Se o produto já estiver fixado** com aquele link, o preço dele é atualizado na hora e entra no histórico e nos alertas.
-
-O favorito só entrega à janela do **seu** servidor o HTML que já está na sua tela. Nenhum acesso automático é feito à loja, e nada do que você digitou na loja é enviado.
 
 ## Compartilhar o link pelo app da loja
 
@@ -195,17 +182,17 @@ O SetupSniper pede o token (OAuth 2.0, client credentials) em `api.amazon.com`, 
 
 ## Links de afiliado
 
-As redes de afiliados e a Amazon devolvem **links rastreados**. O SetupSniper guarda o link rastreado separado (`affiliateUrl`), mas o **"Ver na loja" continua abrindo a URL limpa** da loja. Usar link de afiliado só vai acontecer se você ligar uma opção para isso, e com aviso visível.
+As redes de afiliados e a Amazon devolvem **links rastreados**. O SetupSniper guarda o link rastreado separado (`affiliateUrl`), mas o **"Ver na loja" continua abrindo a URL limpa** da loja. O link de afiliado nunca é usado no botão.
 
 ## Pichau e Magalu: sem fonte oficial
 
 - **Pichau:** nenhuma API pública nem programa de afiliados com API de produtos foi encontrado \[não verificado\].
 - **Magalu:** o programa **Parceiro Magalu** tem uma API de links de parceiro que lê um produto pelo endereço, mas não foi encontrada uma API de **busca** documentada \[não verificado\]. Fica para uma etapa futura.
-- **Para as duas, o que funciona:** a **extensão** do navegador, o **favorito** "Enviar para o SetupSniper" e o **app instalado** com "Compartilhar". O preço que você viu aparece com a idade ("visto por você há 3 h").
+- **Para as duas, o que funciona:** a **extensão** do navegador e o **app instalado** com "Compartilhar". O preço que você viu aparece com a idade ("visto por você há 3 h").
 
 ## Outras dicas quando a loja bloqueia
 
 1. **Rode o servidor em casa.** Internet residencial (Wi-Fi ou 4G) é bloqueada bem menos que servidores na nuvem ou VPNs.
-2. **Use a extensão ou o favorito.** Quando a loja recusa, o que você abrir no seu navegador continua chegando ao SetupSniper. O servidor não abre navegador nenhum para ler lojas.
+2. **Use a extensão.** Quando a loja recusa, o que você abrir no seu navegador continua chegando ao SetupSniper. O servidor não abre navegador nenhum para ler lojas.
 3. **Fixe o link do produto.** A página de um produto costuma ser menos protegida que a busca, e os Fixados conferem o preço direto nela.
 4. **Encaminhe posts de promoção para o bot** e ative os canais na aba 🛒 Ofertas: o preço vem do post, e o link é conferido quando possível.

@@ -55,7 +55,7 @@ Faça na ordem: cada passo já melhora o resultado, e os cadastros de afiliado p
 5. **Lomadee** (Terabyte) e **Awin** (KaBuM!): peça a entrada no programa da loja e espere a aprovação.
 6. **Amazon Creators API**: só se você já tiver vendas como associado. Sem ela, a Amazon continua pela página.
 
-Se um cadastro for recusado, a loja continua pela página, pela [extensão](extensao.md) ou pelo favorito "Enviar para o SetupSniper".
+Se um cadastro for recusado, a loja continua pela página, pela [extensão](extensao.md) ou pelo Compartilhar do app instalado.
 
 ## 4. Reinicie e confira
 

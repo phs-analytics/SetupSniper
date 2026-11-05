@@ -1,5 +1,16 @@
 # Changelog
 
+## 3.2.0 — 2026-11-05
+
+**Menos abas, cálculo do total corrigido**
+- **Abas:** Busca, Fixados, Ofertas, Lojas e Alertas. A aba 🎟️ Cupons saiu: os cupons dos canais e grupos do Telegram continuam entrando no total final e na aba Ofertas, e a lista de canais passou para **Ofertas → Editar a lista de canais**.
+- **Cálculo do total final** foi para a aba **Alertas**, com três correções:
+  - a cotação do dólar aceita "R$ 5,40" (antes era apagada sem aviso) e valor inválido é recusado com mensagem;
+  - a cotação aparece como "R$ 5,40", e no modo PTAX a data mostrada é a do Banco Central, não a do salvamento;
+  - ao salvar CEP, cotação ou perfil, o total dos Fixados é recalculado na hora.
+- **Compartilhar → SetupSniper** (app instalado) abre uma janela com o preço lido, os totais e o botão Fixar.
+- **Aba Lojas:** saíram "Enviar da loja para o SetupSniper" (o favorito e a página dele) e a opção "Links de afiliado". O "Ver na loja" abre sempre a página limpa do produto, e a extensão continua enviando os preços das páginas que você abre.
+
 ## 3.1.0 — 2026-11-04
 
 **Ofertas numa aba só, com nome e preço certos**

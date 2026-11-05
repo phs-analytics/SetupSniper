@@ -1,4 +1,4 @@
-// "Enviar para o SetupSniper": páginas abertas pelo próprio usuário e enviadas pelo favorito.
+// Páginas abertas pelo próprio usuário e enviadas pela extensão (/api/capture).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, mkdtempSync, rmSync } from 'node:fs';
