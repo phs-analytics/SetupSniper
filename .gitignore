@@ -33,5 +33,3 @@ data/history/
 data/coupons-feed.json
 # ofertas montadas a partir dos posts, cupons e capturas (7 dias)
 data/offers.json
-# planilhas da coleta automática do Mercado Livre
-data/coletas/

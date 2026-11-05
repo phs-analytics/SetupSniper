@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "SetupSniper: enviar preços",
-  "version": "3.3.0",
+  "version": "3.2.0",
   "description": "Envia ao SEU SetupSniper os preços das lojas que você abre e mostra os cupons e o histórico da loja aberta.",
   "permissions": ["storage"],
   "optional_host_permissions": ["http://*/*", "https://*/*"],

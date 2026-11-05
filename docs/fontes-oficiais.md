@@ -89,17 +89,6 @@ No app da loja, toque em **Compartilhar** e mande o link para o seu bot do Teleg
 
 Só com o app, o SetupSniper usa um token do aplicativo (`client_credentials`).
 
-Cada oferta do Mercado Livre também traz a **tarifa de venda** do anúncio (`fee`: tipo de anúncio, valor em R$ e %) e a **% de avaliações positivas** do vendedor.
-
-### Coleta automática para planilha
-
-Com as credenciais acima, o SetupSniper pode coletar sozinho, de tempos em tempos, nome, preço, frete, loja, avaliação da loja e tarifa de venda. Os dados vão para `data/coletas/AAAA-MM-DD.csv` (um arquivo por dia, abre no Excel ou no Google Sheets).
-
-1. No `.env`, preencha `COLETA_BUSCAS` (ex.: `rtx 4060;ssd 1tb`), `COLETA_PAGINAS`, `COLETA_INTERVALO_MIN` (0 = uma vez só) e, se quiser o frete pago, `COLETA_CEP`.
-2. Rode `npm run coletar`. No celular (Termux), rode antes `termux-wake-lock` para o Android não pausar a coleta.
-
-As buscas rodam uma por vez, com 5 segundos de pausa entre elas. Um erro numa busca não para a coleta: a próxima rodada tenta de novo. É tudo pela API oficial, sem imitar visitante no site.
-
 ### Conectar a sua conta (login oficial)
 
 Algumas consultas da API do Mercado Livre só respondem para um usuário conectado. Para isso:
