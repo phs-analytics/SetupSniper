@@ -66,6 +66,7 @@ Quer só conhecer a interface? Rode `npm run demo` (preços simulados).
 | [Extensão do navegador](docs/extensao.md) | Envio automático dos preços das páginas que você abre (PC e Android) |
 | [App no celular](docs/app-celular.md) | Link ou app? Como instalar, HTTPS e Compartilhar |
 | [Lojas bloqueadas e APIs oficiais](docs/fontes-oficiais.md) | Diagnóstico, fontes por loja e as APIs do Mercado Livre, Shopee, AliExpress, Awin, Lomadee e Amazon |
+| [Sobre o SetupSniper](docs/sobre-o-setupsniper.md) | O projeto hoje e todas as atualizações, da 1.0.0 à versão atual |
 | [Como funciona](docs/como-funciona.md) | Leitura de preços, totais, cupons, score, API e o que ainda não foi conferido |
 | [Cupons](docs/cupons.md) | De onde vêm os cupons de cada loja e como são tratados |
 | [Impostos de importação](docs/impostos-importacao.md) | Regras de II e ICMS, com fontes e vigência |
