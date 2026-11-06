@@ -9,9 +9,8 @@ from contextlib import asynccontextmanager
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.client = httpx.AsyncClient(
-        timeout=httpx.Timeout(10.0),
-        limits=httpx.Limits(max_connections=100, max_keepalive_connections=20)
+        timeout=httpx.Timeout(20.0), # Aumentado para evitar timeouts que parecem recusas
+        limits=httpx.Limits(max_connections=200, max_keepalive_connections=50)
     )
     yield
     await app.state.client.aclose()
