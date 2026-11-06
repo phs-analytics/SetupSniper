@@ -85,68 +85,57 @@ async def scrape_product_details(url: str) -> Optional[ProductDetail]:
 
 @app.get("/search", response_model=List[ProductDetail])
 async def search_products(q: str = Query(..., description="Termo de busca")):
-    # URL de busca com parâmetro para forçar a listagem de produtos
+    # URL limpa, simulando busca orgânica
     search_url = f"https://lista.mercadolivre.com.br/{q.replace(' ', '-')}"
     client = app.state.client
     
+    # Headers ultra-realistas (Chrome 120+)
     headers = {
-        "User-Agent": random.choice(USER_AGENTS),
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
         "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
-        "Referer": "https://www.google.com/",
+        "sec-ch-ua": '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-platform": '"Windows"',
+        "Referer": "https://www.google.com.br/",
         "DNT": "1",
-        "Connection": "keep-alive",
-        "Upgrade-Insecure-Requests": "1"
     }
     
     try:
         response = await client.get(search_url, headers=headers)
         
-        # Detecção de bloqueio por IP (403 Forbidden ou 429 Too Many Requests)
-        if response.status_code in [403, 429]:
-            print(f"ALERTA: IP do servidor bloqueado. Status: {response.status_code}")
-            raise HTTPException(status_code=403, detail="Servidor temporariamente bloqueado pelo Mercado Livre")
-
-        # Detecção de Captcha no corpo da página
-        if "captcha" in response.text.lower() or "robot" in response.text.lower():
-            print("ALERTA: Captcha detectado na página de busca")
-            raise HTTPException(status_code=403, detail="Bloqueio por Captcha")
+        if response.status_code != 200:
+            raise HTTPException(status_code=response.status_code, detail="Erro na resposta do ML")
 
         soup = BeautifulSoup(response.text, "html.parser")
         
-        # ESTRATÉGIA BRUTA: Busca por links que contenham 'MLB' (ID do produto)
-        # Isso ignora as classes CSS que mudam constantemente
+        # BUSCA AGRESSIVA POR LINKS DE PRODUTO
+        # Procura qualquer <a> que contenha '/p/MLB' no link
         links = []
         for a in soup.find_all("a", href=True):
             href = a['href']
-            if "MLB" in href and ("produto" in href or "lista" not in href):
-                clean_url = href.split("#")[0].split("?")[0]
-                
-                # Normalização de URLs curtas ou relativas
-                if "produto.mercadolivre.com.br" not in clean_url:
-                    if "/p/" in clean_url or "MLB" in clean_url:
-                        clean_url = "https://produto.mercadolivre.com.br/" + clean_url.split("/")[-1]
-                
+            if "/p/MLB" in href:
+                # Limpa a URL para remover parâmetros de rastreio
+                clean_url = href.split("?")[0].split("#")[0]
                 if clean_url not in links:
                     links.append(clean_url)
         
-        print(f"Links de produtos encontrados: {len(links)}")
+        print(f"Debug: Encontrados {len(links)} links de produtos")
         
         if not links:
-            print("Debug: Nenhum link de produto encontrado. O layout pode ter mudado.")
             return []
 
-        # Processa apenas os 3 primeiros para ser extremamente cauteloso com o IP do servidor
-        tasks = [scrape_product_details(url) for url in links[:3]]
+        # Pegamos apenas o PRIMEIRO para evitar detecção por volume
+        # Se funcionar com 1, depois tentamos aumentar
+        tasks = [scrape_product_details(links[0])]
         results = await asyncio.gather(*tasks)
         
         return [res for res in results if res is not None]
         
-    except HTTPException as he:
-        raise he
     except Exception as e:
-        print(f"Erro inesperado na busca: {e}")
+        print(f"Erro: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 if __name__ == "__main__":
     import uvicorn
