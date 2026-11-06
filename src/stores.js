@@ -76,16 +76,18 @@ export const ADAPTERS = {
   mercadolivre: {
     base: 'https://www.mercadolivre.com.br',
     url: (q, p) => `https://lista.mercadolivre.com.br/${enc(slug(q))}${p > 1 ? `_Desde_${(p - 1) * 48 + 1}` : ''}_NoIndex_True`,
-    // 1ª tentativa: API pública (traz reputação do vendedor); se recusar, cai para o HTML.
+    // 1ª tentativa: proxy local de scraping (porta 8000); se recusar, cai para o HTML.
     api: async (q, p, ft = fetchText) => {
-      const j = await ft(`https://api.mercadolibre.com/sites/MLB/search?q=${enc(q)}&offset=${(p - 1) * 50}&limit=50`, { json: true });
-      // A API de busca não traz o preço no Pix: "price" é o preço no crédito (1x).
-      return (j.results ?? []).map(r => ({
-        title: r.title, card: r.price, url: r.permalink, image: r.thumbnail?.replace(/^http:/, 'https:'),
-        available: r.available_quantity !== 0,
-        installments: r.installments ? { n: r.installments.quantity, value: r.installments.amount, rate: r.installments.rate } : null,
-        seller: { id: r.seller?.id ?? null, name: r.official_store_name ?? r.seller?.nickname ?? null, official: !!r.official_store_id },
-        freeShipping: r.shipping?.free_shipping === true,
+      const j = await ft(`http://localhost:8000/search?q=${enc(q)}&offset=${(p - 1) * 50}&limit=50`, { json: true });
+      // A API local pode devolver { results: [...] } (formato ML) ou um array direto.
+      const results = Array.isArray(j) ? j : (j.results ?? []);
+      return results.map(r => ({
+        title: r.title, card: r.price ?? r.card, url: r.permalink ?? r.url,
+        image: (r.thumbnail ?? r.image)?.replace(/^http:/, 'https:'),
+        available: r.available_quantity !== 0 && r.available !== false,
+        installments: r.installments ? { n: r.installments.quantity ?? r.installments.n, value: r.installments.amount ?? r.installments.value, rate: r.installments.rate } : null,
+        seller: { id: r.seller?.id ?? null, name: r.official_store_name ?? r.seller?.nickname ?? r.seller?.name ?? null, official: !!r.official_store_id },
+        freeShipping: r.shipping?.free_shipping === true || r.free_shipping === true,
       }));
     },
     parse: (html, a) => {
