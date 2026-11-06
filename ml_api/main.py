@@ -9,7 +9,9 @@ from contextlib import asynccontextmanager
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-        timeout=httpx.Timeout(20.0), # Aumentado para evitar timeouts que parecem recusas
+    # FIX: Indentação corrigida e cliente instanciado corretamente
+    app.state.client = httpx.AsyncClient(
+        timeout=httpx.Timeout(20.0),
         limits=httpx.Limits(max_connections=200, max_keepalive_connections=50)
     )
     yield
@@ -42,10 +44,12 @@ async def scrape_product_details(url: str) -> Optional[ProductDetail]:
         response = await client.get(url, headers=headers)
         if response.status_code != 200: return None
         soup = BeautifulSoup(response.text, "html.parser")
+        
         def safe_get(selector, class_name, attr=None):
             elem = soup.find(selector, {"class": class_name})
             if not elem: return "N/A"
             return elem.get(attr).strip() if attr else elem.text.strip()
+            
         return ProductDetail(
             name=safe_get("h1", "ui-pdp-title"),
             price=f"R$ {safe_get('span', 'andes-money-amount__fraction')}",
@@ -61,11 +65,8 @@ async def scrape_product_details(url: str) -> Optional[ProductDetail]:
 
 @app.get("/search", response_model=List[ProductDetail])
 async def search_products(q: str = Query(..., description="Termo de busca")):
-    # URL de busca otimizada
     search_url = f"https://lista.mercadolivre.com.br/{q.replace(' ', '-')}"
     client = app.state.client
-    
-    # Headers robustos para parecer um navegador real
     headers = {
         "User-Agent": random.choice(USER_AGENTS),
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
@@ -74,45 +75,25 @@ async def search_products(q: str = Query(..., description="Termo de busca")):
         "Connection": "keep-alive",
         "Upgrade-Insecure-Requests": "1"
     }
-    
     try:
         response = await client.get(search_url, headers=headers)
-        
-        if response.status_code != 200:
-            print(f"Erro do servidor ML: {response.status_code}")
-            return []
-
-        # Log para depuração: verifica se caiu em Captcha
+        if response.status_code != 200: return []
         if "captcha" in response.text.lower() or "robot" in response.text.lower():
-            print("DETECTADO: Mercado Livre exigiu Captcha!")
             raise HTTPException(status_code=403, detail="Bloqueio por Captcha")
-
-        soup = BeautifulSoup(response.text, "html.parser")
         
-        # ESTRATÉGIA BRUTA: Pegar qualquer link que contenha 'produto' e 'MLB'
-        # Isso ignora as classes CSS que o ML muda toda hora
+        soup = BeautifulSoup(response.text, "html.parser")
         links = []
         for a in soup.find_all("a", href=True):
             href = a['href']
             if "produto.mercadolivre.com.br" in href and "MLB" in href:
-                # Limpa a URL removendo parâmetros de rastreio (#)
                 clean_url = href.split("#")[0].split("?")[0]
-                if clean_url not in links:
-                    links.append(clean_url)
+                if clean_url not in links: links.append(clean_url)
         
-        print(f"Links encontrados: {len(links)}")
-        
-        if not links:
-            return []
-
-        # Processa os primeiros 5 produtos para evitar banimento rápido
+        if not links: return []
         tasks = [scrape_product_details(url) for url in links[:5]]
         results = await asyncio.gather(*tasks)
-        
         return [res for res in results if res is not None]
-        
     except Exception as e:
-        print(f"Erro na busca: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
