@@ -62,18 +62,58 @@ async def scrape_product_details(url: str) -> Optional[ProductDetail]:
 
 @app.get("/search", response_model=List[ProductDetail])
 async def search_products(q: str = Query(..., description="Termo de busca")):
+    # URL de busca otimizada
     search_url = f"https://lista.mercadolivre.com.br/{q.replace(' ', '-')}"
     client = app.state.client
+    
+    # Headers robustos para parecer um navegador real
+    headers = {
+        "User-Agent": random.choice(USER_AGENTS),
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+        "Referer": "https://www.google.com/",
+        "Connection": "keep-alive",
+        "Upgrade-Insecure-Requests": "1"
+    }
+    
     try:
-        headers = {"User-Agent": random.choice(USER_AGENTS)}
         response = await client.get(search_url, headers=headers)
+        
+        if response.status_code != 200:
+            print(f"Erro do servidor ML: {response.status_code}")
+            return []
+
+        # Log para depuração: verifica se caiu em Captcha
+        if "captcha" in response.text.lower() or "robot" in response.text.lower():
+            print("DETECTADO: Mercado Livre exigiu Captcha!")
+            raise HTTPException(status_code=403, detail="Bloqueio por Captcha")
+
         soup = BeautifulSoup(response.text, "html.parser")
-        links = [a.get("href").split("#")[0] for a in soup.find_all("a", {"class": "ui-search-item__title"}) if a.get("href")]
-        if not links: return []
+        
+        # ESTRATÉGIA BRUTA: Pegar qualquer link que contenha 'produto' e 'MLB'
+        # Isso ignora as classes CSS que o ML muda toda hora
+        links = []
+        for a in soup.find_all("a", href=True):
+            href = a['href']
+            if "produto.mercadolivre.com.br" in href and "MLB" in href:
+                # Limpa a URL removendo parâmetros de rastreio (#)
+                clean_url = href.split("#")[0].split("?")[0]
+                if clean_url not in links:
+                    links.append(clean_url)
+        
+        print(f"Links encontrados: {len(links)}")
+        
+        if not links:
+            return []
+
+        # Processa os primeiros 5 produtos para evitar banimento rápido
         tasks = [scrape_product_details(url) for url in links[:5]]
         results = await asyncio.gather(*tasks)
+        
         return [res for res in results if res is not None]
+        
     except Exception as e:
+        print(f"Erro na busca: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
