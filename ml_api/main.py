@@ -35,8 +35,8 @@ class ProductDetail(BaseModel):
 
 # Lista de User-Agents para rotacionar e evitar detecção de bot
 USER_AGENTS = [
+    "Mozilla/5.0 (Linux; Android 13; SM-S901B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Mobile Safari/537.36",
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36",
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
     "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit the 605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1"
 ]
@@ -86,7 +86,7 @@ async def scrape_product_details(url: str) -> Optional[ProductDetail]:
 @app.get("/search", response_model=List[ProductDetail])
 async def search_products(q: str = Query(..., description="Termo de busca")):
     # URL de busca com parâmetro para forçar a listagem de produtos
-    search_url = f"https://lista.mercadolivre.com.br/{q.replace(' ', '-')}_NoFilter_PAGINA=1"
+    search_url = f"https://lista.mercadolivre.com.br/{q.replace(' ', '-')}"
     client = app.state.client
     
     headers = {
